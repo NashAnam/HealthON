@@ -32,14 +32,46 @@ export default function AdminDashboard() {
     };
 
     const fetchPendingPayments = async () => {
-        const { data, error } = await supabase
-            .from('payments')
-            .select(`id, created_at, amount, payment_status, transaction_id, patient_id, patients (name, phone, user_id)`)
-            .eq('payment_status', 'pending_verification')
-            .order('created_at', { ascending: false });
+        try {
+            // Fetch payments first
+            const { data: paymentsData, error: paymentsError } = await supabase
+                .from('payments')
+                .select('*')
+                .eq('payment_status', 'pending_verification')
+                .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        setPayments(data || []);
+            if (paymentsError) {
+                console.error('Payments error:', paymentsError);
+                toast.error('Failed to load payments');
+                return;
+            }
+
+            // Fetch patient data separately for each payment
+            const enrichedPayments = await Promise.all(
+                (paymentsData || []).map(async (payment) => {
+                    const { data: patient } = await supabase
+                        .from('patients')
+                        .select('name, phone, user_id')
+                        .eq('id', payment.patient_id)
+                        .maybeSingle();
+
+                    return {
+                        ...payment,
+                        patients: patient || {
+                            name: 'Patient ID: ' + payment.patient_id.substring(0, 8),
+                            phone: 'N/A',
+                            user_id: null
+                        }
+                    };
+                })
+            );
+
+            console.log('Loaded payments:', enrichedPayments);
+            setPayments(enrichedPayments);
+        } catch (err) {
+            console.error('Error loading payments:', err);
+            toast.error('Error loading payments');
+        }
     };
 
     const fetchPendingDoctors = async () => {
@@ -65,6 +97,11 @@ export default function AdminDashboard() {
     };
 
     const handleApprovePayment = async (payment) => {
+        if (!payment.patients?.user_id) {
+            toast.error('Cannot approve: Patient not found in database');
+            return;
+        }
+
         if (!confirm(`Confirm receipt of ₹${payment.amount} from ${payment.patients?.name}?`)) return;
 
         setProcessingId(payment.id);
@@ -85,6 +122,7 @@ export default function AdminDashboard() {
             toast.success('Payment Approved & Subscription Activated');
             fetchData();
         } catch (error) {
+            console.error('Approval error:', error);
             toast.error('Error approving payment');
         } finally {
             setProcessingId(null);
@@ -166,8 +204,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('payments')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'payments'
-                                ? 'bg-indigo-600 text-white shadow-lg'
-                                : 'bg-white text-slate-600 hover:bg-slate-100'
+                            ? 'bg-indigo-600 text-white shadow-lg'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
                             }`}
                     >
                         <Users className="w-5 h-5" />
@@ -176,8 +214,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('doctors')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'doctors'
-                                ? 'bg-violet-600 text-white shadow-lg'
-                                : 'bg-white text-slate-600 hover:bg-slate-100'
+                            ? 'bg-violet-600 text-white shadow-lg'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
                             }`}
                     >
                         <Stethoscope className="w-5 h-5" />
@@ -186,8 +224,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('labs')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'labs'
-                                ? 'bg-emerald-600 text-white shadow-lg'
-                                : 'bg-white text-slate-600 hover:bg-slate-100'
+                            ? 'bg-emerald-600 text-white shadow-lg'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
                             }`}
                     >
                         <FlaskConical className="w-5 h-5" />
@@ -248,20 +286,56 @@ function PaymentsTable({ payments, loading, processingId, onApprove, onReject })
                     <th className="p-6 text-right font-bold text-slate-600 text-sm">Actions</th>
                 </tr>
             </thead>
-            <tbody className="divide-y">
-                {payments.length === 0 ? (
-                    <tr><td colSpan="5" className="p-10 text-center text-slate-500">{loading ? 'Loading...' : 'No pending payments'}</td></tr>
+            <tbody>
+                {loading ? (
+                    <tr>
+                        <td colSpan="5" className="p-12 text-center text-slate-500">
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="w-5 h-5 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                                Loading payments...
+                            </div>
+                        </td>
+                    </tr>
+                ) : payments.length === 0 ? (
+                    <tr>
+                        <td colSpan="5" className="p-12 text-center text-slate-500">
+                            No pending payments
+                        </td>
+                    </tr>
                 ) : (
-                    payments.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50">
-                            <td className="p-6 text-slate-600">{new Date(p.created_at).toLocaleDateString()}</td>
-                            <td className="p-6"><p className="font-bold">{p.patients?.name}</p><p className="text-sm text-slate-500">{p.patients?.phone}</p></td>
-                            <td className="p-6"><span className="font-mono bg-slate-100 px-3 py-1 rounded text-sm">{p.transaction_id}</span></td>
-                            <td className="p-6 font-bold text-emerald-600">₹{p.amount}</td>
+                    payments.map((payment) => (
+                        <tr key={payment.id} className="border-b hover:bg-slate-50">
+                            <td className="p-6 text-sm text-slate-700">
+                                {new Date(payment.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="p-6">
+                                <div className="font-bold text-slate-900">{payment.patients?.name}</div>
+                                <div className="text-sm text-slate-500">{payment.patients?.phone}</div>
+                            </td>
+                            <td className="p-6 text-sm text-slate-700 font-mono">{payment.transaction_id}</td>
+                            <td className="p-6 text-lg font-bold text-slate-900">₹{payment.amount}</td>
                             <td className="p-6 text-right">
-                                <div className="flex justify-end gap-2">
-                                    <button onClick={() => onReject(p.id)} disabled={processingId === p.id} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><XCircle className="w-6 h-6" /></button>
-                                    <button onClick={() => onApprove(p)} disabled={processingId === p.id} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold"><CheckCircle2 className="w-5 h-5" />Approve</button>
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        onClick={() => onApprove(payment)}
+                                        disabled={processingId === payment.id}
+                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {processingId === payment.id ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        )}
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => onReject(payment.id)}
+                                        disabled={processingId === payment.id}
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                        Reject
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -280,24 +354,47 @@ function DoctorsTable({ doctors, loading, processingId, onVerify, onReject }) {
                     <th className="p-6 text-left font-bold text-slate-600 text-sm">Name</th>
                     <th className="p-6 text-left font-bold text-slate-600 text-sm">Qualification</th>
                     <th className="p-6 text-left font-bold text-slate-600 text-sm">Experience</th>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Timings</th>
                     <th className="p-6 text-right font-bold text-slate-600 text-sm">Actions</th>
                 </tr>
             </thead>
-            <tbody className="divide-y">
-                {doctors.length === 0 ? (
-                    <tr><td colSpan="5" className="p-10 text-center text-slate-500">{loading ? 'Loading...' : 'No pending doctors'}</td></tr>
+            <tbody>
+                {loading ? (
+                    <tr>
+                        <td colSpan="4" className="p-12 text-center text-slate-500">
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="w-5 h-5 border-2 border-slate-300 border-t-violet-600 rounded-full animate-spin"></div>
+                                Loading doctors...
+                            </div>
+                        </td>
+                    </tr>
+                ) : doctors.length === 0 ? (
+                    <tr>
+                        <td colSpan="4" className="p-12 text-center text-slate-500">
+                            No pending doctor verifications
+                        </td>
+                    </tr>
                 ) : (
-                    doctors.map((d) => (
-                        <tr key={d.id} className="hover:bg-slate-50">
-                            <td className="p-6 font-bold">{d.name}</td>
-                            <td className="p-6 text-slate-600">{d.qualification}</td>
-                            <td className="p-6 text-slate-600">{d.experience}</td>
-                            <td className="p-6 text-slate-600">{d.timings}</td>
+                    doctors.map((doctor) => (
+                        <tr key={doctor.id} className="border-b hover:bg-slate-50">
+                            <td className="p-6 font-bold text-slate-900">{doctor.name}</td>
+                            <td className="p-6 text-sm text-slate-700">{doctor.qualification}</td>
+                            <td className="p-6 text-sm text-slate-700">{doctor.experience} years</td>
                             <td className="p-6 text-right">
-                                <div className="flex justify-end gap-2">
-                                    <button onClick={() => onReject(d.id)} disabled={processingId === d.id} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><XCircle className="w-6 h-6" /></button>
-                                    <button onClick={() => onVerify(d.id, d.name)} disabled={processingId === d.id} className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2 rounded-xl font-bold"><CheckCircle2 className="w-5 h-5" />Verify</button>
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        onClick={() => onVerify(doctor.id, doctor.name)}
+                                        disabled={processingId === doctor.id}
+                                        className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                    >
+                                        Verify
+                                    </button>
+                                    <button
+                                        onClick={() => onReject(doctor.id)}
+                                        disabled={processingId === doctor.id}
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                    >
+                                        Reject
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -315,25 +412,46 @@ function LabsTable({ labs, loading, processingId, onVerify, onReject }) {
                 <tr>
                     <th className="p-6 text-left font-bold text-slate-600 text-sm">Name</th>
                     <th className="p-6 text-left font-bold text-slate-600 text-sm">Address</th>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">License</th>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Tests</th>
                     <th className="p-6 text-right font-bold text-slate-600 text-sm">Actions</th>
                 </tr>
             </thead>
-            <tbody className="divide-y">
-                {labs.length === 0 ? (
-                    <tr><td colSpan="5" className="p-10 text-center text-slate-500">{loading ? 'Loading...' : 'No pending labs'}</td></tr>
+            <tbody>
+                {loading ? (
+                    <tr>
+                        <td colSpan="3" className="p-12 text-center text-slate-500">
+                            <div className="flex items-center justify-center gap-3">
+                                <div className="w-5 h-5 border-2 border-slate-300 border-t-emerald-600 rounded-full animate-spin"></div>
+                                Loading labs...
+                            </div>
+                        </td>
+                    </tr>
+                ) : labs.length === 0 ? (
+                    <tr>
+                        <td colSpan="3" className="p-12 text-center text-slate-500">
+                            No pending lab verifications
+                        </td>
+                    </tr>
                 ) : (
-                    labs.map((l) => (
-                        <tr key={l.id} className="hover:bg-slate-50">
-                            <td className="p-6 font-bold">{l.name}</td>
-                            <td className="p-6 text-slate-600">{l.address}</td>
-                            <td className="p-6 text-slate-600">{l.license_number}</td>
-                            <td className="p-6 text-slate-600 text-sm">{l.tests_list?.substring(0, 50)}...</td>
+                    labs.map((lab) => (
+                        <tr key={lab.id} className="border-b hover:bg-slate-50">
+                            <td className="p-6 font-bold text-slate-900">{lab.name}</td>
+                            <td className="p-6 text-sm text-slate-700">{lab.address}</td>
                             <td className="p-6 text-right">
-                                <div className="flex justify-end gap-2">
-                                    <button onClick={() => onReject(l.id)} disabled={processingId === l.id} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><XCircle className="w-6 h-6" /></button>
-                                    <button onClick={() => onVerify(l.id, l.name)} disabled={processingId === l.id} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold"><CheckCircle2 className="w-5 h-5" />Verify</button>
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        onClick={() => onVerify(lab.id, lab.name)}
+                                        disabled={processingId === lab.id}
+                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                    >
+                                        Verify
+                                    </button>
+                                    <button
+                                        onClick={() => onReject(lab.id)}
+                                        disabled={processingId === lab.id}
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                    >
+                                        Reject
+                                    </button>
                                 </div>
                             </td>
                         </tr>
