@@ -43,10 +43,70 @@ export default function AboutPage() {
 
                 {/* Features */}
                 <div className="grid md:grid-cols-4 gap-6 mb-16">
-                    <FeatureCard icon={<Users className="w-8 h-8" />} title="For Everyone" color="from-blue-500 to-indigo-600" />
-                    <FeatureCard icon={<Shield className="w-8 h-8" />} title="Secure & Private" color="from-purple-500 to-pink-600" />
-                    <FeatureCard icon={<Zap className="w-8 h-8" />} title="Fast & Easy" color="from-emerald-500 to-teal-600" />
-                    <FeatureCard icon={<Heart className="w-8 h-8" />} title="Health Tracking" color="from-rose-500 to-red-600" />
+                    <FeatureCard
+                        icon={<Users className="w-8 h-8" />}
+                        title="For Everyone"
+                        description="Patients, doctors, and labs all in one platform"
+                        color="from-blue-500 to-indigo-600"
+                    />
+                    <FeatureCard
+                        icon={<Shield className="w-8 h-8" />}
+                        title="Secure & Private"
+                        description="Your health data is encrypted and protected"
+                        color="from-purple-500 to-pink-600"
+                    />
+                    <FeatureCard
+                        icon={<Zap className="w-8 h-8" />}
+                        title="Fast & Easy"
+                        description="Book appointments and tests in seconds"
+                        color="from-emerald-500 to-teal-600"
+                    />
+                    <FeatureCard
+                        icon={<Heart className="w-8 h-8" />}
+                        title="Health Tracking"
+                        description="Monitor vitals and get health insights"
+                        color="from-rose-500 to-red-600"
+                    />
+                </div>
+
+                {/* What We Offer */}
+                <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 mb-16 border border-gray-100">
+                    <h3 className="text-3xl font-bold text-gray-900 mb-8 text-center">What We Offer</h3>
+                    <div className="grid md:grid-cols-3 gap-8">
+                        <ServiceCard
+                            title="For Patients"
+                            features={[
+                                "Book doctor appointments",
+                                "Schedule lab tests",
+                                "Track health vitals",
+                                "Set medication reminders",
+                                "Health risk assessments",
+                                "View medical reports"
+                            ]}
+                        />
+                        <ServiceCard
+                            title="For Doctors"
+                            features={[
+                                "Manage appointments",
+                                "OPD management",
+                                "Patient records",
+                                "Telemedicine support",
+                                "Schedule management",
+                                "Digital consultations"
+                            ]}
+                        />
+                        <ServiceCard
+                            title="For Labs"
+                            features={[
+                                "Manage test bookings",
+                                "Upload reports",
+                                "Track samples",
+                                "Patient communication",
+                                "Inventory management",
+                                "Digital reports"
+                            ]}
+                        />
+                    </div>
                 </div>
 
                 {/* Developer */}
@@ -62,13 +122,34 @@ export default function AboutPage() {
     );
 }
 
-function FeatureCard({ icon, title, color }) {
+function FeatureCard({ icon, title, description, color }) {
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white mb-4`}>
+        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all border border-gray-100 group">
+            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
                 {icon}
             </div>
-            <h4 className="text-lg font-bold text-gray-900">{title}</h4>
+            <h4 className="text-lg font-bold text-gray-900 mb-2">{title}</h4>
+            <p className="text-sm text-gray-600">{description}</p>
+        </div>
+    );
+}
+
+function ServiceCard({ title, features }) {
+    return (
+        <div className="space-y-4">
+            <h4 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-indigo-200">{title}</h4>
+            <ul className="space-y-3">
+                {features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2 text-gray-700">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <span className="text-sm">{feature}</span>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }
