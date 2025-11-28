@@ -34,9 +34,7 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl shadow-slate-200/50 border border-slate-100 p-10 relative z-10 text-center">
 
-        <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-600/20">
-          <Activity className="w-8 h-8 text-white" />
-        </div>
+        <img src="/careon-logo.png" alt="CareOn" className="w-16 h-16 object-contain mx-auto mb-8" />
 
         <h1 className="text-3xl font-bold text-slate-900 mb-3">Welcome Back</h1>
         <p className="text-slate-500 mb-10 text-lg">Sign in to access your health dashboard</p>
