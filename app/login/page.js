@@ -19,7 +19,8 @@ export default function LoginPage() {
         toast.success('Redirecting to CareOn...');
       }
     } catch (err) {
-      toast.error('An error occurred');
+      console.error('Login error:', err);
+      toast.error(err.message || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
     }
