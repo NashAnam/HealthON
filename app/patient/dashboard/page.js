@@ -33,36 +33,42 @@ export default function PatientDashboard() {
       if (patientError) throw patientError;
       setPatient(patientData);
 
+      // Always load data regardless of subscription status for now
+      const { data: vitalsData } = await getLatestVitals(patientData.id);
+      setVitals(vitalsData);
+
+      const { data: assessmentData } = await getLatestAssessment(patientData.id);
+      setAssessment(assessmentData);
+
+      const { data: remindersData } = await getReminders(patientData.id);
+      setReminders(remindersData || []);
+
+      /* 
+      // TEMPORARILY DISABLED SUBSCRIPTION CHECK
       const endDate = patientData?.subscription_end_date ? new Date(patientData.subscription_end_date) : null;
       const isActive = endDate && endDate > new Date();
 
       if (isActive) {
         setSubscriptionStatus('active');
-
-        const { data: vitalsData } = await getLatestVitals(patientData.id);
-        setVitals(vitalsData);
-
-        const { data: assessmentData } = await getLatestAssessment(patientData.id);
-        setAssessment(assessmentData);
-
-        const { data: remindersData } = await getReminders(patientData.id);
-        setReminders(remindersData || []);
       } else {
         // Check for pending payment
         const { data: payment } = await supabase
-          .from('payments')
-          .select('payment_status')
-          .eq('patient_id', patientData.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+            .from('payments')
+            .select('payment_status')
+            .eq('patient_id', patientData.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
         if (payment && (payment.payment_status === 'pending_verification')) {
-          setSubscriptionStatus('pending');
+             setSubscriptionStatus('pending');
         } else {
-          setSubscriptionStatus('expired');
+             setSubscriptionStatus('expired');
         }
       }
+      */
+      setSubscriptionStatus('active'); // Force active
+
     } catch (error) {
       console.error('Error loading dashboard:', error);
       toast.error('Failed to load dashboard');
@@ -75,9 +81,9 @@ export default function PatientDashboard() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
 
-  // Subscription States
-  if (subscriptionStatus === 'pending') return <SubscriptionPending />;
-  if (subscriptionStatus === 'expired') return <SubscriptionExpired router={router} />;
+  // Subscription States - DISABLED
+  // if (subscriptionStatus === 'pending') return <SubscriptionPending />;
+  // if (subscriptionStatus === 'expired') return <SubscriptionExpired router={router} />;
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100">
