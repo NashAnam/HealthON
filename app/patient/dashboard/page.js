@@ -55,50 +55,6 @@ export default function PatientDashboard() {
       console.error('Error loading dashboard:', error);
       toast.error('Failed to load dashboard');
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => router.push('/login');
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
-
-  // Request notification permission on mount
-  useEffect(() => {
-    if ('Notification' in window) {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // Check for due reminders every minute
-  useEffect(() => {
-    const checkReminders = () => {
-      const now = new Date();
-      reminders.forEach(rem => {
-        const remTime = new Date(rem.reminder_time);
-        // Check if reminder is within the last minute
-        if (remTime > new Date(now.getTime() - 60000) && remTime <= now) {
-          if (Notification.permission === 'granted') {
-            new Notification('Health Reminder', {
-              body: rem.title,
-              icon: '/icon.png' // Ensure this exists or use a default
-            });
-          } else {
-            toast(rem.title, { icon: '⏰' });
-          }
-        }
-      });
-    };
-
-    const interval = setInterval(checkReminders, 60000);
-    return () => clearInterval(interval);
-  }, [reminders]);
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100 pb-20 md:pb-0">
-      {/* Sidebar (Desktop) */}
-      <aside className="hidden md:flex flex-col w-72 p-4 fixed h-full z-10">
-        <div className="bg-white h-full rounded-3xl p-6 flex flex-col shadow-xl shadow-slate-200/50 border border-slate-100">
           <div className="flex items-center gap-3 mb-10 px-2">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
               <Activity className="w-6 h-6 text-white" />
@@ -118,11 +74,11 @@ export default function PatientDashboard() {
               <span className="font-medium">Sign Out</span>
             </button>
           </div>
-        </div>
-      </aside>
+        </div >
+      </aside >
 
-      {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-white z-20 px-4 py-3 shadow-sm flex justify-between items-center">
+    {/* Mobile Header */ }
+    < header className = "md:hidden fixed top-0 left-0 right-0 bg-white z-20 px-4 py-3 shadow-sm flex justify-between items-center" >
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <Activity className="w-5 h-5 text-white" />
@@ -132,21 +88,21 @@ export default function PatientDashboard() {
         <button onClick={handleLogout} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
           <LogOut className="w-5 h-5" />
         </button>
+      </header >
+
+    {/* Main Content */ }
+    < main className = "flex-1 md:ml-72 p-4 md:p-8 mt-14 md:mt-0" >
+      <header className="flex justify-between items-center mb-10 hidden md:flex">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-1">Hello, {patient?.name?.split(' ')[0]} 👋</h1>
+          <p className="text-slate-500">{patient?.age ? `${patient.age} Yrs • ` : ''}{patient?.phone}</p>
+        </div>
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-0.5 shadow-lg shadow-indigo-500/20">
+          <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center text-indigo-600 font-bold text-lg">{patient?.name?.charAt(0) || 'P'}</div>
+        </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 md:ml-72 p-4 md:p-8 mt-14 md:mt-0">
-        <header className="flex justify-between items-center mb-10 hidden md:flex">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">Hello, {patient?.name?.split(' ')[0]} 👋</h1>
-            <p className="text-slate-500">{patient?.age ? `${patient.age} Yrs • ` : ''}{patient?.phone}</p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 p-0.5 shadow-lg shadow-indigo-500/20">
-            <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center text-indigo-600 font-bold text-lg">{patient?.name?.charAt(0) || 'P'}</div>
-          </div>
-        </header>
-
-        {/* Mobile Welcome */}
+  {/* Mobile Welcome */ }
         <div className="md:hidden mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Hi, {patient?.name?.split(' ')[0]} 👋</h1>
           <p className="text-sm text-slate-500">Welcome back to your health dashboard.</p>
@@ -260,17 +216,17 @@ export default function PatientDashboard() {
           onClose={() => setShowReminderModal(false)}
           patientId={patient?.id}
         />
-      </main>
+      </main >
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-20 px-6 py-3 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+    {/* Mobile Bottom Navigation */ }
+    < nav className = "md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-20 px-6 py-3 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" >
         <MobileNavItem icon={LayoutDashboard} label="Home" active onClick={() => { }} />
         <MobileNavItem icon={Calendar} label="Book" onClick={() => router.push('/patient/doctor-booking')} />
         <MobileNavItem icon={Plus} label="Add" onClick={() => setShowReminderModal(true)} primary />
         <MobileNavItem icon={FileText} label="Records" onClick={() => router.push('/patient/lab/reports')} />
         <MobileNavItem icon={Settings} label="Settings" onClick={() => router.push('/patient/settings')} />
-      </nav>
-    </div>
+      </nav >
+    </div >
   );
 }
 
