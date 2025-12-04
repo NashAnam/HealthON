@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getLab, supabase } from '@/lib/supabase';
+import { getCurrentUser, getLab, supabase, signOut } from '@/lib/supabase';
 import { FlaskConical, Calendar, FileText, Upload, Users, TrendingUp, LogOut, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -57,8 +57,23 @@ export default function LabDashboard() {
   };
 
   const handleLogout = async () => {
-    router.push('/login');
-    toast.success('Logged out successfully');
+    try {
+      const { error } = await signOut();
+      if (error) {
+        toast.error('Logout failed. Please try again.');
+        return;
+      }
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Lab logout error:', error);
+      toast.error('Logout failed. Please try again.');
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      } else {
+        router.replace('/login');
+      }
+    }
   };
 
   if (!lab) return (

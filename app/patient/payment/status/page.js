@@ -1,4 +1,37 @@
 'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Activity } from 'lucide-react';
+
+export default function PaymentStatusPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        router.replace('/patient/dashboard');
+    }, [router]);
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+            <div className="bg-white border border-slate-100 rounded-[32px] p-10 text-center shadow-2xl shadow-slate-200/60 max-w-md w-full">
+                <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-600/30">
+                    <Activity className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">Payments Disabled</h1>
+                <p className="text-slate-600 mb-6">
+                    This page is no longer required—your account is active right after consent.
+                    Redirecting you to the dashboard...
+                </p>
+                <Loader2 className="w-6 h-6 text-indigo-600 mx-auto animate-spin" />
+            </div>
+        </div>
+    );
+}
+
+/*
+Legacy payment verification page retained for reference:
+
+'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
@@ -96,7 +129,7 @@ function PaymentStatusContent() {
     );
 }
 
-export default function PaymentStatusPage() {
+export function LegacyPaymentStatusPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -107,3 +140,4 @@ export default function PaymentStatusPage() {
         </Suspense>
     );
 }
+*/
