@@ -49,6 +49,13 @@ export default function CompleteProfilePage() {
     checkProfile();
   }, []);
 
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
+
+  const isValidPhone = (phone) => {
+    // Basic 10-digit validation (you can relax or tighten this as needed)
+    return /^[0-9]{10}$/.test((phone || '').trim());
+  };
+
   const checkProfile = async () => {
     try {
       const currentUser = await getCurrentUser();
@@ -91,6 +98,16 @@ export default function CompleteProfilePage() {
     }
     if (!formData.name || !formData.phone) {
       toast.error('Name and Phone are required');
+      return;
+    }
+
+    if (!isValidPhone(formData.phone)) {
+      toast.error('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    if (formData.email && !isValidEmail(formData.email)) {
+      toast.error('Please enter a valid email address');
       return;
     }
 
@@ -229,15 +246,43 @@ export default function CompleteProfilePage() {
 
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <InputField icon={User} label="Full Name" placeholder="John Doe" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                  <InputField icon={Phone} label="Phone Number" placeholder="+91 98765 43210" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                  <InputField
+                    icon={User}
+                    label="Full Name"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  />
+                  <InputField
+                    icon={Phone}
+                    label="Phone Number"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="10-digit mobile number"
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  />
                 </div>
 
                 {userType === 'patient' && (
                   <>
                     <div className="grid md:grid-cols-2 gap-6">
-                      <InputField icon={Calendar} label="Age" type="number" placeholder="Years" value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} />
-                      <InputField icon={Mail} label="Email (Optional)" placeholder="john@example.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                      <InputField
+                        icon={Calendar}
+                        label="Age"
+                        type="number"
+                        placeholder="Years"
+                        value={formData.age}
+                        onChange={e => setFormData({ ...formData, age: e.target.value })}
+                      />
+                      <InputField
+                        icon={Mail}
+                        label="Email (Optional)"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      />
                     </div>
                   </>
                 )}

@@ -1,11 +1,50 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Activity } from 'lucide-react';
+
+export default function PaymentPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        router.replace('/patient/dashboard');
+    }, [router]);
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+            <div className="max-w-md w-full bg-white border border-slate-100 rounded-[32px] p-10 text-center shadow-2xl shadow-slate-200/60">
+                <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-600/30">
+                    <Activity className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">No Payment Needed</h1>
+                <p className="text-slate-600 mb-6">
+                    CareOn now unlocks the patient dashboard immediately after registration.
+                    Redirecting you to your dashboard...
+                </p>
+                <button
+                    onClick={() => router.replace('/patient/dashboard')}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/20"
+                >
+                    Go to Dashboard
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/*
+================================================================================
+Legacy payment experience retained for reference. Re-enable by restoring the
+imports and component below.
+================================================================================
+
+import { useState, useEffect } from 'react';
 import { getCurrentUser, getPatient, createPayment, updatePatient, supabase } from '@/lib/supabase';
 import { ShieldCheck, CheckCircle2, QrCode, ArrowRight, Activity, Hash } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function PaymentPage() {
+function LegacyPaymentPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [patient, setPatient] = useState(null);
@@ -25,7 +64,6 @@ export default function PaymentPage() {
         const { data } = await getPatient(user.id);
         if (data) {
             setPatient(data);
-            // Check if already paid
             const { data: payment } = await supabase
                 .from('payments')
                 .select('payment_status')
@@ -47,7 +85,6 @@ export default function PaymentPage() {
 
         setLoading(true);
         try {
-            // Create payment record with pending status
             const { error } = await createPayment({
                 patient_id: patient.id,
                 amount: 99,
@@ -87,7 +124,6 @@ export default function PaymentPage() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
-                    {/* Order Summary */}
                     <div className="md:col-span-1">
                         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/50 sticky top-8">
                             <h3 className="font-bold text-slate-900 mb-6 text-sm uppercase tracking-wider opacity-70">Order Summary</h3>
@@ -109,14 +145,12 @@ export default function PaymentPage() {
                         </div>
                     </div>
 
-                    {/* Payment Section */}
                     <div className="md:col-span-2">
                         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/50">
                             <h3 className="font-bold text-slate-900 mb-8 text-sm uppercase tracking-wider opacity-70">UPI Payment</h3>
 
                             {!showTransactionInput ? (
                                 <div className="space-y-8">
-                                    {/* QR Code */}
                                     <div className="flex flex-col items-center justify-center p-10 bg-slate-50 rounded-3xl border border-slate-200 border-dashed">
                                         <div className="bg-white p-4 rounded-2xl shadow-sm mb-6 border border-slate-100">
                                             <img src="/images/upi-qr.png" alt="UPI QR Code" className="w-64 h-64 object-contain" />
@@ -194,3 +228,4 @@ export default function PaymentPage() {
         </div>
     );
 }
+*/

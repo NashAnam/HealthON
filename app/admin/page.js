@@ -1,12 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, XCircle, RefreshCw, Users, Stethoscope, FlaskConical } from 'lucide-react';
+import { RefreshCw, Stethoscope, FlaskConical } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState('payments');
-    const [payments, setPayments] = useState([]);
+    const [activeTab, setActiveTab] = useState('doctors');
+    // const [payments, setPayments] = useState([]);
     const [doctors, setDoctors] = useState([]);
     const [labs, setLabs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,9 +19,7 @@ export default function AdminDashboard() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            if (activeTab === 'payments') {
-                await fetchPendingPayments();
-            } else if (activeTab === 'doctors') {
+            if (activeTab === 'doctors') {
                 await fetchPendingDoctors();
             } else if (activeTab === 'labs') {
                 await fetchPendingLabs();
@@ -31,9 +29,9 @@ export default function AdminDashboard() {
         }
     };
 
+    /*
     const fetchPendingPayments = async () => {
         try {
-            // Fetch payments first
             const { data: paymentsData, error: paymentsError } = await supabase
                 .from('payments')
                 .select('*')
@@ -46,7 +44,6 @@ export default function AdminDashboard() {
                 return;
             }
 
-            // Fetch patient data separately for each payment
             const enrichedPayments = await Promise.all(
                 (paymentsData || []).map(async (payment) => {
                     const { data: patient } = await supabase
@@ -73,6 +70,7 @@ export default function AdminDashboard() {
             toast.error('Error loading payments');
         }
     };
+    */
 
     const fetchPendingDoctors = async () => {
         const { data, error } = await supabase
@@ -96,6 +94,7 @@ export default function AdminDashboard() {
         setLabs(data || []);
     };
 
+    /*
     const handleApprovePayment = async (payment) => {
         if (!payment.patients?.user_id) {
             toast.error('Cannot approve: Patient not found in database');
@@ -128,6 +127,7 @@ export default function AdminDashboard() {
             setProcessingId(null);
         }
     };
+    */
 
     const handleVerifyDoctor = async (doctorId, doctorName) => {
         if (!confirm(`Verify ${doctorName} as a doctor?`)) return;
@@ -174,9 +174,10 @@ export default function AdminDashboard() {
 
         setProcessingId(id);
         try {
-            if (type === 'payment') {
-                await supabase.from('payments').update({ payment_status: 'rejected' }).eq('id', id);
-            } else if (type === 'doctor') {
+            // if (type === 'payment') {
+            //     await supabase.from('payments').update({ payment_status: 'rejected' }).eq('id', id);
+            // } else
+            if (type === 'doctor') {
                 await supabase.from('doctors').delete().eq('id', id);
             } else if (type === 'lab') {
                 await supabase.from('labs').delete().eq('id', id);
@@ -196,12 +197,12 @@ export default function AdminDashboard() {
             <div className="max-w-6xl mx-auto">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
-                    <p className="text-slate-500 mt-1">Manage payments, doctors, and labs</p>
+                    <p className="text-slate-500 mt-1">Manage doctors and labs</p>
                 </div>
 
                 {/* Tabs */}
                 <div className="flex gap-4 mb-6">
-                    <button
+                    {/* <button
                         onClick={() => setActiveTab('payments')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'payments'
                             ? 'bg-indigo-600 text-white shadow-lg'
@@ -210,7 +211,7 @@ export default function AdminDashboard() {
                     >
                         <Users className="w-5 h-5" />
                         Payments ({payments.length})
-                    </button>
+                    </button> */}
                     <button
                         onClick={() => setActiveTab('doctors')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'doctors'
@@ -241,7 +242,7 @@ export default function AdminDashboard() {
 
                 {/* Content */}
                 <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                    {activeTab === 'payments' && (
+                    {/* {activeTab === 'payments' && (
                         <PaymentsTable
                             payments={payments}
                             loading={loading}
@@ -249,7 +250,7 @@ export default function AdminDashboard() {
                             onApprove={handleApprovePayment}
                             onReject={(id) => handleReject(id, 'payment')}
                         />
-                    )}
+                    )} */}
                     {activeTab === 'doctors' && (
                         <DoctorsTable
                             doctors={doctors}
@@ -274,7 +275,7 @@ export default function AdminDashboard() {
     );
 }
 
-function PaymentsTable({ payments, loading, processingId, onApprove, onReject }) {
+/* function PaymentsTable({ payments, loading, processingId, onApprove, onReject }) {
     return (
         <table className="w-full">
             <thead className="bg-slate-50 border-b">
@@ -344,7 +345,7 @@ function PaymentsTable({ payments, loading, processingId, onApprove, onReject })
             </tbody>
         </table>
     );
-}
+} */
 
 function DoctorsTable({ doctors, loading, processingId, onVerify, onReject }) {
     return (

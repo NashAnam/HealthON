@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getDoctor, getDoctorAppointments } from '@/lib/supabase';
+import { getCurrentUser, getDoctor, getDoctorAppointments, signOut } from '@/lib/supabase';
 import { Calendar, Users, Video, Activity, Clock, TrendingUp, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -51,8 +51,23 @@ export default function DoctorDashboard() {
   };
 
   const handleLogout = async () => {
-    router.push('/login');
-    toast.success('Logged out successfully');
+    try {
+      const { error } = await signOut();
+      if (error) {
+        toast.error('Logout failed. Please try again.');
+        return;
+      }
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Doctor logout error:', error);
+      toast.error('Logout failed. Please try again.');
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      } else {
+        router.replace('/login');
+      }
+    }
   };
 
   if (!doctor) return (

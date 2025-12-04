@@ -1,10 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, getLatestVitals, getLatestAssessment, getReminders, supabase } from '@/lib/supabase';
+import { getCurrentUser, getPatient, getLatestVitals, getLatestAssessment, getReminders, signOut } from '@/lib/supabase';
 import {
   Activity, Calendar, FileText, Bell, LogOut,
-  LayoutDashboard, CreditCard, Settings, Plus,
+  LayoutDashboard, /* CreditCard, */ Settings, Plus,
   Stethoscope, Clock, ChevronRight, Search, AlertCircle, RefreshCw, Heart, User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -59,7 +59,25 @@ export default function PatientDashboard() {
     }
   };
 
-  const handleLogout = async () => router.push('/login');
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        toast.error('Logout failed. Please try again.');
+        return;
+      }
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Logout failed. Please try again.');
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      } else {
+        router.replace('/login');
+      }
+    }
+  };
 
   // Request notification permission on mount
   useEffect(() => {
@@ -109,7 +127,7 @@ export default function PatientDashboard() {
             <NavItem icon={LayoutDashboard} label="Overview" active />
             <NavItem icon={Calendar} label="Appointments" onClick={() => router.push('/patient/doctor-booking')} />
             <NavItem icon={FileText} label="Records" onClick={() => router.push('/patient/lab/reports')} />
-            <NavItem icon={CreditCard} label="Payments" onClick={() => router.push('/patient/payment')} />
+            {/* <NavItem icon={CreditCard} label="Payments" onClick={() => router.push('/patient/payment')} /> */}
             <NavItem icon={Settings} label="Settings" onClick={() => router.push('/patient/settings')} />
           </nav>
           <div className="mt-auto pt-6 border-t border-slate-100">

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, updatePatient, supabase } from '@/lib/supabase';
+import { getCurrentUser, getPatient, updatePatient /* , supabase */ } from '@/lib/supabase';
 import { ShieldCheck, ArrowRight, CheckCircle2, FileText, Lock, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -49,15 +49,17 @@ export default function ConsentPage() {
         }
 
         if (patientData.consent_given) {
-            console.log('[CONSENT] Consent already given, redirecting to payment');
-            router.replace('/patient/payment');
+            console.log('[CONSENT] Consent already given, redirecting to dashboard');
+            // router.replace('/patient/payment');
+            router.replace('/patient/dashboard');
             return;
         }
 
         console.log('[CONSENT] Setting patient data');
         setPatient(patientData);
 
-        // Check payment status
+        // Payment gating removed; legacy check retained for reference:
+        /*
         const { data: payment } = await supabase
             .from('payments')
             .select('payment_status')
@@ -65,9 +67,9 @@ export default function ConsentPage() {
             .maybeSingle();
 
         if (payment && (payment.payment_status === 'completed' || payment.payment_status === 'pending_verification')) {
-            console.log('[CONSENT] Payment already active, redirecting to dashboard');
             router.replace('/patient/dashboard');
         }
+        */
     };
 
     const handleSubmitConsent = async () => {
@@ -85,7 +87,8 @@ export default function ConsentPage() {
             if (error) throw error;
 
             toast.success('Consent recorded');
-            router.push('/patient/payment');
+            // router.push('/patient/payment');
+            router.push('/patient/dashboard');
         } catch (error) {
             toast.error('Error saving consent');
             setLoading(false);
@@ -190,7 +193,7 @@ export default function ConsentPage() {
                                 </>
                             ) : (
                                 <>
-                                    Continue to Payment
+                                    Go to Dashboard
                                     <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
