@@ -5,7 +5,7 @@ import { getCurrentUser, getPatient, getLatestVitals, getLatestAssessment, getRe
 import {
   Activity, Calendar, FileText, Bell, LogOut,
   LayoutDashboard, /* CreditCard, */ Settings, Plus,
-  Stethoscope, Clock, ChevronRight, Search, AlertCircle, RefreshCw, Heart, User
+  Stethoscope, Clock, ChevronRight, Search, AlertCircle, RefreshCw, Heart, User, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ReminderModal from '@/components/ReminderModal';
@@ -61,6 +61,23 @@ export default function PatientDashboard() {
       }
     } catch (error) {
       console.error('Error requesting permission:', error);
+    }
+  };
+
+  const deleteReminder = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setReminders(reminders.filter(r => r.id !== id));
+      toast.success('Reminder deleted');
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      toast.error('Failed to delete reminder');
     }
   };
 
@@ -346,7 +363,8 @@ export default function PatientDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-xl text-slate-900">Reminders</h3>
                 <div className="flex gap-2">
-                  {notificationPermission !== 'granted' && (
+                  {/* Always show notification button on mobile or if not granted */}
+                  {(notificationPermission !== 'granted' || (typeof window !== 'undefined' && window.innerWidth < 768)) && (
                     <button
                       onClick={requestNotificationPermission}
                       className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
@@ -364,12 +382,21 @@ export default function PatientDashboard() {
               {reminders.length > 0 ? (
                 <div className="space-y-4">
                   {reminders.map(rem => (
-                    <div key={rem.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-indigo-600"><Clock className="w-5 h-5" /></div>
-                      <div>
-                        <p className="font-bold text-slate-900">{rem.title}</p>
-                        <p className="text-xs text-slate-500">{new Date(rem.reminder_time).toLocaleString()}</p>
+                    <div key={rem.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-indigo-600"><Clock className="w-5 h-5" /></div>
+                        <div>
+                          <p className="font-bold text-slate-900">{rem.title}</p>
+                          <p className="text-xs text-slate-500">{new Date(rem.reminder_time).toLocaleString()}</p>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => deleteReminder(rem.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                        title="Delete Reminder"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
                     </div>
                   ))}
                 </div>
