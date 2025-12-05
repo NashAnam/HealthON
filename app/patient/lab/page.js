@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, getVerifiedLabs, createLabBooking, getLabBookings } from '@/lib/supabase';
 import { FlaskConical, Search, Calendar, FileText, ArrowLeft, Check, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { notifyLabTestBooked } from '@/lib/appointmentNotifications';
 
 export default function LabPage() {
   const router = useRouter();
@@ -76,6 +77,9 @@ export default function LabPage() {
         status: 'pending'
       });
 
+      // Send notification
+      notifyLabTestBooked(bookingData, selectedLab);
+
       toast.success('Lab test booked successfully!');
       setShowBookingForm(false);
       setSelectedLab(null);
@@ -147,8 +151,8 @@ export default function LabPage() {
                       </div>
                     </div>
                     <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${booking.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-blue-100 text-blue-700'
+                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-blue-100 text-blue-700'
                       }`}>
                       {booking.status}
                     </span>

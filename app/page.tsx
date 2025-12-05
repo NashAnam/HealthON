@@ -32,7 +32,40 @@ export default function HomePage() {
         </div>
       </nav>
 
-
+      {/* Hero Section */}
+      <section className="py-24 md:py-32 bg-gradient-to-br from-indigo-50 via-white to-violet-50">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 rounded-full mb-8">
+            <Activity className="w-4 h-4 text-indigo-600" />
+            <span className="text-sm font-bold text-indigo-700">Welcome to CareOn</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6 leading-tight">
+            Your Health Journey,{" "}
+            <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+              Simplified
+            </span>
+          </h1>
+          <p className="text-xl md:text-2xl text-slate-600 mb-4 max-w-3xl mx-auto font-semibold">
+            Know Early, Act Right, Save Life
+          </p>
+          <p className="text-lg text-slate-500 mb-12 max-w-2xl mx-auto">
+            Connect with verified doctors, book lab tests, track your health metrics, and manage your entire family's healthcare in one secure platform.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link
+              href="/login"
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-lg font-bold hover:shadow-2xl hover:shadow-indigo-600/30 transition-all transform hover:-translate-y-1 flex items-center gap-2">
+              Get Started Free
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/about"
+              className="px-8 py-4 rounded-2xl bg-white border-2 border-slate-200 text-slate-700 text-lg font-bold hover:border-indigo-300 hover:shadow-lg transition-all">
+              Learn More
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Features Grid */}
       <section className="py-32 bg-white">

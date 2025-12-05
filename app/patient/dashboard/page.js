@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, getLatestVitals, getLatestAssessment, getReminders, signOut } from '@/lib/supabase';
+import { getCurrentUser, getPatient, getLatestVitals, getLatestAssessment, getReminders, getPatientAppointments, getLabBookings, signOut, supabase } from '@/lib/supabase';
 import {
   Activity, Calendar, FileText, Bell, LogOut,
   LayoutDashboard, /* CreditCard, */ Settings, Plus,
@@ -9,6 +9,11 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ReminderModal from '@/components/ReminderModal';
+import { AppointmentsSection, LabBookingsSection } from '@/components/BookingsDisplay';
+import { PrescriptionsSection } from '@/components/PrescriptionsDisplay';
+import { checkUpcomingAppointments } from '@/lib/appointmentNotifications';
+import { sendHealthSuggestion, getRecommendedSpecializations } from '@/lib/healthSuggestions';
+import { scheduleDailyVitalsReminder, sendReminderIfNeeded } from '@/lib/vitalsReminder';
 
 export default function PatientDashboard() {
   const router = useRouter();
@@ -17,6 +22,10 @@ export default function PatientDashboard() {
   const [vitals, setVitals] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [reminders, setReminders] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [labBookings, setLabBookings] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [recommendedDoctors, setRecommendedDoctors] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState('loading');
   const [showReminderModal, setShowReminderModal] = useState(false);
 
@@ -48,6 +57,33 @@ export default function PatientDashboard() {
 
       const { data: remindersData } = await getReminders(patientData.id);
       setReminders(remindersData || []);
+
+      const { data: appointmentsData } = await getPatientAppointments(patientData.id);
+      setAppointments(appointmentsData || []);
+
+      const { data: labBookingsData } = await getLabBookings(patientData.id);
+      setLabBookings(labBookingsData || []);
+
+      // Fetch prescriptions
+      const { data: prescriptionsData } = await supabase
+        .from('prescriptions')
+        .select('*, doctors(*)')
+        .eq('patient_id', patientData.id)
+        .order('created_at', { ascending: false });
+      setPrescriptions(prescriptionsData || []);
+
+      // Calculate recommended doctors based on assessment
+      if (assessmentData) {
+        const recommendations = getRecommendedSpecializations(assessmentData);
+        setRecommendedDoctors(recommendations);
+      }
+
+      // Send health suggestion if no reminders
+      if (!remindersData || remindersData.length === 0) {
+        setTimeout(() => {
+          sendHealthSuggestion();
+        }, 5000);
+      }
 
       setSubscriptionStatus('active'); // Force active
 
@@ -109,6 +145,38 @@ export default function PatientDashboard() {
     const interval = setInterval(checkReminders, 60000);
     return () => clearInterval(interval);
   }, [reminders]);
+
+  // Check for upcoming appointments every minute
+  useEffect(() => {
+    const checkAppointments = () => {
+      if (appointments && appointments.length > 0) {
+        checkUpcomingAppointments(appointments);
+      }
+    };
+
+    const interval = setInterval(checkAppointments, 60000); // Check every minute
+    checkAppointments(); // Check immediately on mount
+    return () => clearInterval(interval);
+  }, [appointments]);
+
+  // Schedule daily vitals reminder at 8 AM
+  useEffect(() => {
+    const interval = scheduleDailyVitalsReminder();
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check if vitals reminder needed (at 8 AM, 12 PM, 6 PM)
+  useEffect(() => {
+    const checkVitalsReminder = () => {
+      if (patient?.id) {
+        sendReminderIfNeeded(patient.id, supabase);
+      }
+    };
+
+    checkVitalsReminder();
+    const interval = setInterval(checkVitalsReminder, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [patient]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
 
@@ -242,11 +310,22 @@ export default function PatientDashboard() {
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
+
+            <AppointmentsSection appointments={appointments} />
+            <LabBookingsSection labBookings={labBookings} />
+            <PrescriptionsSection prescriptions={prescriptions} />
+
           </div>
 
           <div className="space-y-8">
             <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
-              <h3 className="font-bold text-xl text-slate-900 mb-6">Reminders</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-xl text-slate-900">Reminders</h3>
+                <button onClick={() => setShowReminderModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg">
+                  <Plus className="w-4 h-4" />
+                  Add Reminder
+                </button>
+              </div>
               {reminders.length > 0 ? (
                 <div className="space-y-4">
                   {reminders.map(rem => (
@@ -266,7 +345,6 @@ export default function PatientDashboard() {
                     <h4 className="font-bold text-amber-900">Health Tip</h4>
                   </div>
                   <p className="text-sm text-amber-800 leading-relaxed">No reminders set. Remember to drink 8 glasses of water today and take a 30-minute walk!</p>
-                  <button onClick={() => setShowReminderModal(true)} className="mt-4 text-xs font-bold text-amber-700 hover:text-amber-900 hover:bg-amber-100 px-4 py-2 rounded-lg uppercase tracking-wide transition-all">+ Set Reminder</button>
                 </div>
               )}
             </div>
@@ -278,17 +356,17 @@ export default function PatientDashboard() {
           onClose={() => setShowReminderModal(false)}
           patientId={patient?.id}
         />
-      </main>
+      </main >
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-20 px-6 py-3 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      < nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-20 px-6 py-3 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]" >
         <MobileNavItem icon={LayoutDashboard} label="Home" active onClick={() => { }} />
         <MobileNavItem icon={Calendar} label="Book" onClick={() => router.push('/patient/doctor-booking')} />
         <MobileNavItem icon={Plus} label="Add" onClick={() => setShowReminderModal(true)} primary />
         <MobileNavItem icon={FileText} label="Records" onClick={() => router.push('/patient/lab/reports')} />
         <MobileNavItem icon={Settings} label="Settings" onClick={() => router.push('/patient/settings')} />
-      </nav>
-    </div>
+      </nav >
+    </div >
   );
 }
 

@@ -23,9 +23,12 @@ self.addEventListener('push', function (event) {
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
 
-    if (event.action === 'view') {
+    // Get URL from notification data or default to reminders
+    const url = event.notification.data?.url || '/patient/reminders';
+
+    if (event.action === 'view' || !event.action) {
         event.waitUntil(
-            clients.openWindow('/patient/reminders')
+            clients.openWindow(url)
         );
     }
 });

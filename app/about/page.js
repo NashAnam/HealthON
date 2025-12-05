@@ -1,155 +1,203 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Heart, Shield, Users, Zap, ArrowLeft } from 'lucide-react';
+import { Heart, Shield, Users, Zap, ArrowLeft, CheckCircle2, Activity, Stethoscope, FlaskConical } from 'lucide-react';
 
 export default function AboutPage() {
     const router = useRouter();
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50">
             {/* Header */}
-            <header className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-indigo-100 sticky top-0 z-50">
+            <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-indigo-100 sticky top-0 z-50">
                 <div className="container mx-auto px-6 py-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-between">
                         <button
                             onClick={() => router.push('/')}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors"
                         >
-                            <ArrowLeft className="w-5 h-5 text-gray-600" />
+                            <ArrowLeft className="w-5 h-5" />
+                            <span className="font-medium">Back to Home</span>
                         </button>
-                        <div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                                About CareOn
-                            </h1>
-                            <p className="text-sm text-gray-600">Your Complete Healthcare Platform</p>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                                <Activity className="w-6 h-6 text-white" />
+                            </div>
+                            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">CareOn</span>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <div className="container mx-auto px-6 py-12 max-w-6xl">
-                {/* Hero Section */}
-                <div className="text-center mb-16">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 mb-6 shadow-lg">
-                        <Heart className="w-10 h-10 text-white" />
-                    </div>
-                    <h2 className="text-5xl font-bold text-gray-900 mb-4">
-                        Welcome to <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">CareOn</span>
-                    </h2>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                        A comprehensive healthcare platform connecting patients, doctors, and labs seamlessly.
+            {/* Hero Section */}
+            <section className="container mx-auto px-6 py-20">
+                <div className="text-center max-w-4xl mx-auto">
+                    <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6">
+                        Your Health,{' '}
+                        <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                            Our Priority
+                        </span>
+                    </h1>
+                    <p className="text-xl text-slate-600 leading-relaxed mb-8">
+                        CareOn is a comprehensive healthcare management platform designed to make healthcare accessible,
+                        efficient, and personalized for everyone.
                     </p>
-                </div>
-
-                {/* Features */}
-                <div className="grid md:grid-cols-4 gap-6 mb-16">
-                    <FeatureCard
-                        icon={<Users className="w-8 h-8" />}
-                        title="For Everyone"
-                        description="Patients, doctors, and labs all in one platform"
-                        color="from-blue-500 to-indigo-600"
-                    />
-                    <FeatureCard
-                        icon={<Shield className="w-8 h-8" />}
-                        title="Secure & Private"
-                        description="Your health data is encrypted and protected"
-                        color="from-purple-500 to-pink-600"
-                    />
-                    <FeatureCard
-                        icon={<Zap className="w-8 h-8" />}
-                        title="Fast & Easy"
-                        description="Book appointments and tests in seconds"
-                        color="from-emerald-500 to-teal-600"
-                    />
-                    <FeatureCard
-                        icon={<Heart className="w-8 h-8" />}
-                        title="Health Tracking"
-                        description="Monitor vitals and get health insights"
-                        color="from-rose-500 to-red-600"
-                    />
-                </div>
-
-                {/* What We Offer */}
-                <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 mb-16 border border-gray-100">
-                    <h3 className="text-3xl font-bold text-gray-900 mb-8 text-center">What We Offer</h3>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        <ServiceCard
-                            title="For Patients"
-                            features={[
-                                "Book doctor appointments",
-                                "Schedule lab tests",
-                                "Track health vitals",
-                                "Set medication reminders",
-                                "Health risk assessments",
-                                "View medical reports"
-                            ]}
-                        />
-                        <ServiceCard
-                            title="For Doctors"
-                            features={[
-                                "Manage appointments",
-                                "OPD management",
-                                "Patient records",
-                                "Telemedicine support",
-                                "Schedule management",
-                                "Digital consultations"
-                            ]}
-                        />
-                        <ServiceCard
-                            title="For Labs"
-                            features={[
-                                "Manage test bookings",
-                                "Upload reports",
-                                "Track samples",
-                                "Patient communication",
-                                "Inventory management",
-                                "Digital reports"
-                            ]}
-                        />
+                    <div className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-50 rounded-full border border-indigo-200">
+                        <Heart className="w-5 h-5 text-indigo-600" />
+                        <span className="text-indigo-700 font-semibold">Empowering Better Health Outcomes</span>
                     </div>
                 </div>
+            </section>
 
-                {/* Developer */}
-                <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl shadow-2xl p-12 text-white text-center">
-                    <h3 className="text-2xl font-bold mb-6">Developed By</h3>
-                    <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold mb-4 mx-auto border-4 border-white/30">
-                        NA
-                    </div>
-                    <h4 className="text-xl font-bold">Nashrah Anam</h4>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function FeatureCard({ icon, title, description, color }) {
-    return (
-        <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all border border-gray-100 group">
-            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                {icon}
-            </div>
-            <h4 className="text-lg font-bold text-gray-900 mb-2">{title}</h4>
-            <p className="text-sm text-gray-600">{description}</p>
-        </div>
-    );
-}
-
-function ServiceCard({ title, features }) {
-    return (
-        <div className="space-y-4">
-            <h4 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b-2 border-indigo-200">{title}</h4>
-            <ul className="space-y-3">
-                {features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2 text-gray-700">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
+            {/* Mission & Vision */}
+            <section className="container mx-auto px-6 py-16">
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+                        <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mb-6">
+                            <Heart className="w-8 h-8 text-indigo-600" />
                         </div>
-                        <span className="text-sm">{feature}</span>
-                    </li>
-                ))}
-            </ul>
+                        <h2 className="text-3xl font-bold text-slate-900 mb-4">Our Mission</h2>
+                        <p className="text-slate-600 leading-relaxed text-lg">
+                            To revolutionize healthcare delivery by providing an integrated platform that connects patients,
+                            doctors, and labs, making quality healthcare accessible to everyone, everywhere.
+                        </p>
+                    </div>
+
+                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+                        <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mb-6">
+                            <Zap className="w-8 h-8 text-violet-600" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-slate-900 mb-4">Our Vision</h2>
+                        <p className="text-slate-600 leading-relaxed text-lg">
+                            To become the leading healthcare platform that empowers individuals to take control of their health
+                            through technology, data-driven insights, and seamless care coordination.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Features */}
+            <section className="container mx-auto px-6 py-16">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-bold text-slate-900 mb-4">What We Offer</h2>
+                    <p className="text-xl text-slate-600">Comprehensive healthcare solutions at your fingertips</p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                    <FeatureCard
+                        icon={Stethoscope}
+                        title="Doctor Consultations"
+                        description="Connect with verified doctors for in-person or telemedicine consultations"
+                        color="indigo"
+                    />
+                    <FeatureCard
+                        icon={FlaskConical}
+                        title="Lab Services"
+                        description="Book lab tests with home collection and get digital reports instantly"
+                        color="violet"
+                    />
+                    <FeatureCard
+                        icon={Activity}
+                        title="Health Tracking"
+                        description="Monitor vitals, track health metrics, and get personalized insights"
+                        color="emerald"
+                    />
+                    <FeatureCard
+                        icon={Shield}
+                        title="Risk Assessment"
+                        description="AI-powered health risk assessments for diabetes, hypertension, and more"
+                        color="rose"
+                    />
+                    <FeatureCard
+                        icon={Users}
+                        title="Patient Management"
+                        description="Comprehensive health records and appointment management in one place"
+                        color="blue"
+                    />
+                    <FeatureCard
+                        icon={Heart}
+                        title="Reminders & Alerts"
+                        description="Never miss medications or appointments with smart notifications"
+                        color="pink"
+                    />
+                </div>
+            </section>
+
+            {/* Why Choose Us */}
+            <section className="container mx-auto px-6 py-16">
+                <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl p-12 text-white">
+                    <h2 className="text-4xl font-bold mb-8 text-center">Why Choose CareOn?</h2>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <BenefitItem text="Verified healthcare professionals" />
+                        <BenefitItem text="Secure and private health data" />
+                        <BenefitItem text="24/7 access to your health records" />
+                        <BenefitItem text="AI-powered health insights" />
+                        <BenefitItem text="Seamless appointment booking" />
+                        <BenefitItem text="Home lab collection services" />
+                        <BenefitItem text="Telemedicine consultations" />
+                        <BenefitItem text="Personalized health tracking" />
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA Section */}
+            <section className="container mx-auto px-6 py-20">
+                <div className="text-center max-w-3xl mx-auto">
+                    <h2 className="text-4xl font-bold text-slate-900 mb-6">Ready to Take Control of Your Health?</h2>
+                    <p className="text-xl text-slate-600 mb-8">
+                        Join thousands of users who trust CareOn for their healthcare needs
+                    </p>
+                    <button
+                        onClick={() => router.push('/login')}
+                        className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:shadow-indigo-600/40 transition-all"
+                    >
+                        Get Started Today
+                    </button>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="bg-slate-900 text-white py-12">
+                <div className="container mx-auto px-6 text-center">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center">
+                            <Activity className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-2xl font-bold">CareOn</span>
+                    </div>
+                    <p className="text-slate-400 mb-2">Empowering Better Health Outcomes</p>
+                    <p className="text-slate-500 text-sm">© 2025 CareOn. All rights reserved.</p>
+                </div>
+            </footer>
+        </div>
+    );
+}
+
+function FeatureCard({ icon: Icon, title, description, color }) {
+    const colors = {
+        indigo: 'bg-indigo-100 text-indigo-600',
+        violet: 'bg-violet-100 text-violet-600',
+        emerald: 'bg-emerald-100 text-emerald-600',
+        rose: 'bg-rose-100 text-rose-600',
+        blue: 'bg-blue-100 text-blue-600',
+        pink: 'bg-pink-100 text-pink-600'
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 hover:shadow-xl transition-all group">
+            <div className={`w-12 h-12 ${colors[color]} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <Icon className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
+            <p className="text-slate-600">{description}</p>
+        </div>
+    );
+}
+
+function BenefitItem({ text }) {
+    return (
+        <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-6 h-6 flex-shrink-0" />
+            <span className="text-lg">{text}</span>
         </div>
     );
 }

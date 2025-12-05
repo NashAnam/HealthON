@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, getVerifiedDoctors, createAppointment } from '@/lib/supabase';
 import { Stethoscope, Search, Calendar, Clock, Star, MapPin, ArrowLeft, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { notifyAppointmentBooked } from '@/lib/appointmentNotifications';
 
 export default function DoctorBookingPage() {
   const router = useRouter();
@@ -77,6 +78,12 @@ export default function DoctorBookingPage() {
         ...bookingData,
         status: 'pending'
       });
+
+      // Send notification
+      notifyAppointmentBooked({
+        ...bookingData,
+        status: 'pending'
+      }, selectedDoctor);
 
       toast.success('Appointment booked successfully!');
       setShowBookingForm(false);

@@ -76,7 +76,6 @@ export default function AdminDashboard() {
         const { data, error } = await supabase
             .from('doctors')
             .select('*')
-            .eq('verified', false)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -87,7 +86,6 @@ export default function AdminDashboard() {
         const { data, error } = await supabase
             .from('labs')
             .select('*')
-            .eq('verified', false)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
