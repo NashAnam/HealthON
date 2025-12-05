@@ -5,7 +5,7 @@ import { getCurrentUser, getPatient, getLatestVitals, getLatestAssessment, getRe
 import {
   Activity, Calendar, FileText, Bell, LogOut,
   LayoutDashboard, /* CreditCard, */ Settings, Plus,
-  Stethoscope, Clock, ChevronRight, Search, AlertCircle, RefreshCw, Heart, User, Trash2
+  Stethoscope, Clock, ChevronRight, Search, AlertCircle, RefreshCw, Heart, User, Trash2, Flame
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ReminderModal from '@/components/ReminderModal';
@@ -14,6 +14,7 @@ import { PrescriptionsSection } from '@/components/PrescriptionsDisplay';
 import { checkUpcomingAppointments } from '@/lib/appointmentNotifications';
 import { sendHealthSuggestion, getRecommendedSpecializations } from '@/lib/healthSuggestions';
 import { scheduleDailyVitalsReminder, sendReminderIfNeeded } from '@/lib/vitalsReminder';
+import { showInstantNotification } from '@/lib/notifications';
 
 export default function PatientDashboard() {
   const router = useRouter();
@@ -52,10 +53,11 @@ export default function PatientDashboard() {
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register('/sw.js');
         }
-        new Notification('CareOn Notifications Enabled', {
-          body: 'You will now receive health reminders and updates!',
-          icon: '/icon-192x192.png'
-        });
+        // Use the robust notification helper
+        showInstantNotification(
+          'CareOn Notifications Enabled',
+          'You will now receive health reminders and updates!'
+        );
       } else {
         toast.error('Notifications denied. Please enable them in browser settings.');
       }
@@ -171,14 +173,7 @@ export default function PatientDashboard() {
         const remTime = new Date(rem.reminder_time);
         // Check if reminder is within the last minute
         if (remTime > new Date(now.getTime() - 60000) && remTime <= now) {
-          if (Notification.permission === 'granted') {
-            new Notification('Health Reminder', {
-              body: rem.title,
-              icon: '/icon.png' // Ensure this exists or use a default
-            });
-          } else {
-            toast(rem.title, { icon: '⏰' });
-          }
+          showInstantNotification('Health Reminder', rem.title);
         }
       });
     };
@@ -220,6 +215,8 @@ export default function PatientDashboard() {
   }, [patient]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
+
+  const isVitalsLoggedToday = vitals && new Date(vitals.created_at).toDateString() === new Date().toDateString();
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 selection:bg-indigo-100 pb-20 md:pb-0">
@@ -277,6 +274,38 @@ export default function PatientDashboard() {
         <div className="md:hidden mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Hi, {patient?.name?.split(' ')[0]} 👋</h1>
           <p className="text-sm text-slate-500">Welcome back to your health dashboard.</p>
+        </div>
+
+        {/* Daily Check-in & Streak */}
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gradient-to-r from-indigo-500 to-violet-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-500/20 flex items-center justify-between relative overflow-hidden">
+            <div className="relative z-10">
+              <h3 className="font-bold text-lg mb-1">Daily Health Check</h3>
+              <p className="text-indigo-100 text-sm mb-4">Log your vitals to keep your streak!</p>
+              {isVitalsLoggedToday ? (
+                <span className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 w-fit">
+                  <Activity className="w-4 h-4" /> Completed Today
+                </span>
+              ) : (
+                <button onClick={() => router.push('/patient/vitals')} className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-colors flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Log Now
+                </button>
+              )}
+            </div>
+            <div className="w-24 h-24 bg-white/10 rounded-full absolute -right-6 -bottom-6 blur-2xl"></div>
+            <div className="w-16 h-16 bg-white/10 rounded-full absolute right-10 top-0 blur-xl"></div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center gap-4">
+            <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-500">
+              <Flame className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Current Streak</p>
+              <h3 className="text-3xl font-bold text-slate-900">{isVitalsLoggedToday ? '1' : '0'} <span className="text-sm font-normal text-slate-400">Days</span></h3>
+              <p className="text-xs text-slate-400">Keep it up!</p>
+            </div>
+          </div>
         </div>
 
         <section className="mb-8">
@@ -417,6 +446,7 @@ export default function PatientDashboard() {
           isOpen={showReminderModal}
           onClose={() => setShowReminderModal(false)}
           patientId={patient?.id}
+          onSuccess={loadDashboard}
         />
       </main >
 
