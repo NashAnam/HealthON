@@ -104,23 +104,9 @@ export default function AboutPage() {
             </section>
 
             {/* Footer */}
-            <footer className="bg-slate-900 text-white py-12">
+            <footer className="bg-slate-900 text-white py-8 mt-auto">
                 <div className="container mx-auto px-6 text-center">
-                    <div className="flex items-center justify-center gap-3 mb-6">
-                        <div className="relative w-8 h-8">
-                            <Image
-                                src="/images/careon-logo.png"
-                                alt="CareOn Logo"
-                                fill
-                                className="object-contain brightness-0 invert"
-                            />
-                        </div>
-                        <span className="text-2xl font-bold">CareOn</span>
-                    </div>
-                    <p className="text-slate-400 mb-8 max-w-md mx-auto">
-                        Empowering you to live a healthier, happier life with technology that cares.
-                    </p>
-                    <p className="text-slate-500 text-sm border-t border-slate-800 pt-8">
+                    <p className="text-slate-400 text-sm">
                         © 2025 CareOn. Know Early, Act Right, Save Life.
                     </p>
                 </div>
