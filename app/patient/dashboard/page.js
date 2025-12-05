@@ -260,7 +260,14 @@ export default function PatientDashboard() {
             <VitalCard label="Heart Rate" value={vitals?.heart_rate || '--'} unit="bpm" icon={Heart} color="rose" />
             <VitalCard label="Blood Pressure" value={vitals ? `${vitals.systolic_bp}/${vitals.diastolic_bp}` : '--'} unit="mmHg" icon={Activity} color="indigo" />
             <VitalCard label="Blood Sugar" value={vitals?.blood_sugar || '--'} unit="mg/dL" icon={Activity} color="emerald" />
-            <VitalCard label="BMI" value={patient?.weight && patient?.height ? (patient.weight / ((patient.height / 100) ** 2)).toFixed(1) : '--'} unit="" icon={User} color="violet" />
+            <VitalCard
+              label="BMI"
+              value={patient?.weight && patient?.height ? (patient.weight / ((patient.height / 100) ** 2)).toFixed(1) : 'Update Profile'}
+              unit=""
+              icon={User}
+              color="violet"
+              onClick={!(patient?.weight && patient?.height) ? () => router.push('/patient/settings') : undefined}
+            />
           </div>
         </section>
 
@@ -444,14 +451,19 @@ const MobileNavItem = ({ icon: Icon, label, active, primary, onClick }) => {
   );
 };
 
-const VitalCard = ({ label, value, unit, icon: Icon, color }) => {
+const VitalCard = ({ label, value, unit, icon: Icon, color, onClick }) => {
   const colors = { rose: 'text-rose-600 bg-rose-50', indigo: 'text-indigo-600 bg-indigo-50', emerald: 'text-emerald-600 bg-emerald-50', violet: 'text-violet-600 bg-violet-50' };
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-full">
+    <div
+      onClick={onClick}
+      className={`bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-full ${onClick ? 'cursor-pointer hover:border-indigo-200 transition-colors' : ''}`}
+    >
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${colors[color]}`}><Icon className="w-5 h-5" /></div>
       <div>
         <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-xl font-bold text-slate-900">{value} <span className="text-xs font-normal text-slate-400">{unit}</span></p>
+        <p className={`font-bold text-slate-900 ${value === 'Update Profile' ? 'text-xs text-indigo-600' : 'text-xl'}`}>
+          {value} <span className="text-xs font-normal text-slate-400">{unit}</span>
+        </p>
       </div>
     </div>
   );

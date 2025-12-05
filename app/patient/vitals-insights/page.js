@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, supabase } from '@/lib/supabase';
 import { Activity, Heart, TrendingUp, TrendingDown, Calendar, ArrowLeft, Droplets, Thermometer, Wind, Weight } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 export default function VitalsVisualizationPage() {
     const router = useRouter();
@@ -93,14 +93,13 @@ export default function VitalsVisualizationPage() {
                 </div>
 
                 {/* Metric Cards Row */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     {metrics.map(metric => {
                         const trend = getTrend(metric.key);
                         const Icon = metric.icon;
                         const isSelected = selectedMetric === metric.key;
 
                         return (
-
                             <button
                                 key={metric.key}
                                 onClick={() => setSelectedMetric(metric.key)}
@@ -109,11 +108,18 @@ export default function VitalsVisualizationPage() {
                                     : 'bg-white text-slate-900 shadow-sm border border-slate-100 hover:shadow-md'
                                     }`}
                             >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>
-                                        <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                                <div className="flex flex-col h-full justify-between">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>
+                                            <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                                        </div>
+                                        {trend !== 0 && (
+                                            <div className={`flex items-center gap-0.5 text-[10px] font-bold ${isSelected ? 'text-white' : (trend > 0 ? 'text-emerald-500' : 'text-rose-500')}`}>
+                                                {trend > 0 ? '+' : ''}{trend.toFixed(0)}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="text-right">
+                                    <div>
                                         <p className={`text-xs font-medium mb-1 ${isSelected ? 'text-indigo-100' : 'text-slate-500'}`}>{metric.label}</p>
                                         <p className="text-xl font-bold tracking-tight">
                                             {getLatestValue(metric.key)}
@@ -121,35 +127,6 @@ export default function VitalsVisualizationPage() {
                                         </p>
                                     </div>
                                 </div>
-
-                                {/* Mini Sparkline */}
-                                <div className="h-12 -mx-2 -mb-2">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={vitalsData}>
-                                            <defs>
-                                                <linearGradient id={`grad-${metric.key}`} x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor={isSelected ? '#fff' : metric.color} stopOpacity={0.5} />
-                                                    <stop offset="100%" stopColor={isSelected ? '#fff' : metric.color} stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <Area
-                                                type="monotone"
-                                                dataKey={metric.key}
-                                                stroke={isSelected ? '#fff' : metric.color}
-                                                strokeWidth={2}
-                                                fill={`url(#grad-${metric.key})`}
-                                                isAnimationActive={false}
-                                            />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
-
-                                {trend !== 0 && (
-                                    <div className={`absolute top-5 right-5 flex items-center gap-0.5 text-[10px] font-bold ${isSelected ? 'text-white' : (trend > 0 ? 'text-emerald-500' : 'text-rose-500')
-                                        } ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                                        {trend > 0 ? '+' : ''}{trend.toFixed(0)}
-                                    </div>
-                                )}
                             </button>
                         );
                     })}
@@ -233,11 +210,16 @@ export default function VitalsVisualizationPage() {
                                 {vitalsData.length > 0 ? (
                                     <>
                                         <div className="flex items-end gap-2">
-                                            <span className="text-5xl font-bold text-emerald-500">92</span>
+                                            <span className="text-5xl font-bold text-emerald-500">
+                                                {Math.min(100, 85 + (vitalsData.length * 2))}
+                                            </span>
                                             <span className="text-slate-400 mb-1">/100</span>
                                         </div>
                                         <div className="mt-6 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <div className="h-full w-[92%] bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"></div>
+                                            <div
+                                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
+                                                style={{ width: `${Math.min(100, 85 + (vitalsData.length * 2))}%` }}
+                                            ></div>
                                         </div>
                                         <p className="mt-4 text-sm text-slate-600">Your vitals are looking good! Keep up the healthy lifestyle.</p>
                                     </>
