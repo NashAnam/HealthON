@@ -28,10 +28,41 @@ export default function PatientDashboard() {
   const [recommendedDoctors, setRecommendedDoctors] = useState([]);
   const [subscriptionStatus, setSubscriptionStatus] = useState('loading');
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
 
   useEffect(() => {
     loadDashboard();
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
   }, []);
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      toast.error('This browser does not support notifications');
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+
+      if (permission === 'granted') {
+        toast.success('Notifications enabled!');
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js');
+        }
+        new Notification('CareOn Notifications Enabled', {
+          body: 'You will now receive health reminders and updates!',
+          icon: '/icon-192x192.png'
+        });
+      } else {
+        toast.error('Notifications denied. Please enable them in browser settings.');
+      }
+    } catch (error) {
+      console.error('Error requesting permission:', error);
+    }
+  };
 
   const loadDashboard = async () => {
     try {
@@ -114,13 +145,6 @@ export default function PatientDashboard() {
       }
     }
   };
-
-  // Request notification permission on mount
-  useEffect(() => {
-    if ('Notification' in window) {
-      Notification.requestPermission();
-    }
-  }, []);
 
   // Check for due reminders every minute
   useEffect(() => {
@@ -321,10 +345,21 @@ export default function PatientDashboard() {
             <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-xl text-slate-900">Reminders</h3>
-                <button onClick={() => setShowReminderModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg">
-                  <Plus className="w-4 h-4" />
-                  Add Reminder
-                </button>
+                <div className="flex gap-2">
+                  {notificationPermission !== 'granted' && (
+                    <button
+                      onClick={requestNotificationPermission}
+                      className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
+                      title="Enable Notifications"
+                    >
+                      <Bell className="w-5 h-5" />
+                    </button>
+                  )}
+                  <button onClick={() => setShowReminderModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg">
+                    <Plus className="w-4 h-4" />
+                    Add Reminder
+                  </button>
+                </div>
               </div>
               {reminders.length > 0 ? (
                 <div className="space-y-4">
