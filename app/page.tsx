@@ -160,46 +160,6 @@ export default function HomePage() {
                 <Mail className="w-4 h-4" />
                 <span>Get in Touch</span>
               </div>
-              <h2 className="text-4xl font-bold text-slate-900 mb-6">We're here to help you.</h2>
-              <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-                Have questions about HealthOn? Our team is ready to assist you. Reach out to us for support, partnerships, or just to say hello.
-              </p>
-
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                    <Mail className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Email Us</p>
-                    <p className="text-lg font-bold text-slate-900">support@healthon.app</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                    <Phone className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Call Us</p>
-                    <p className="text-lg font-bold text-slate-900">+91 98765 43210</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                    <MapPin className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Visit Us</p>
-                    <p className="text-lg font-bold text-slate-900">Bangalore, India</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-8 md:p-10 rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-100">
-              <h3 className="text-2xl font-bold text-slate-900 mb-6">Send us a message</h3>
               <form className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -289,9 +249,8 @@ export default function HomePage() {
           </div>
 
           <div className="pt-8 border-t border-slate-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-500">© 2025 HealthOn Healthcare. All rights reserved.</p>
+            <p className="text-slate-500">© 2025 HealthOn. All rights reserved.</p>
             <p className="text-slate-500 flex items-center gap-2">
-              Made with <HeartPulse className="w-4 h-4 text-rose-500" /> for better health.
             </p>
           </div>
         </div>
