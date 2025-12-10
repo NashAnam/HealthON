@@ -5,8 +5,10 @@ const config: CapacitorConfig = {
     appName: 'HealthOn',
     webDir: 'out',
     server: {
+        url: 'https://www.healthon.app',
         androidScheme: 'https',
-        iosScheme: 'https'
+        iosScheme: 'https',
+        cleartext: true
     },
     plugins: {
         SplashScreen: {
