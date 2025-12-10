@@ -146,99 +146,69 @@ export default function HomePage() {
                   Digital Reports
                 </li>
               </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-24 bg-slate-50 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full font-bold text-sm mb-6">
-                <Mail className="w-4 h-4" />
-                <span>Get in Touch</span>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Message</label>
-                  <textarea className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all min-h-[120px]" placeholder="How can we help you?"></textarea>
+              <div className="col-span-1 md:col-span-1">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-2xl font-bold">HealthOn</span>
                 </div>
-                <button type="button" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all transform hover:-translate-y-0.5">
-                  Send Message
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-1 md:col-span-1">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-white" />
+                <p className="text-slate-400 leading-relaxed mb-6">
+                  Empowering you to take control of your health with advanced technology and compassionate care.
+                </p>
+                <div className="flex gap-4">
+                  <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                  <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
+                    <Twitter className="w-5 h-5" />
+                  </a>
+                  <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                  <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
+                    <Linkedin className="w-5 h-5" />
+                  </a>
                 </div>
-                <span className="text-2xl font-bold">HealthOn</span>
               </div>
-              <p className="text-slate-400 leading-relaxed mb-6">
-                Empowering you to take control of your health with advanced technology and compassionate care.
+
+              <div>
+                <h4 className="text-lg font-bold mb-6">Quick Links</h4>
+                <ul className="space-y-4">
+                  <li><Link href="/" className="text-slate-400 hover:text-indigo-400 transition-colors">Home</Link></li>
+                  <li><Link href="/about" className="text-slate-400 hover:text-indigo-400 transition-colors">About Us</Link></li>
+                  <li><a href="#features" className="text-slate-400 hover:text-indigo-400 transition-colors">Features</a></li>
+                  <li><a href="#contact" className="text-slate-400 hover:text-indigo-400 transition-colors">Contact</a></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold mb-6">Services</h4>
+                <ul className="space-y-4">
+                  <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Find a Doctor</Link></li>
+                  <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Lab Tests</Link></li>
+                  <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Health Tracking</Link></li>
+                  <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Emergency Care</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold mb-6">Legal</h4>
+                <ul className="space-y-4">
+                  <li><Link href="/privacy" className="text-slate-400 hover:text-indigo-400 transition-colors">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="text-slate-400 hover:text-indigo-400 transition-colors">Terms of Service</Link></li>
+                  <li><Link href="/cookies" className="text-slate-400 hover:text-indigo-400 transition-colors">Cookie Policy</Link></li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-slate-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-slate-500">© 2025 HealthOn. All rights reserved.</p>
+              <p className="text-slate-500 flex items-center gap-2">
               </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-bold mb-6">Quick Links</h4>
-              <ul className="space-y-4">
-                <li><Link href="/" className="text-slate-400 hover:text-indigo-400 transition-colors">Home</Link></li>
-                <li><Link href="/about" className="text-slate-400 hover:text-indigo-400 transition-colors">About Us</Link></li>
-                <li><a href="#features" className="text-slate-400 hover:text-indigo-400 transition-colors">Features</a></li>
-                <li><a href="#contact" className="text-slate-400 hover:text-indigo-400 transition-colors">Contact</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-bold mb-6">Services</h4>
-              <ul className="space-y-4">
-                <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Find a Doctor</Link></li>
-                <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Lab Tests</Link></li>
-                <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Health Tracking</Link></li>
-                <li><Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Emergency Care</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-bold mb-6">Legal</h4>
-              <ul className="space-y-4">
-                <li><Link href="/privacy" className="text-slate-400 hover:text-indigo-400 transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="text-slate-400 hover:text-indigo-400 transition-colors">Terms of Service</Link></li>
-                <li><Link href="/cookies" className="text-slate-400 hover:text-indigo-400 transition-colors">Cookie Policy</Link></li>
-              </ul>
             </div>
           </div>
-
-          <div className="pt-8 border-t border-slate-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-500">© 2025 HealthOn. All rights reserved.</p>
-            <p className="text-slate-500 flex items-center gap-2">
-            </p>
-          </div>
-        </div>
-      </footer>
+        </footer>
     </main>
   );
 }
