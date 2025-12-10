@@ -1,6 +1,6 @@
 {
-    "name": "CareOn",
-    "short_name": "CareOn",
+    "name": "HealthOn",
+    "short_name": "HealthOn",
     "description": "Complete Healthcare Platform",
     "start_url": "/",
     "display": "standalone",

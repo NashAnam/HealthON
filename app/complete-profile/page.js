@@ -202,7 +202,7 @@ export default function CompleteProfilePage() {
             <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-indigo-600/20">
               <Activity className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold mb-4 text-slate-900 tracking-tight">CareOn <br /> <span className="text-indigo-600">Healthcare.</span></h1>
+            <h1 className="text-4xl font-bold mb-4 text-slate-900 tracking-tight">HealthOn <br /> <span className="text-indigo-600">Healthcare.</span></h1>
             <p className="text-slate-500 leading-relaxed text-lg">Your trusted platform for managing health, appointments, and records.</p>
           </div>
           <div className="relative z-10 space-y-5 mt-12">

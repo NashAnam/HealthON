@@ -19,7 +19,7 @@ export default function PaymentPage() {
                 </div>
                 <h1 className="text-2xl font-bold text-slate-900 mb-2">No Payment Needed</h1>
                 <p className="text-slate-600 mb-6">
-                    CareOn now unlocks the patient dashboard immediately after registration.
+                    HealthOn now unlocks the patient dashboard immediately after registration.
                     Redirecting you to your dashboard...
                 </p>
                 <button
@@ -120,7 +120,7 @@ function LegacyPaymentPage() {
                         <Activity className="w-6 h-6 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold text-slate-900 mb-2">Complete Subscription</h1>
-                    <p className="text-slate-500">Unlock full access to CareOn features.</p>
+                    <p className="text-slate-500">Unlock full access to HealthOn features.</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">

@@ -22,12 +22,12 @@ export default function AboutPage() {
                         <div className="relative w-10 h-10 drop-shadow-md">
                             <Image
                                 src="/images/careon-logo.png"
-                                alt="CareOn Logo"
+                                alt="HealthOn Logo"
                                 fill
                                 className="object-contain"
                             />
                         </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">CareOn</span>
+                        <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">HealthOn</span>
                     </div>
                 </div>
             </header>
@@ -42,7 +42,7 @@ export default function AboutPage() {
                     Healthcare <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">Simplified.</span>
                 </h1>
                 <p className="text-xl text-slate-600 leading-relaxed mb-10 max-w-2xl mx-auto">
-                    CareOn connects you with doctors, labs, and your own health data in one simple, secure platform.
+                    HealthOn connects you with doctors, labs, and your own health data in one simple, secure platform.
                     We believe managing your health should be effortless and beautiful.
                 </p>
                 <div className="flex justify-center gap-4">
@@ -107,7 +107,7 @@ export default function AboutPage() {
             <footer className="bg-slate-900 text-white py-8 mt-auto">
                 <div className="container mx-auto px-6 text-center">
                     <p className="text-slate-400 text-sm">
-                        © 2025 CareOn. Know Early, Act Right, Save Life.
+                        © 2025 HealthOn. Know Early, Act Right, Save Life.
                     </p>
                 </div>
             </footer>

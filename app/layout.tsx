@@ -7,12 +7,12 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'CareOn - Complete Healthcare Platform',
+  title: 'HealthOn - Complete Healthcare Platform',
   description: 'Connect patients, doctors, and labs seamlessly for better healthcare',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'CareOn'
+    title: 'HealthOn'
   },
   manifest: '/manifest.json'
 }

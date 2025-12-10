@@ -13,7 +13,7 @@ export default function HomePage() {
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
               <Activity className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">CareOn</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">HealthOn</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/about" className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
@@ -37,7 +37,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 rounded-full mb-8">
             <Activity className="w-4 h-4 text-indigo-600" />
-            <span className="text-sm font-bold text-indigo-700">Welcome to CareOn</span>
+            <span className="text-sm font-bold text-indigo-700">Welcome to HealthOn</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6 leading-tight">
             Your Health Journey,{" "}
@@ -144,9 +144,9 @@ export default function HomePage() {
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-slate-900">CareOn</span>
+            <span className="text-xl font-bold text-slate-900">HealthOn</span>
           </div>
-          <p className="text-slate-500 font-medium">© 2025 CareOn Healthcare. All rights reserved.</p>
+          <p className="text-slate-500 font-medium">© 2025 HealthOn Healthcare. All rights reserved.</p>
         </div>
       </footer>
     </main>

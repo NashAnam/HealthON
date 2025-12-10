@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-    appId: 'com.careon.healthcare',
-    appName: 'CareOn',
+    appId: 'com.healthon.app',
+    appName: 'HealthOn',
     webDir: 'out',
     server: {
         androidScheme: 'https',

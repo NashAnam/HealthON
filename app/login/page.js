@@ -16,7 +16,7 @@ export default function LoginPage() {
       if (error) {
         toast.error('Failed to sign in: ' + error.message);
       } else {
-        toast.success('Redirecting to CareOn...');
+        toast.success('Redirecting to HealthOn...');
       }
     } catch (err) {
       console.error('Login error:', err);

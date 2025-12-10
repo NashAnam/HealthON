@@ -96,7 +96,7 @@ export default function LabDashboard() {
                 <FlaskConical className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">CareOn</h1>
+                <h1 className="text-2xl font-bold text-gray-900">HealthOn</h1>
                 <p className="text-sm text-gray-600">Lab Portal</p>
               </div>
             </div>
@@ -198,8 +198,8 @@ export default function LabDashboard() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${booking.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-blue-100 text-blue-700'
+                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-blue-100 text-blue-700'
                         }`}>
                         {booking.status}
                       </span>

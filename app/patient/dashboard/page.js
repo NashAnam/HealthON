@@ -53,7 +53,7 @@ export default function PatientDashboard() {
           navigator.serviceWorker.register('/sw.js');
         }
         showInstantNotification(
-          'CareOn Notifications Enabled',
+          'HealthOn Notifications Enabled',
           'You will now receive health reminders and updates!'
         );
       } else {
@@ -192,7 +192,7 @@ export default function PatientDashboard() {
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
               <Activity className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">CareOn</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">HealthOn</span>
           </div>
           <nav className="flex-1 space-y-2">
             <NavItem icon={LayoutDashboard} label="Overview" active />
@@ -215,7 +215,7 @@ export default function PatientDashboard() {
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <Activity className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg text-slate-900">CareOn</span>
+          <span className="font-bold text-lg text-slate-900">HealthOn</span>
         </div>
         <button onClick={handleLogout} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
           <LogOut className="w-5 h-5" />
