@@ -278,31 +278,6 @@ export default function HomePage() {
                 <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
                   <Activity className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-2xl font-bold">HealthOn</span>
-              </div>
-              <p className="text-slate-400 leading-relaxed mb-6">
-                Empowering you to take control of your health with advanced technology and compassionate care.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-bold mb-6">Quick Links</h4>
-              <ul className="space-y-4">
-                <li><Link href="/" className="text-slate-400 hover:text-indigo-400 transition-colors">Home</Link></li>
                 <li><Link href="/about" className="text-slate-400 hover:text-indigo-400 transition-colors">About Us</Link></li>
                 <li><a href="#features" className="text-slate-400 hover:text-indigo-400 transition-colors">Features</a></li>
                 <li><a href="#contact" className="text-slate-400 hover:text-indigo-400 transition-colors">Contact</a></li>
