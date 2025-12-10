@@ -1,9 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { ArrowRight, Activity, ShieldCheck, HeartPulse, Stethoscope, CheckCircle2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 
 export default function HomePage() {
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    message: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const { firstName, lastName, email, message } = formData;
+
+    if (!firstName || !email || !message) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const subject = `New Inquiry from ${firstName} ${lastName}`;
+    const body = `Name: ${firstName} ${lastName}\nEmail: ${email}\n\nMessage:\n${message}`;
+
+    // Open email client
+    window.location.href = `mailto:contact@healthon.app?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    toast.success("Opening your email client...");
+
+    // Reset form
+    setFormData({ firstName: "", lastName: "", email: "", message: "" });
+  };
+
   return (
     <main className="min-h-screen w-full bg-white font-sans text-slate-900 selection:bg-indigo-100 overflow-x-hidden">
       {/* Navbar */}
@@ -180,26 +214,53 @@ export default function HomePage() {
 
             <div className="bg-white p-8 md:p-10 rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-100">
               <h3 className="text-2xl font-bold text-slate-900 mb-6">Send us a message</h3>
-              <form className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700">First Name</label>
-                    <input type="text" className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all" placeholder="John" />
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                      placeholder="John"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700">Last Name</label>
-                    <input type="text" className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all" placeholder="Doe" />
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                      placeholder="Doe"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700">Email</label>
-                  <input type="email" className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all" placeholder="john@example.com" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                    placeholder="john@example.com"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700">Message</label>
-                  <textarea className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all min-h-[120px]" placeholder="How can we help you?"></textarea>
+                  <textarea
+                    name="message"
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all min-h-[120px]"
+                    placeholder="How can we help you?"
+                  ></textarea>
                 </div>
-                <button type="button" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all transform hover:-translate-y-0.5">
+                <button type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all transform hover:-translate-y-0.5">
                   Send Message
                 </button>
               </form>
