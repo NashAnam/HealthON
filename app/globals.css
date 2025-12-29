@@ -11,6 +11,64 @@ body {
   font-family: var(--font-inter), sans-serif;
 }
 
+@layer base {
+  :root {
+    --background: 240 20% 99%; /* #F8FAFB approx */
+    --foreground: 0 0% 10%; /* #1A1A1A approx */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 293 57% 25%; /* #5A1B63 approx - Deep Plum */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 175 56% 41%; /* #2FA39A approx - Teal */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 293 57% 25%;
+    --radius: 1rem;
+  }
+}
+
+body {
+  @apply bg-surface text-gray-900 overflow-x-hidden;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  @apply bg-white/60 backdrop-blur-md border border-white/20 shadow-lg;
+}
+
+.glass-card {
+  @apply bg-white/70 backdrop-blur-lg border border-white/30 shadow-sm rounded-2xl hover:shadow-md transition-all duration-300;
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-plum-800 to-teal-600;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
 code {
-  font-family: var(--font-roboto-mono), monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
