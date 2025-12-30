@@ -227,168 +227,182 @@ function TelemedicineRoomContent() {
     return (
         <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
             {/* Call Header */}
-            <div className="p-4 md:p-6 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-50">
+            <div className="p-4 md:p-5 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-800 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/10">
+                    <div className="w-9 h-9 bg-plum-800 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-plum-500/10 text-sm">
                         H
                     </div>
                     <div>
-                        <h1 className="text-gray-900 font-black leading-none tracking-tight">HealthON Virtual</h1>
-                        <p className="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-1.5">Telemedicine Session</p>
+                        <h1 className="text-slate-900 font-black leading-none tracking-tight text-base">HealthON Virtual</h1>
+                        <p className="text-[9px] text-plum-600 font-black uppercase tracking-[0.15em] mt-1.5">Telemedicine Session</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-6">
                     <div className="hidden md:flex flex-col text-right">
-                        <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1.5">Your Consultant</p>
-                        <p className="text-gray-900 font-black leading-none">Dr. {appointment.doctors?.name}</p>
+                        <p className="text-slate-400 text-[8px] font-black uppercase tracking-widest mb-1">Your Consultant</p>
+                        <p className="text-slate-900 font-black leading-none text-sm">Dr. {appointment.doctors?.name}</p>
                     </div>
-                    <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 border border-gray-100">
-                        <Settings size={20} />
+                    <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
+                        <Settings size={18} />
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 p-4 md:p-8 flex flex-col lg:flex-row gap-8 overflow-hidden relative">
-                {/* Background Blobs */}
-                <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-indigo-50/50 rounded-full blur-[120px] pointer-events-none" />
-
+            <div className="flex-1 p-4 md:p-6 flex flex-col lg:flex-row gap-6 overflow-hidden relative">
                 {/* Main Video Area */}
-                <div className="flex-1 relative rounded-[3rem] bg-gray-100 shadow-2xl shadow-indigo-100/50 border border-gray-200 overflow-hidden flex items-center justify-center group">
+                <div className="flex-1 relative rounded-[2.5rem] bg-slate-900 shadow-2xl overflow-hidden flex items-center justify-center group border border-slate-800">
                     {!isJoined ? (
-                        <div className="absolute inset-0 z-20 bg-white/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center text-gray-900">
+                        <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-8 text-center">
+                            {/* Dynamic Background for Lobby */}
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-50 rounded-full blur-[120px]" />
+                                <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-teal-50 rounded-full blur-[120px]" />
+                            </div>
+
                             <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
+                                initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="max-w-md w-full"
+                                className="max-w-md w-full relative z-10"
                             >
-                                <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner border border-indigo-100">
-                                    <Video size={48} className="text-indigo-600" />
+                                <div className="w-20 h-20 bg-plum-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-plum-100/50">
+                                    <Video size={32} className="text-plum-600" />
                                 </div>
-                                <h2 className="text-4xl font-black mb-4 leading-tight tracking-tight">Join Dr. {appointment.doctors?.name?.split(' ').pop()}</h2>
-                                <p className="text-gray-500 font-medium mb-10 leading-relaxed px-6">Your connection is private and secure. Tap below to start your medical session.</p>
+                                <h2 className="text-3xl font-black mb-3 text-slate-900 tracking-tight leading-tight">Join Dr. {appointment.doctors?.name?.split(' ').pop()}</h2>
+                                <p className="text-slate-500 font-medium mb-8 leading-relaxed text-sm">A private, secure medical line is ready for your consultation.</p>
+
+                                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8 flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-slate-200 shadow-sm">
+                                                <Mic size={16} className={audioEnabled ? "text-teal-600" : "text-slate-300"} />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Microphone</span>
+                                        </div>
+                                        <button onClick={toggleAudio} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${audioEnabled ? 'bg-teal-50 text-teal-700 border border-teal-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                                            {audioEnabled ? 'Active' : 'Muted'}
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-slate-200 shadow-sm">
+                                                <Video size={16} className={videoEnabled ? "text-teal-600" : "text-slate-300"} />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Camera</span>
+                                        </div>
+                                        <button onClick={toggleVideo} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${videoEnabled ? 'bg-teal-50 text-teal-700 border border-teal-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                                            {videoEnabled ? 'Active' : 'Disabled'}
+                                        </button>
+                                    </div>
+                                </div>
 
                                 <button
                                     onClick={handleJoin}
-                                    className="w-full py-5 bg-indigo-600 hover:bg-black text-white rounded-[2rem] font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
+                                    className="w-full py-4 bg-plum-800 hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-plum-800/20 active:scale-95 flex items-center justify-center gap-3"
                                 >
-                                    Start Video Session
+                                    Enter Consultation
                                 </button>
                             </motion.div>
                         </div>
-                    ) : !isConnected ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-                            {/* Waiting for Doctor */}
-                            <div className="text-center">
-                                <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-6 shadow-xl border border-indigo-50 animate-pulse">
-                                    <User size={64} />
-                                </div>
-                                <p className="text-indigo-800 font-black uppercase tracking-widest text-[10px]">Waiting for Dr. {appointment.doctors?.name} to admit you...</p>
-                            </div>
-                        </div>
                     ) : (
-                        <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-                            {/* Real Doctor Feed */}
-                            <video
-                                ref={remoteVideoRef}
-                                autoPlay
-                                playsInline
-                                className="w-full h-full object-cover"
-                            />
-
-                            {/* Signal Waves Decoration */}
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full border border-indigo-500/30 rounded-full animate-ping [animation-duration:3s]" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] border border-indigo-500/20 rounded-full animate-ping [animation-duration:4s]" />
-                            </div>
-
-                            <div className="absolute top-8 left-8 flex items-center gap-3 z-10">
-                                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-600/80 backdrop-blur-md rounded-2xl shadow-lg border border-indigo-500/20">
-                                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_#fff]" />
-                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Encounter Active</span>
+                        <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                            {!isConnected ? (
+                                <div className="text-center">
+                                    <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center text-slate-600 mx-auto mb-6 shadow-xl border border-slate-700 animate-pulse">
+                                        <User size={48} />
+                                    </div>
+                                    <p className="text-teal-400 font-black uppercase tracking-widest text-[10px]">Calling Dr. {appointment.doctors?.name}...</p>
                                 </div>
-                                <div className="px-4 py-2 bg-white/30 backdrop-blur-md rounded-2xl text-[10px] font-black text-white uppercase tracking-widest border border-white/20 shadow-sm">
-                                    E2E ENCRYPTED
-                                </div>
-                            </div>
+                            ) : (
+                                <>
+                                    <video
+                                        ref={remoteVideoRef}
+                                        autoPlay
+                                        playsInline
+                                        className="w-full h-full object-cover"
+                                    />
+                                    {/* Overlay Data */}
+                                    <div className="absolute top-6 left-6 flex items-center gap-3 z-10">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-xl border border-white/10">
+                                            <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_#f43f5e]" />
+                                            <span className="text-[9px] font-black text-white uppercase tracking-widest">LIVE SESSION</span>
+                                        </div>
+                                        <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-xl text-[9px] font-black text-white/60 uppercase tracking-widest border border-white/5">
+                                            SECURE LINE
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
-                    {/* Local Video Preview */}
-                    <div className={`absolute bottom-6 right-6 w-48 aspect-video md:w-64 bg-white rounded-[2rem] border-4 border-white shadow-2xl overflow-hidden z-30 transition-all duration-500 ${!isJoined ? 'md:w-80 shadow-indigo-500/10' : ''}`}>
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover scale-x-[-1]"
-                        />
-                        {!videoEnabled && (
-                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                                <VideoOff size={32} className="text-gray-300" />
+                    {/* Active Controls Bar - Only when joined */}
+                    {isJoined && (
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-40 bg-black/20 backdrop-blur-xl p-3 rounded-[2rem] border border-white/10 shadow-2xl">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={toggleAudio}
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${audioEnabled ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'}`}
+                            >
+                                {audioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={toggleVideo}
+                                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${videoEnabled ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'}`}
+                            >
+                                {videoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
+                            </motion.button>
+                            <div className="w-px h-8 bg-white/10 mx-1" />
+                            <motion.button
+                                whileHover={{ scale: 1.05, backgroundColor: '#e11d48' }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleLeave}
+                                className="w-12 h-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-lg shadow-rose-600/20 transition-all"
+                            >
+                                <PhoneOff size={20} />
+                            </motion.button>
+                        </div>
+                    )}
+
+                    {/* Local Feed Overlay - Only when joined */}
+                    {isJoined && (
+                        <div className="absolute top-6 right-6 w-32 aspect-video md:w-48 bg-slate-800 rounded-2xl border-2 border-slate-700/50 shadow-2xl overflow-hidden z-30 group/local">
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover scale-x-[-1]"
+                            />
+                            {!videoEnabled && (
+                                <div className="absolute inset-0 bg-slate-800 flex items-center justify-center">
+                                    <VideoOff size={20} className="text-slate-600" />
+                                </div>
+                            )}
+                            <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/40 backdrop-blur-md rounded-lg text-[7px] text-white/80 font-black uppercase tracking-widest flex items-center gap-1.5 border border-white/5">
+                                <div className="w-1 h-1 bg-teal-400 rounded-full shadow-[0_0_5px_#2dd4bf]" />
+                                ME
                             </div>
-                        )}
-                        <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-indigo-900/80 backdrop-blur-md rounded-xl text-[9px] text-white font-black uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse shadow-[0_0_8px_#818cf8]" />
-                            {audioEnabled ? <Mic size={10} /> : <MicOff size={10} className="text-rose-400" />}
-                            Your Feed
                         </div>
-                    </div>
-
-                    {/* Controls Overlay */}
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 md:gap-6 z-40 w-full justify-center px-4">
-                        <motion.button
-                            whileHover={{ scale: 1.1, y: -5 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={toggleAudio}
-                            className={`w-14 h-14 md:w-16 md:h-16 rounded-[1.5rem] flex items-center justify-center transition-all shadow-xl ${audioEnabled ? 'bg-white text-gray-600 hover:text-indigo-600 border border-gray-100' : 'bg-rose-500 text-white shadow-rose-500/20'}`}
-                        >
-                            {audioEnabled ? <Mic size={24} /> : <MicOff size={24} />}
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.1, y: -5 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={toggleVideo}
-                            className={`w-14 h-14 md:w-16 md:h-16 rounded-[1.5rem] flex items-center justify-center transition-all shadow-xl ${videoEnabled ? 'bg-white text-gray-600 hover:text-indigo-600 border border-gray-100' : 'bg-rose-500 text-white shadow-rose-500/20'}`}
-                        >
-                            {videoEnabled ? <Video size={24} /> : <VideoOff size={24} />}
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.1, y: -5, backgroundColor: '#000' }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleLeave}
-                            className="w-14 h-14 md:w-16 md:h-16 rounded-[1.5rem] bg-rose-600 text-white flex items-center justify-center shadow-xl shadow-rose-600/20 transition-all"
-                        >
-                            <PhoneOff size={24} />
-                        </motion.button>
-                    </div>
-
-                    {/* UI Decorations */}
-                    <div className="absolute top-8 left-8 flex items-center gap-3 z-10">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-rose-600 rounded-2xl shadow-lg border border-rose-500/20">
-                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_#fff]" />
-                            <span className="text-[10px] font-black text-white uppercase tracking-widest">Encounter Active</span>
-                        </div>
-                        <div className="px-4 py-2 bg-white/80 backdrop-blur-md rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest border border-gray-100 shadow-sm">
-                            00:00:00
-                        </div>
-                    </div>
-                    <div className="absolute top-8 right-8 flex items-center gap-2 z-10">
-                        <button className="p-4 bg-white/80 backdrop-blur-md rounded-[1.5rem] text-gray-400 hover:text-indigo-600 border border-gray-100 shadow-sm transition-all group">
-                            <Maximize2 size={20} className="group-hover:scale-110 transition-transform" />
-                        </button>
-                    </div>
+                    )}
                 </div>
 
                 {/* Sidebar: Consultation Details */}
-                <div className="w-full lg:w-[350px] flex flex-col gap-6">
-                    <div className="bg-white rounded-[3rem] border border-gray-100 p-8 flex-1 flex flex-col shadow-xl shadow-gray-100/50">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-2 bg-indigo-50 rounded-xl">
-                                <MessageSquare className="text-indigo-600" size={18} />
+                <div className="w-full lg:w-[320px] shrink-0 flex flex-col gap-6">
+                    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 flex-1 flex flex-col shadow-sm">
+                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
+                            <div className="flex items-center gap-3">
+                                <MessageSquare className="text-plum-600" size={14} />
+                                <h3 className="text-slate-900 font-black text-[10px] uppercase tracking-widest">Medical Line</h3>
                             </div>
-                            <h3 className="text-gray-900 font-black text-xs uppercase tracking-widest">Secure Messages</h3>
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-teal-50 rounded-lg">
+                                <div className="w-1 h-1 bg-teal-500 rounded-full" />
+                                <span className="text-[8px] font-black text-teal-700 uppercase tracking-widest">Encrypted</span>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-hidden bg-gray-50/50 rounded-[2rem] border border-gray-100 relative">
+                        <div className="flex-1 overflow-hidden bg-slate-50/50 rounded-2xl border border-slate-50 relative">
                             <TelemedicineChat
                                 appointmentId={id}
                                 userRole="patient"
@@ -396,7 +410,6 @@ function TelemedicineRoomContent() {
                             />
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, saveAssessment } from '@/lib/supabase';
+import { getCurrentUser, getPatient, saveAssessment, getLatestAssessment } from '@/lib/supabase';
 import { calculateRiskScores } from '@/lib/riskCalculator';
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -216,6 +216,14 @@ export default function AssessmentPage() {
     if (!user) return router.replace('/login');
     const { data } = await getPatient(user.id);
     setPatient(data);
+
+    if (data) {
+      const { data: assessmentData } = await getLatestAssessment(data.id);
+      if (assessmentData) {
+        toast.success('Loading your latest health assessment results...');
+        router.replace('/patient/assessment/result');
+      }
+    }
   };
 
   const handleAnswer = (value) => {

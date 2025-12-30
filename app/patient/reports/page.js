@@ -115,41 +115,34 @@ ${comments || 'Staying committed to my health journey!'}`,
 
     return (
         <div className="min-h-screen bg-[#F8FAFB] font-sans text-slate-900 pb-20">
-
-            {/* Header */}
-            <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
-                <div className="container mx-auto px-6 py-5">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => router.push('/patient/dashboard')} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                            <ArrowLeft className="w-6 h-6 text-gray-900" />
-                        </button>
-                        <div>
-                            <h1 className="text-2xl font-black text-gray-900">Health Reports</h1>
-                            <p className="text-sm font-bold text-gray-400">Track your progress & view lab results</p>
-                        </div>
-                    </div>
+            {/* Compact Internal Header for Mobile Only */}
+            <div className="lg:hidden bg-white border-b border-gray-100 px-6 py-4 mb-4">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => router.replace('/patient/dashboard')} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-gray-900" />
+                    </button>
+                    <h1 className="text-xl font-black text-gray-900">Reports</h1>
                 </div>
-            </header>
+            </div>
 
             <div className="container mx-auto px-6 py-8">
                 <div className="grid lg:grid-cols-3 gap-8">
-
-                    {/* Progress Report Section */}
+                    {/* Progress Report Section - High Density */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 sticky top-24">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Progress Report</h3>
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Analysis</span>
+                        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 sticky top-24">
+                            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-50">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Progress Insight</h3>
+                                <TrendingUp className="w-4 h-4 text-plum-600" />
                             </div>
 
-                            <div className="space-y-4 mb-8">
+                            <div className="space-y-3 mb-6">
                                 <ReportMetric
-                                    label="On time appointments"
+                                    label="Apt Attendance"
                                     value={`${metrics?.appointmentRate || 0}%`}
                                     points={metrics?.appointmentRate * 3 || 0}
                                 />
                                 <ReportMetric
-                                    label="Active reminders"
+                                    label="Active Alarms"
                                     value={metrics?.activeReminders || 0}
                                     points={metrics?.activeReminders * 50 || 0}
                                 />
@@ -159,28 +152,27 @@ ${comments || 'Staying committed to my health journey!'}`,
                                     points={metrics?.avgSleep >= 7 ? 150 : 100}
                                 />
 
-                                <div className="pt-4 border-t border-gray-100 flex justify-between items-center mb-6">
-                                    <span className="text-sm font-black text-gray-900 uppercase">Total Power Points</span>
-                                    <span className="text-xl font-black text-plum-800 tracking-tighter">{patient?.reward_points?.toLocaleString() || 0} pts</span>
+                                <div className="pt-3 border-t border-gray-100 flex justify-between items-center mb-4">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Reward</span>
+                                    <span className="text-lg font-black text-plum-800 tracking-tighter">{patient?.reward_points?.toLocaleString() || 0} pts</span>
                                 </div>
 
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Comments</label>
+                                <div className="mb-4">
                                     <textarea
                                         value={comments}
                                         onChange={(e) => setComments(e.target.value)}
-                                        placeholder="Add notes about your progress..."
-                                        className="w-full mt-2 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-plum-800/10 min-h-[100px] resize-none"
+                                        placeholder="Add progress notes..."
+                                        className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-plum-800/10 min-h-[80px] resize-none"
                                     />
                                 </div>
                             </div>
 
                             <button
                                 onClick={handleShareToNetwork}
-                                className="w-full py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-plum-800/20 flex items-center justify-center gap-2"
+                                className="w-full py-3.5 bg-plum-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-plum-800/20 flex items-center justify-center gap-2"
                             >
-                                <Share2 className="w-4 h-4" />
-                                Share to Network
+                                <Share2 className="w-3.5 h-3.5" />
+                                Share Update
                             </button>
                         </div>
                     </div>
@@ -206,51 +198,46 @@ ${comments || 'Staying committed to my health journey!'}`,
                                 </div>
                             ) : (
                                 reports.map((report) => (
-                                    <div key={report.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600">
-                                                    <FlaskConical className="w-6 h-6" />
+                                    <div key={report.id} className="bg-white rounded-[2rem] p-5 md:p-6 shadow-sm border border-gray-100 hover:border-teal-200 transition-all group">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 group-hover:scale-110 transition-transform">
+                                                    <FlaskConical className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-lg font-bold text-gray-900">{report.test_type || 'Lab Test'}</h3>
-                                                    <div className="flex items-center gap-4 mt-1">
-                                                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                            <Calendar className="w-4 h-4" />
-                                                            <span>{new Date(report.test_date).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${report.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                            'bg-yellow-100 text-yellow-700'
-                                                            }`}>
-                                                            {report.status}
-                                                        </span>
+                                                    <h3 className="text-base font-black text-gray-900 leading-none">{report.test_type || 'Lab Test'}</h3>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <Calendar className="w-3 h-3 text-gray-400" />
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{new Date(report.test_date).toLocaleDateString()}</span>
                                                     </div>
                                                 </div>
                                             </div>
+                                            <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${report.status === 'completed' ? 'bg-teal-50 text-teal-700 border border-teal-100' :
+                                                'bg-amber-50 text-amber-700 border border-amber-100'
+                                                }`}>
+                                                {report.status}
+                                            </span>
                                         </div>
 
                                         {report.notes && (
-                                            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</p>
-                                                <p className="text-sm text-gray-700">{report.notes}</p>
-                                            </div>
+                                            <p className="text-xs text-gray-500 font-medium bg-gray-50/50 p-4 rounded-xl mb-4 border border-gray-50 line-clamp-2">{report.notes}</p>
                                         )}
 
-                                        <div className="flex gap-3">
+                                        <div className="flex gap-2">
                                             {report.report_url && (
                                                 <button
                                                     onClick={() => handleDownload(report.report_url)}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all"
+                                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-teal-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20"
                                                 >
-                                                    <Download className="w-4 h-4" />
-                                                    Download Report
+                                                    <Download className="w-3.5 h-3.5" />
+                                                    Get PDF
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => router.push('/patient/lab-booking')}
-                                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
+                                                className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all"
                                             >
-                                                Book Another Test
+                                                Reschedule
                                             </button>
                                         </div>
                                     </div>
@@ -264,7 +251,6 @@ ${comments || 'Staying committed to my health journey!'}`,
     );
 }
 
-// Report Metric Component
 function ReportMetric({ label, value, points }) {
     return (
         <div className="flex justify-between items-center py-2">

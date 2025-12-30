@@ -8,7 +8,7 @@ export default function PatientLayout({ children }) {
             <div className="flex min-h-screen bg-surface">
                 <Sidebar />
                 <NotificationSync />
-                <div className="flex-1 transition-all duration-300">
+                <div className="flex-1 lg:pl-64 transition-all duration-300">
                     {children}
                 </div>
             </div>

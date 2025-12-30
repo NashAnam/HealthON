@@ -30,18 +30,18 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Overlay */}
+            {/* Overlay (Mobile Only) */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
+                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] lg:hidden"
                     onClick={close}
                 />
             )}
 
             {/* Sidebar Content */}
             <aside className={`
-                fixed top-0 right-0 h-screen w-72 bg-white flex flex-col border-l border-gray-100 z-[1000] transition-transform duration-300 ease-in-out shadow-2xl
-                ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+                fixed top-0 left-0 h-screen w-64 bg-white flex flex-col border-r border-gray-100 z-[1000] transition-transform duration-300 ease-in-out
+                ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
 
                 {/* Logo Area */}
@@ -50,17 +50,17 @@ export default function Sidebar() {
                         <div className="w-9 h-9 flex items-center justify-center p-1">
                             <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
                         </div>
-                        <span className="text-2xl font-bold text-slate-900">
+                        <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
                             Health<span className="text-[#648C81]">ON</span>
                         </span>
                     </Link>
-                    <button onClick={close} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full">
+                    <button onClick={close} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full lg:hidden">
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+                <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto">
                     {menuItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
@@ -69,12 +69,12 @@ export default function Sidebar() {
                                 href={item.href}
                                 onClick={close}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                    ? 'bg-plum-50 text-plum-700 font-semibold shadow-sm'
+                                    ? 'bg-[#5D2A42] text-white shadow-lg shadow-[#5D2A42]/20 font-semibold'
                                     : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                     }`}
                             >
-                                <item.icon size={20} className={isActive ? 'text-plum-700' : 'text-slate-400 group-hover:text-slate-600'} />
-                                <span>{item.name}</span>
+                                <item.icon size={20} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} />
+                                <span className="text-sm">{item.name}</span>
                             </Link>
                         );
                     })}
@@ -84,7 +84,7 @@ export default function Sidebar() {
                 <div className="p-6 border-t border-gray-100 bg-gray-50/50">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-rose-600 hover:bg-rose-50 transition-all font-bold"
+                        className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-rose-600 hover:bg-rose-50 transition-all font-bold text-sm"
                     >
                         <LogOut size={20} />
                         <span>Sign Out</span>

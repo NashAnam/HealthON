@@ -275,7 +275,7 @@ export default function ActionPlanPage() {
     const currentDayData = plan.find(d => d.day === selectedDay);
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] p-4 md:p-8 font-sans text-slate-900">
+        <div className="min-h-screen bg-[#F8FAFB] p-4 md:p-8 font-sans text-slate-900 transition-all duration-300">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center md:justify-between gap-4 mb-8">
@@ -300,20 +300,28 @@ export default function ActionPlanPage() {
                 </div>
 
                 {/* Risk Summary Badge */}
-                <div className={`mb-8 text-center p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border-2 ${overallRisk === 'high' ? 'bg-rose-50 border-rose-100 text-rose-700' :
+                <div className={`mb-6 p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] border-2 shadow-sm ${overallRisk === 'high' ? 'bg-rose-50 border-rose-100 text-rose-700' :
                     overallRisk === 'moderate' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                         'bg-emerald-50 border-emerald-100 text-emerald-700'
                     }`}>
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                        <Zap size={18} />
-                        <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em]">Profile Status</span>
+                    <div className="flex items-center gap-2 mb-1 justify-center md:justify-start">
+                        <Zap size={14} className="animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Clinical Insight</span>
                     </div>
-                    <h2 className="text-xl md:text-3xl font-black uppercase tracking-tight">{overallRisk} Risk Profile</h2>
-                    <p className="max-w-md mx-auto mt-2 text-xs md:text-sm font-medium opacity-80">
-                        {overallRisk === 'high' ? 'Your health profile requires immediate attention. Stick strictly to this plan.' :
-                            overallRisk === 'moderate' ? 'A balanced approach is needed to reduce your health risks.' :
-                                'Keep up the good habits to maintain your excellent health status.'}
-                    </p>
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="text-center md:text-left">
+                            <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight">{overallRisk} Risk Profile</h2>
+                            <p className="mt-1 text-xs font-medium opacity-80 max-w-sm">
+                                {overallRisk === 'high' ? 'Immediate intervention required. Stick strictly to this plan.' :
+                                    overallRisk === 'moderate' ? 'Balanced approach needed to reduce long-term health risks.' :
+                                        'Maintaining excellent health status. Keep up your current habits.'}
+                            </p>
+                        </div>
+                        <div className="flex items-baseline gap-1 bg-white/50 px-4 py-2 rounded-xl border border-white/50">
+                            <span className="text-2xl font-black">{patient?.points || 0}</span>
+                            <span className="text-[10px] font-black uppercase opacity-60">Points</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Day Selector */}
@@ -333,18 +341,18 @@ export default function ActionPlanPage() {
                 </div>
 
                 {/* Daily Plan Card */}
-                <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl shadow-slate-200/50 border border-slate-50 relative overflow-hidden mb-8">
-                    <div className="hidden md:block absolute top-0 right-0 p-8">
-                        <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest">Day {selectedDay}</div>
-                    </div>
-                    <div className="md:hidden flex justify-between items-center mb-8">
-                        <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">Day {selectedDay}</div>
+                <div className="bg-white rounded-2xl md:rounded-[2.5rem] p-6 md:p-10 shadow-xl shadow-slate-200/50 border border-slate-50 relative overflow-hidden mb-8">
+                    <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-50">
+                        <div className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20">Day {selectedDay} Summary</div>
+                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <Calendar size={14} /> Today's Focus
+                        </div>
                     </div>
 
-                    <div className="space-y-10 md:space-y-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
                         <PlanSection
                             icon={Utensils}
-                            title="Dietary Plan"
+                            title="Nutrition"
                             content={currentDayData.diet}
                             color="text-orange-500 bg-orange-50"
                             completed={completedTasks[`${selectedDay}-diet`]}
@@ -352,7 +360,7 @@ export default function ActionPlanPage() {
                         />
                         <PlanSection
                             icon={Activity}
-                            title="Exercise Routine"
+                            title="Exercise"
                             content={currentDayData.exercise}
                             color="text-indigo-500 bg-indigo-50"
                             completed={completedTasks[`${selectedDay}-exercise`]}
@@ -360,7 +368,7 @@ export default function ActionPlanPage() {
                         />
                         <PlanSection
                             icon={Sun}
-                            title="Lifestyle & Habit"
+                            title="Habits"
                             content={currentDayData.lifestyle}
                             color="text-sky-500 bg-sky-50"
                             completed={completedTasks[`${selectedDay}-lifestyle`]}
@@ -413,21 +421,23 @@ export default function ActionPlanPage() {
 
 function PlanSection({ icon: Icon, title, content, color, completed, onToggle }) {
     return (
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start group">
-            <div className={`p-4 rounded-3xl ${color} transition-transform group-hover:scale-110 shadow-sm flex-shrink-0`}>
-                <Icon size={24} />
+        <div className="flex flex-col gap-4 group">
+            <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${color} transition-transform group-hover:scale-110 shadow-sm flex-shrink-0`}>
+                    <Icon size={18} />
+                </div>
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</h4>
             </div>
             <div className="flex-1">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</h4>
-                <p className={`text-lg md:text-xl font-bold leading-relaxed transition-all ${completed ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
+                <p className={`text-sm md:text-base font-bold leading-relaxed transition-all ${completed ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
                     {content}
                 </p>
                 <button
                     onClick={onToggle}
-                    className={`mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${completed ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-600'}`}
+                    className={`mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${completed ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-600'}`}
                 >
-                    <CheckCircle2 size={16} className={completed ? 'fill-emerald-500 text-white' : ''} />
-                    {completed ? 'Task Completed' : 'Mark as complete'}
+                    <CheckCircle2 size={14} className={completed ? 'fill-emerald-500 text-white' : ''} />
+                    {completed ? 'Success' : 'Complete'}
                 </button>
             </div>
         </div>

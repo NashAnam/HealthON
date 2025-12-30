@@ -202,45 +202,45 @@ export default function PatientDashboard() {
 
             <DashboardHeader patient={patient} />
 
-            {/* Quick Actions Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {/* Quick Actions Row - High Density Mobile */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
                 <ActionCard
                     icon={Watch}
-                    title="Connect Watch"
-                    subtitle="Sync your health data"
+                    title="Watch"
+                    subtitle="Sync"
                     onClick={connectWatch}
                     color="bg-plum-800"
                     active={isConnectingWatch}
                 />
                 <ActionCard
                     icon={Activity}
-                    title="Health Assessment"
-                    subtitle="Get your risk score"
+                    title="Assess"
+                    subtitle="Risk Score"
                     onClick={() => router.push('/patient/assessment')}
                     color="bg-teal-500"
                 />
                 <ActionCard
                     icon={Zap}
-                    title="7-Day Action Plan"
-                    subtitle="Personalised Health Journey"
+                    title="Plan"
+                    subtitle="7-Day"
                     onClick={() => router.push(assessment ? '/patient/action-plan' : '/patient/assessment')}
                     color="bg-emerald-600"
                 />
                 <ActionCard
                     icon={Activity}
-                    title="Track My Treatment"
-                    subtitle="Goals & Nutrition"
+                    title="Track"
+                    subtitle="Goals"
                     onClick={() => router.push('/patient/goals')}
                     color="bg-indigo-600"
                 />
             </div>
 
-            {/* Daily Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <StatTile icon={Heart} label="Heart Rate" value={vitals?.heart_rate ? `${vitals.heart_rate} bpm` : '--'} subtitle="Latest Record" color="rose" progress={vitals?.heart_rate ? Math.min((vitals.heart_rate / 200) * 100, 100) : 0} />
-                <StatTile icon={Timer} label="Sleep" value={vitals?.sleep_hours ? `${vitals.sleep_hours} h` : '--'} subtitle="Latest Record" color="indigo" progress={vitals?.sleep_hours ? Math.min((vitals.sleep_hours / 12) * 100, 100) : 0} />
-                <StatTile icon={Footprints} label="Steps Today" value={vitals?.steps ? vitals.steps.toLocaleString() : '--'} subtitle="Daily Goal: 10k" color="plum" progress={vitals?.steps ? Math.min((vitals.steps / 10000) * 100, 100) : 0} />
-                <StatTile icon={Activity} label="Active Minutes" value={vitals?.active_minutes ? `${vitals.active_minutes} min` : '--'} subtitle="Today" color="teal" progress={vitals?.active_minutes ? Math.min((vitals.active_minutes / 180) * 100, 100) : 0} />
+            {/* Daily Stats Grid - High Density Mobile */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
+                <StatTile icon={Heart} label="Heart" value={vitals?.heart_rate ? `${vitals.heart_rate}` : '--'} subtitle="BPM" color="rose" progress={vitals?.heart_rate ? Math.min((vitals.heart_rate / 200) * 100, 100) : 0} />
+                <StatTile icon={Timer} label="Sleep" value={vitals?.sleep_hours ? `${vitals.sleep_hours}` : '--'} subtitle="Hours" color="indigo" progress={vitals?.sleep_hours ? Math.min((vitals.sleep_hours / 12) * 100, 100) : 0} />
+                <StatTile icon={Footprints} label="Steps" value={vitals?.steps ? (vitals.steps > 999 ? `${(vitals.steps / 1000).toFixed(1)}k` : vitals.steps) : '--'} subtitle="Steps" color="plum" progress={vitals?.steps ? Math.min((vitals.steps / 10000) * 100, 100) : 0} />
+                <StatTile icon={Activity} label="Active" value={vitals?.active_minutes ? `${vitals.active_minutes}` : '--'} subtitle="Mins" color="teal" progress={vitals?.active_minutes ? Math.min((vitals.active_minutes / 180) * 100, 100) : 0} />
             </div>
 
             {/* Bookings Section */}
@@ -364,17 +364,17 @@ function ActionCard({ icon: Icon, title, subtitle, onClick, color, active, fullW
     return (
         <button
             onClick={onClick}
-            className={`p-6 rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : ''}`}
+            className={`p-4 md:p-6 rounded-2xl md:rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : ''}`}
         >
-            <div className="flex items-center gap-4 relative z-10">
-                <div className={`p-4 rounded-2xl ${active ? 'bg-gray-100 text-gray-400' : color + ' text-white shadow-lg'} group-hover:scale-110 transition-transform`}>
-                    <Icon size={24} />
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 relative z-10">
+                <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl ${active ? 'bg-gray-100 text-gray-400' : color + ' text-white shadow-lg'} group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <div>
-                    <h4 className="font-black text-gray-900">{title}</h4>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{subtitle}</p>
+                    <h4 className="font-black text-xs md:text-base text-gray-900 leading-tight">{title}</h4>
+                    <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">{subtitle}</p>
                 </div>
-                <ChevronRight className="ml-auto text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all" size={20} />
+                <ChevronRight className="ml-auto text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all hidden md:block" size={20} />
             </div>
         </button>
     );
@@ -426,15 +426,15 @@ function StatTile({ icon: Icon, label, value, subtitle, color, progress = 65 }) 
         teal: 'text-teal-600 bg-teal-50',
     };
     return (
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-lg transition-all group">
-            <div className="flex justify-between items-start mb-4">
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-lg transition-all group">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
                 <div>
-                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{label}</h4>
-                    <p className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1 group-hover:text-plum-800 transition-colors">{value}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{subtitle}</p>
+                    <h4 className="text-[8px] md:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{label}</h4>
+                    <p className="text-lg md:text-2xl font-black text-gray-900 tracking-tight leading-none mb-1 group-hover:text-plum-800 transition-colors">{value}</p>
+                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{subtitle}</p>
                 </div>
-                <div className={`p-3 rounded-xl ${variants[color]} group-hover:scale-110 transition-transform`}>
-                    <Icon size={22} />
+                <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${variants[color]} group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-4 h-4 md:w-5 md:h-5" />
                 </div>
             </div>
             <div className="h-1 bg-gray-50 rounded-full overflow-hidden">

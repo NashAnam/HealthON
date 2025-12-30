@@ -71,14 +71,14 @@ export function AssessmentResultPage() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 py-12 px-4 font-sans text-slate-900">
+        <div className="min-h-screen bg-slate-50 py-8 md:py-12 px-4 font-sans text-slate-900 transition-all duration-300">
             <div className="max-w-3xl mx-auto">
-                <div className="text-center mb-12">
-                    <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <Activity className="w-8 h-8 text-emerald-600" />
+                <div className="text-center mb-8 md:mb-12">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                        <Activity className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
                     </div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Your Health Report</h1>
-                    <p className="text-slate-500">Based on your recent assessment.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-1 md:mb-2 tracking-tight">Health Report</h1>
+                    <p className="text-xs md:text-sm text-slate-500 font-medium">Clinically analyzed based on your assessment.</p>
                 </div>
 
                 <div className="grid gap-6">
@@ -119,36 +119,36 @@ export function AssessmentResultPage() {
                     />
                 </div>
 
-                <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="mt-8 md:mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                     <button
                         onClick={() => router.push('/patient/dashboard')}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-4 rounded-2xl font-bold transition-all"
+                        className="bg-white border border-slate-200 text-slate-700 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-50"
                     >
-                        Dashboard
+                        Home
                     </button>
                     <button
                         onClick={() => router.push('/patient/assessment')}
-                        className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                        className="bg-indigo-50 text-indigo-700 p-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 hover:bg-indigo-100"
                     >
-                        <RefreshCw className="w-5 h-5" /> Retake Assessment
+                        <RefreshCw className="w-4 h-4" /> Retake
                     </button>
                     <button
-                        onClick={() => router.push('/patient/lab')}
-                        className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-teal-600/20 transition-all flex items-center justify-center gap-2"
+                        onClick={() => router.push('/patient/reports?tab=labs')}
+                        className="bg-teal-600 text-white p-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-teal-600/20 transition-all flex items-center justify-center gap-2 hover:bg-teal-700"
                     >
-                        <FileText className="w-5 h-5" /> Lab Test
+                        <FileText className="w-4 h-4" /> Lab
                     </button>
                     <button
                         onClick={() => router.push('/patient/action-plan')}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                        className="bg-emerald-600 text-white p-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 hover:bg-emerald-700"
                     >
-                        <Zap className="w-5 h-5" /> 7-Day Action Plan
+                        < Zap className="w-4 h-4" /> Plan
                     </button>
                     <button
                         onClick={() => router.push('/patient/doctor-booking')}
-                        className="bg-plum-700 hover:bg-plum-800 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-plum-700/20 transition-all flex items-center justify-center gap-2"
+                        className="col-span-2 md:col-span-1 bg-plum-700 text-white p-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-plum-700/20 transition-all flex items-center justify-center gap-2 hover:bg-plum-800"
                     >
-                        Consult<ArrowRight className="w-5 h-5" />
+                        Consult<ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
 
@@ -177,35 +177,35 @@ const ScoreCard = ({ title, score, condition, icon: Icon, max }) => {
     const percentage = Math.min((score / max) * 100, 100);
 
     return (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-6">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${bg}`}>
-                <Icon className={`w-7 h-7 ${color}`} />
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4 md:gap-6">
+            <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center ${bg} shrink-0`}>
+                <Icon className={`w-5 h-5 md:w-7 md:h-7 ${color}`} />
             </div>
-            <div className="flex-1">
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold text-slate-900">{title}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${bg} ${color}`}>
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center mb-1.5 md:mb-2">
+                    <h3 className="font-black text-xs md:text-base text-slate-900 truncate">{title}</h3>
+                    <span className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-xs font-black uppercase tracking-wider ${bg} ${color}`}>
                         {level} Risk
                     </span>
                 </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 md:h-3 bg-slate-100 rounded-full overflow-hidden">
                     <div
                         className={`h-full rounded-full transition-all duration-1000 ${level === 'High' ? 'bg-rose-500' : level === 'Moderate' ? 'bg-amber-500' : 'bg-emerald-500'}`}
                         style={{ width: `${percentage}%` }}
                     ></div>
                 </div>
             </div>
-            <div className="text-right min-w-[60px]">
-                <span className="block text-2xl font-bold text-slate-900">{score}</span>
-                <span className="text-xs text-slate-400">/ {max}</span>
+            <div className="text-right min-w-[50px] md:min-w-[60px]">
+                <span className="block text-xl md:text-2xl font-black text-slate-900 leading-none">{score}</span>
+                <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">/ {max}</span>
             </div>
         </div>
     );
 };
 const DetailItem = ({ label, value }) => (
-    <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-        <span className="text-sm font-bold text-slate-900 capitalize">{value}</span>
+    <div className="flex justify-between items-center p-3 md:p-4 bg-slate-50/50 rounded-xl md:rounded-2xl border border-slate-100">
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+        <span className="text-xs md:text-sm font-black text-slate-900 capitalize">{value}</span>
     </div>
 );
 

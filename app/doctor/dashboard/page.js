@@ -113,7 +113,7 @@ export default function DoctorDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] pb-12 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FDFDFD] pb-12 lg:pl-64 overflow-x-hidden transition-all duration-300">
       {/* Dynamic Background Glows */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
@@ -121,10 +121,12 @@ export default function DoctorDashboard() {
       </div>
 
       <div className="relative z-10">
-        {/* Top Navigation Bar */}
         <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 flex items-center justify-center p-1">
+            <button onClick={toggle} className="p-2 -ml-2 text-gray-400 hover:text-plum-800 lg:hidden transition-colors">
+              <MoreHorizontal size={24} />
+            </button>
+            <div className="w-9 h-9 flex items-center justify-center p-1">
               <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
@@ -138,15 +140,7 @@ export default function DoctorDashboard() {
               <Search size={18} className="text-gray-400" />
               <input type="text" placeholder="Search patients..." className="bg-transparent border-none focus:outline-none text-sm font-medium w-48" />
             </div>
-            {/* Bell Icon Removed */}
             <div className="h-8 w-[1px] bg-gray-100 mx-1 md:mx-2 hidden sm:block"></div>
-            {/* Sidebar Toggle - BESIDE PROFILE */}
-            <button
-              onClick={toggle}
-              className="p-3 bg-white text-plum-900 rounded-full shadow-sm border border-gray-100 active:scale-95 transition-all hover:bg-plum-50"
-            >
-              <MoreHorizontal size={24} />
-            </button>
             <div className="flex items-center gap-2 md:gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-gray-900">
@@ -189,12 +183,12 @@ export default function DoctorDashboard() {
             </p>
           </motion.div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
-            <StatCard label="Appointments" value={stats.todayApts} icon={<Calendar className="text-plum-600" />} color="plum" delay={0.1} onClick={() => router.push('/doctor/opd')} />
-            <StatCard label="Total Patients" value={stats.totalPatients} icon={<Users className="text-teal-600" />} color="teal" delay={0.2} onClick={() => router.push('/doctor/patients')} />
-            <StatCard label="Prescriptions" value={stats.prescriptions} icon={<FileText className="text-rose-600" />} color="rose" delay={0.3} onClick={() => router.push('/doctor/prescriptions')} />
-            <StatCard label="Requests" value={stats.newRequests} icon={<Clock className="text-amber-600" />} color="amber" delay={0.4} onClick={() => router.push('/doctor/opd?status=pending')} />
+          {/* Stats Grid - High Density Mobile */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
+            <StatCard label="Apts" value={stats.todayApts} icon={<Calendar className="w-5 h-5 text-plum-600" />} color="plum" delay={0.1} onClick={() => router.push('/doctor/opd')} />
+            <StatCard label="Patients" value={stats.totalPatients} icon={<Users className="w-5 h-5 text-teal-600" />} color="teal" delay={0.2} onClick={() => router.push('/doctor/patients')} />
+            <StatCard label="Prescriptions" value={stats.prescriptions} icon={<FileText className="w-5 h-5 text-rose-600" />} color="rose" delay={0.3} onClick={() => router.push('/doctor/prescriptions')} />
+            <StatCard label="Requests" value={stats.newRequests} icon={<Clock className="w-5 h-5 text-amber-600" />} color="amber" delay={0.4} onClick={() => router.push('/doctor/opd?status=pending')} />
           </div>
 
           <div className="grid grid-cols-1 gap-12">
@@ -357,20 +351,20 @@ function StatCard({ label, value, icon, color, delay = 0, onClick }) {
       transition={{ delay, duration: 0.5 }}
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       onClick={onClick}
-      className={`p-4 md:p-6 rounded-[2rem] border ${themes[color]} bg-white shadow-sm hover:shadow-xl hover:shadow-${color}-500/5 transition-all group relative overflow-hidden cursor-pointer`}
+      className={`p-4 md:p-6 rounded-2xl md:rounded-[2rem] border ${themes[color]} bg-white shadow-sm hover:shadow-xl hover:shadow-${color}-500/5 transition-all group relative overflow-hidden cursor-pointer`}
     >
       <div className="flex justify-between items-start mb-2 md:mb-4">
-        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl ${iconBgs[color]} flex items-center justify-center group-hover:scale-110 transition-transform relative z-10`}>
+        <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${iconBgs[color]} flex items-center justify-center group-hover:scale-110 transition-transform relative z-10`}>
           {icon}
         </div>
-        <MoreHorizontal className="text-gray-300 relative z-10" />
+        <MoreHorizontal className="text-gray-300 relative z-10 w-4 h-4 md:w-5 md:h-5" />
       </div>
       <div className="relative z-10">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
-        <h4 className="text-xl md:text-2xl font-black text-gray-900 mt-1">{value}</h4>
+        <p className="text-[8px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
+        <h4 className="text-lg md:text-2xl font-black text-gray-900 mt-1">{value}</h4>
       </div>
       {/* Decorative background element */}
-      <div className={`absolute -right-4 -bottom-4 w-24 h-24 ${iconBgs[color]} opacity-10 rounded-full blur-3xl`} />
+      <div className={`absolute -right-4 -bottom-4 w-16 h-16 md:w-24 md:h-24 ${iconBgs[color]} opacity-10 rounded-full blur-3xl`} />
     </motion.div>
   );
 }
