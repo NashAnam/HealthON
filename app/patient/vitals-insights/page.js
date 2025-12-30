@@ -11,6 +11,7 @@ export default function VitalsVisualizationPage() {
     const [patient, setPatient] = useState(null);
     const [vitalsData, setVitalsData] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState('heart_rate');
+    const [assessment, setAssessment] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -21,8 +22,10 @@ export default function VitalsVisualizationPage() {
         if (!user) return router.replace('/login');
 
         const { data: patientData } = await getPatient(user.id);
-        if (!patientData) return router.replace('/complete-profile');
-
+        if (!patientData) {
+            setLoading(false);
+            return;
+        }
         setPatient(patientData);
 
         // Fetch last 30 days of vitals
@@ -47,6 +50,16 @@ export default function VitalsVisualizationPage() {
             }));
             setVitalsData(formatted);
         }
+
+        const { data: latestAssessment } = await supabase
+            .from('health_assessments')
+            .select('*')
+            .eq('patient_id', patientData.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        setAssessment(latestAssessment);
 
         setLoading(false);
     };
@@ -205,28 +218,36 @@ export default function VitalsVisualizationPage() {
                     <div className="space-y-6">
                         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden">
                             <div className="relative z-10">
-                                <h3 className="text-lg font-bold text-slate-900 mb-1">Health Score</h3>
-                                <p className="text-slate-500 text-sm mb-6">Based on your vitals</p>
-                                {vitalsData.length > 0 ? (
+                                <h3 className="text-lg font-bold text-slate-900 mb-1">Health Status</h3>
+                                <p className="text-slate-500 text-sm mb-6">Based on your assessment</p>
+                                {assessment ? (
                                     <>
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-5xl font-bold text-emerald-500">
-                                                {Math.min(100, 85 + (vitalsData.length * 2))}
-                                            </span>
-                                            <span className="text-slate-400 mb-1">/100</span>
+                                        <div className="space-y-4">
+                                            {Object.entries(assessment.scores).map(([key, score]) => (
+                                                <div key={key} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{key} Risk</span>
+                                                    <span className={`text-sm font-black ${score > 50 ? 'text-rose-600' : score > 20 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                        {score > 50 ? 'High' : score > 20 ? 'Moderate' : 'Low'}
+                                                    </span>
+                                                </div>
+                                            ))}
                                         </div>
-                                        <div className="mt-6 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
-                                                style={{ width: `${Math.min(100, 85 + (vitalsData.length * 2))}%` }}
-                                            ></div>
-                                        </div>
-                                        <p className="mt-4 text-sm text-slate-600">Your vitals are looking good! Keep up the healthy lifestyle.</p>
+                                        <button
+                                            onClick={() => router.push('/patient/assessment/result')}
+                                            className="w-full mt-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all"
+                                        >
+                                            View Full Report
+                                        </button>
                                     </>
                                 ) : (
                                     <div className="text-center py-4">
-                                        <p className="text-slate-400">No vitals data available</p>
-                                        <p className="text-xs text-slate-400 mt-1">Log your vitals to see your score</p>
+                                        <p className="text-slate-400">No assessment data</p>
+                                        <button
+                                            onClick={() => router.push('/patient/assessment')}
+                                            className="mt-4 text-indigo-600 font-bold hover:underline"
+                                        >
+                                            Take Assessment
+                                        </button>
                                     </div>
                                 )}
                             </div>

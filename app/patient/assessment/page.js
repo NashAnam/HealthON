@@ -38,13 +38,10 @@ const QUESTIONS = [
     ]
   },
   {
-    key: 'bmi',
-    label: 'How would you describe your weight?',
-    options: [
-      { label: 'Normal', value: 24 },
-      { label: 'Overweight', value: 27 },
-      { label: 'Obese (Very Heavy)', value: 32 }
-    ]
+    key: 'height_weight',
+    label: 'What are your body measurements?',
+    subLabel: 'Enter your height and weight to calculate BMI.',
+    type: 'bmi_input'
   },
 
   // --- SECTION C: Lifestyle ---
@@ -248,14 +245,22 @@ export default function AssessmentPage() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // 1. Calculate Scores
-      const scores = calculateRiskScores(answers);
+      // 1. Calculate BMI if height and weight are provided
+      let finalAnswers = { ...answers };
+      if (answers.height && answers.weight) {
+        const h = parseFloat(answers.height) / 100;
+        const w = parseFloat(answers.weight);
+        finalAnswers.bmi = parseFloat((w / (h * h)).toFixed(1));
+      }
 
-      // 2. Save to Database
-      const { error } = await saveAssessment(patient.id, answers, scores);
+      // 2. Calculate Scores
+      const scores = calculateRiskScores(finalAnswers);
+
+      // 3. Save to Database
+      const { error } = await saveAssessment(patient.id, finalAnswers, scores);
       if (error) throw error;
 
-      // 3. Redirect to Results
+      // 4. Redirect to Results
       toast.success('Assessment Complete!');
       router.push('/patient/assessment/result');
 
@@ -275,7 +280,9 @@ export default function AssessmentPage() {
   const currentQ = QUESTIONS[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / QUESTIONS.length) * 100;
   const isLastQuestion = currentQuestionIndex === QUESTIONS.length - 1;
-  const hasAnsweredCurrent = answers[currentQ.key] !== undefined;
+  const hasAnsweredCurrent = currentQ.type === 'bmi_input'
+    ? (answers.height && answers.weight)
+    : (answers[currentQ.key] !== undefined);
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans text-slate-900 flex flex-col items-center justify-center">
@@ -308,23 +315,57 @@ export default function AssessmentPage() {
             </p>
           )}
 
-          <div className="grid gap-4">
-            {currentQ.options.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => handleAnswer(opt.value)}
-                className={`w-full text-left px-8 py-6 rounded-3xl text-xl font-bold border-2 transition-all shadow-sm hover:shadow-md flex items-center justify-between group ${answers[currentQ.key] === opt.value
+          {currentQ.type === 'bmi_input' ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-1">Height (cm)</label>
+                  <input
+                    type="number"
+                    placeholder="170"
+                    value={answers.height || ''}
+                    onChange={(e) => setAnswers(prev => ({ ...prev, height: e.target.value }))}
+                    className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl text-2xl font-bold focus:outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-400 uppercase tracking-wider ml-1">Weight (kg)</label>
+                  <input
+                    type="number"
+                    placeholder="70"
+                    value={answers.weight || ''}
+                    onChange={(e) => setAnswers(prev => ({ ...prev, weight: e.target.value }))}
+                    className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl text-2xl font-bold focus:outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+              </div>
+              {answers.height && answers.weight && (
+                <div className="p-6 bg-indigo-50 rounded-3xl border-2 border-indigo-100 animation-in fade-in zoom-in">
+                  <p className="text-indigo-600 font-bold text-center text-xl">
+                    Calculated BMI: {((parseFloat(answers.weight) / Math.pow(parseFloat(answers.height) / 100, 2)) || 0).toFixed(1)}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {currentQ.options.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleAnswer(opt.value)}
+                  className={`w-full text-left px-8 py-6 rounded-3xl text-xl font-bold border-2 transition-all shadow-sm hover:shadow-md flex items-center justify-between group ${answers[currentQ.key] === opt.value
                     ? 'border-indigo-600 bg-indigo-600 text-white ring-4 ring-indigo-600/20'
                     : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'
-                  }`}
-              >
-                {opt.label}
-                {answers[currentQ.key] === opt.value && (
-                  <CheckCircle2 className="w-8 h-8 text-white" />
-                )}
-              </button>
-            ))}
-          </div>
+                    }`}
+                >
+                  {opt.label}
+                  {answers[currentQ.key] === opt.value && (
+                    <CheckCircle2 className="w-8 h-8 text-white" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
         </div>
 
@@ -334,8 +375,8 @@ export default function AssessmentPage() {
             onClick={handleBack}
             disabled={currentQuestionIndex === 0}
             className={`flex items-center gap-2 text-lg font-bold px-6 py-3 rounded-2xl transition-colors ${currentQuestionIndex === 0
-                ? 'text-slate-300 cursor-not-allowed'
-                : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800'
+              ? 'text-slate-300 cursor-not-allowed'
+              : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800'
               }`}
           >
             <ChevronLeft className="w-6 h-6" /> Back
@@ -355,8 +396,8 @@ export default function AssessmentPage() {
               onClick={handleNext}
               disabled={!hasAnsweredCurrent}
               className={`flex items-center gap-2 text-lg font-bold px-8 py-4 rounded-2xl transition-all ${hasAnsweredCurrent
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
             >
               Next <ChevronRight className="w-6 h-6" />

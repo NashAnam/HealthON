@@ -31,11 +31,28 @@ export default function TelemedicinePage() {
         setDoctor(doctorData);
 
         const { data: appointmentsData } = await getDoctorAppointments(doctorData.id);
-        const telemedicineAppts = (appointmentsData || []).filter(apt => apt.consultation_type === 'telemedicine');
 
-        const today = new Date().toISOString().split('T')[0];
-        const upcoming = telemedicineAppts.filter(apt => apt.appointment_date >= today && apt.status !== 'completed');
-        const past = telemedicineAppts.filter(apt => apt.appointment_date < today || apt.status === 'completed');
+        // Relaxed filter to catch all telemedicine-related appointments
+        const telemedicineAppts = (appointmentsData || []).filter(apt => {
+            const type = apt.consultation_type?.toLowerCase() || '';
+            return type === 'telemedicine' || type === 'video' || type === 'virtual';
+        });
+
+        const today = new Date().toLocaleDateString('en-CA');
+
+        // Upcoming: Today's or future appointments that are not completed or cancelled
+        const upcoming = telemedicineAppts.filter(apt =>
+            apt.appointment_date >= today &&
+            apt.status !== 'completed' &&
+            apt.status !== 'cancelled'
+        );
+
+        // Past: Previous dates or completed/cancelled ones
+        const past = telemedicineAppts.filter(apt =>
+            apt.appointment_date < today ||
+            apt.status === 'completed' ||
+            apt.status === 'cancelled'
+        );
 
         setAppointments(telemedicineAppts);
         setUpcomingAppointments(upcoming);
@@ -43,7 +60,11 @@ export default function TelemedicinePage() {
     };
 
     const handleStartConsultation = (appointment) => {
-        toast.success('Video consultation feature coming soon!');
+        if (!appointment.id) {
+            toast.error("Invalid appointment ID");
+            return;
+        }
+        router.push(`/doctor/telemedicine/room?id=${appointment.id}`);
     };
 
     if (!doctor) return (
@@ -74,39 +95,39 @@ export default function TelemedicinePage() {
 
             <div className="container mx-auto px-6 py-8">
                 {/* Stats */}
-                <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-purple-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-                                <Video className="w-6 h-6 text-purple-600" />
+                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                    <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-xl shadow-purple-500/5 border border-white/50 group hover:bg-white transition-all">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-200">
+                                <Video className="w-7 h-7 text-white" />
                             </div>
                             <div>
-                                <p className="text-sm text-gray-600">Total Sessions</p>
-                                <p className="text-3xl font-bold text-gray-900">{appointments.length}</p>
+                                <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Total Sessions</p>
+                                <p className="text-4xl font-black text-gray-900 group-hover:scale-110 transition-transform origin-left">{appointments.length}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-indigo-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                                <Calendar className="w-6 h-6 text-indigo-600" />
+                    <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-xl shadow-indigo-500/5 border border-white/50 group hover:bg-white transition-all">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                                <Calendar className="w-7 h-7 text-white" />
                             </div>
                             <div>
-                                <p className="text-sm text-gray-600">Upcoming</p>
-                                <p className="text-3xl font-bold text-gray-900">{upcomingAppointments.length}</p>
+                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Upcoming</p>
+                                <p className="text-4xl font-black text-gray-900 group-hover:scale-110 transition-transform origin-left">{upcomingAppointments.length}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-blue-100">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                                <FileText className="w-6 h-6 text-blue-600" />
+                    <div className="bg-white/60 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-xl shadow-blue-500/5 border border-white/50 group hover:bg-white transition-all">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                                <FileText className="w-7 h-7 text-white" />
                             </div>
                             <div>
-                                <p className="text-sm text-gray-600">Completed</p>
-                                <p className="text-3xl font-bold text-gray-900">{pastAppointments.length}</p>
+                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Completed</p>
+                                <p className="text-4xl font-black text-gray-900 group-hover:scale-110 transition-transform origin-left">{pastAppointments.length}</p>
                             </div>
                         </div>
                     </div>
@@ -127,46 +148,47 @@ export default function TelemedicinePage() {
                                     key={appointment.id}
                                     className="p-5 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 hover:shadow-md transition-all"
                                 >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl">
+                                    <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
+                                        <div className="flex items-start gap-4 flex-1">
+                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
                                                 {appointment.patients?.name?.charAt(0) || 'P'}
                                             </div>
-                                            <div>
-                                                <h3 className="text-lg font-bold text-gray-900">{appointment.patients?.name || 'Patient'}</h3>
-                                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-1">
-                                                        <Calendar className="w-4 h-4" />
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-lg font-bold text-gray-900 truncate">{appointment.patients?.name || 'Patient'}</h3>
+                                                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-gray-600">
+                                                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                                        <Calendar className="w-4 h-4 text-purple-600" />
                                                         {appointment.appointment_date}
                                                     </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Clock className="w-4 h-4" />
+                                                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                                        <Clock className="w-4 h-4 text-indigo-600" />
                                                         {appointment.appointment_time}
                                                     </div>
                                                     {appointment.patients?.phone && (
-                                                        <div className="flex items-center gap-1">
-                                                            <Phone className="w-4 h-4" />
+                                                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                                            <Phone className="w-4 h-4 text-blue-600" />
                                                             {appointment.patients.phone}
                                                         </div>
                                                     )}
                                                 </div>
                                                 {appointment.reason && (
-                                                    <p className="text-sm text-gray-700 mt-2">
-                                                        <span className="font-semibold">Reason:</span> {appointment.reason}
+                                                    <p className="text-sm text-gray-700 mt-3 p-3 bg-white/50 rounded-lg border border-purple-100/50">
+                                                        <span className="font-bold text-[10px] uppercase tracking-widest text-gray-400 block mb-1">Reason for consultation</span>
+                                                        {appointment.reason}
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-2">
+                                        <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto shrink-0">
                                             <button
                                                 onClick={() => handleStartConsultation(appointment)}
-                                                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                                                className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md"
                                             >
                                                 <Video className="w-4 h-4" />
-                                                Start Call
+                                                <span className="whitespace-nowrap">Start Call</span>
                                             </button>
-                                            <span className={`px-4 py-1.5 rounded-full text-sm font-semibold text-center ${appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                            <span className={`flex-1 sm:flex-none px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-center flex items-center justify-center ${appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                 {appointment.status}
                                             </span>
@@ -193,31 +215,26 @@ export default function TelemedicinePage() {
                                     key={appointment.id}
                                     className="p-5 bg-gray-50 rounded-xl border border-gray-200"
                                 >
-                                    <div className="flex items-start justify-between">
+                                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                         <div className="flex items-start gap-4">
-                                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white font-bold text-xl">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
                                                 {appointment.patients?.name?.charAt(0) || 'P'}
                                             </div>
                                             <div>
                                                 <h3 className="text-lg font-bold text-gray-900">{appointment.patients?.name || 'Patient'}</h3>
-                                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500 font-medium">
                                                     <div className="flex items-center gap-1">
-                                                        <Calendar className="w-4 h-4" />
+                                                        <Calendar className="w-3.5 h-3.5" />
                                                         {appointment.appointment_date}
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <Clock className="w-4 h-4" />
+                                                        <Clock className="w-3.5 h-3.5" />
                                                         {appointment.appointment_time}
                                                     </div>
                                                 </div>
-                                                {appointment.reason && (
-                                                    <p className="text-sm text-gray-700 mt-2">
-                                                        <span className="font-semibold">Reason:</span> {appointment.reason}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
-                                        <span className="px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700">
+                                        <span className="w-full sm:w-auto px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 text-center">
                                             Completed
                                         </span>
                                     </div>

@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, getLatestAssessment } from '@/lib/supabase';
 import { getRiskLevel } from '@/lib/riskCalculator';
-import { Activity, Heart, Droplet, Zap, Brain, ArrowRight, RefreshCw } from 'lucide-react';
+import { Activity, Heart, Droplet, Zap, Brain, ArrowRight, RefreshCw, FileText } from 'lucide-react';
 
-export default function AssessmentResultPage() {
+export function AssessmentResultPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [scores, setScores] = useState(null);
+    const [assessment, setAssessment] = useState(null);
 
     useEffect(() => {
         loadResults();
@@ -34,6 +35,7 @@ export default function AssessmentResultPage() {
                 setError('Failed to load assessment results. Please try again.');
             } else if (assessment) {
                 setScores(assessment.scores);
+                setAssessment(assessment);
             } else {
                 // No assessment found
                 setScores(null);
@@ -117,19 +119,53 @@ export default function AssessmentResultPage() {
                     />
                 </div>
 
-                <div className="mt-12 flex gap-4 justify-center">
+                <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
                     <button
                         onClick={() => router.push('/patient/dashboard')}
-                        className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-8 py-4 rounded-2xl font-bold transition-colors"
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-4 rounded-2xl font-bold transition-all"
                     >
-                        Back to Dashboard
+                        Dashboard
+                    </button>
+                    <button
+                        onClick={() => router.push('/patient/assessment')}
+                        className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                    >
+                        <RefreshCw className="w-5 h-5" /> Retake Assessment
+                    </button>
+                    <button
+                        onClick={() => router.push('/patient/lab')}
+                        className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-teal-600/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <FileText className="w-5 h-5" /> Lab Test
+                    </button>
+                    <button
+                        onClick={() => router.push('/patient/action-plan')}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Zap className="w-5 h-5" /> 7-Day Action Plan
                     </button>
                     <button
                         onClick={() => router.push('/patient/doctor-booking')}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
+                        className="bg-plum-700 hover:bg-plum-800 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-plum-700/20 transition-all flex items-center justify-center gap-2"
                     >
-                        Consult a Doctor <ArrowRight className="w-5 h-5" />
+                        Consult<ArrowRight className="w-5 h-5" />
                     </button>
+                </div>
+
+                <div className="mt-12 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+                    <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <FileText className="text-indigo-600" /> Assessment Details
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <DetailItem label="Height" value={`${assessment?.answers?.height || '--'} cm`} />
+                        <DetailItem label="Weight" value={`${assessment?.answers?.weight || '--'} kg`} />
+                        <DetailItem label="BMI" value={assessment?.answers?.bmi || '--'} />
+                        <DetailItem label="Smoking/Tobacco" value={assessment?.answers?.tobacco === 'yes' ? 'Yes' : 'No'} />
+                        <DetailItem label="Diabetes History" value={assessment?.answers?.history_diabetes === 'yes' ? 'Yes' : 'No'} />
+                        <DetailItem label="BP History" value={assessment?.answers?.history_bp === 'yes' ? 'Yes' : 'No'} />
+                        <DetailItem label="Stress Level" value={assessment?.answers?.stress || 'Normal'} />
+                        <DetailItem label="Sleep Quality" value={assessment?.answers?.sleep === 'yes' ? 'Poor' : 'Good'} />
+                    </div>
                 </div>
             </div>
         </div>
@@ -166,3 +202,11 @@ const ScoreCard = ({ title, score, condition, icon: Icon, max }) => {
         </div>
     );
 };
+const DetailItem = ({ label, value }) => (
+    <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</span>
+        <span className="text-sm font-bold text-slate-900 capitalize">{value}</span>
+    </div>
+);
+
+export default AssessmentResultPage;

@@ -1,133 +1,845 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getDoctor, getDoctorAppointments, signOut } from '@/lib/supabase';
-import { Calendar, Users, Video, Activity, Clock, TrendingUp, LogOut, CheckCircle, Play } from 'lucide-react';
+import { getCurrentUser, supabase } from '@/lib/supabase';
+import { useSidebar } from '@/lib/SidebarContext';
+import { Calendar, User, Activity, Clock, Video, MapPin, LogOut, FileText, Users, ArrowRight, Check, X, MoreHorizontal, Search, Settings, Plus, Share2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function DoctorDashboard() {
   const router = useRouter();
+  const { toggle } = useSidebar();
   const [doctor, setDoctor] = useState(null);
   const [appointments, setAppointments] = useState([]);
-  const [stats, setStats] = useState({ today: 0, thisWeek: 0, totalPatients: 0, pending: 0 });
+  const [newRequests, setNewRequests] = useState([]);
+  const [patientsByStatus, setPatientsByStatus] = useState({ normal: [], moderate: [], critical: [] });
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayApts: 0,
+    totalPatients: 0,
+    prescriptions: 0,
+    newRequests: 0
+  });
+  const [isConsulting, setIsConsulting] = useState(false);
+  const [consultingAptId, setConsultingAptId] = useState(null);
+  const [isTelemedicine, setIsTelemedicine] = useState(false);
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const loadDashboard = async () => {
-    const user = await getCurrentUser();
-    if (!user) return router.push('/login');
-    const { data: doctorData } = await getDoctor(user.id);
-    if (!doctorData) return router.push('/complete-profile');
-    setDoctor(doctorData);
+  const loadData = async () => {
+    try {
+      const user = await getCurrentUser();
+      if (!user) return router.push('/login');
 
-    const { data: appointmentsData } = await getDoctorAppointments(doctorData.id);
-    setAppointments(appointmentsData || []);
+      const { data: doctorData } = await supabase
+        .from('doctors')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    const today = new Date().toISOString().split('T')[0];
-    setStats({
-      today: (appointmentsData || []).filter(a => a.appointment_date === today).length,
-      thisWeek: (appointmentsData || []).length, // Simplified logic
-      totalPatients: new Set((appointmentsData || []).map(a => a.patient_id)).size,
-      pending: (appointmentsData || []).filter(a => a.status === 'pending').length
-    });
+      if (!doctorData) {
+        const { data: patientData } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
+        if (patientData) {
+          toast.error('Access restricted: You are registered as a Patient.');
+          return router.push('/patient/dashboard');
+        }
+        return router.push('/complete-profile');
+      }
+      setDoctor(doctorData);
+
+      const today = new Date().toLocaleDateString('en-CA');
+      const { data: aptData } = await supabase
+        .from('appointments')
+        .select(`*, patients (*)`)
+        .eq('doctor_id', doctorData.id)
+        .order('appointment_time', { ascending: true });
+
+      const todayApts = aptData?.filter(a => a.appointment_date === today && a.status === 'confirmed') || [];
+      const requests = aptData?.filter(a => a.status === 'pending') || [];
+
+      setAppointments(todayApts);
+      setNewRequests(requests);
+
+      // Fetch Total Unique Patients
+      const { count: patientCount } = await supabase
+        .from('appointments')
+        .select('patient_id', { count: 'exact', head: true })
+        .eq('doctor_id', doctorData.id);
+
+      // Fetch Prescriptions Count
+      const { count: rxCount } = await supabase
+        .from('prescriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('doctor_id', doctorData.id);
+
+      setStats({
+        todayApts: todayApts.length,
+        totalPatients: patientCount || 0,
+        prescriptions: rxCount || 0,
+        newRequests: requests.length
+      });
+
+      setPatientsByStatus({
+        normal: aptData?.slice(0, 2).map(a => a.patients).filter(Boolean) || [],
+        moderate: aptData?.slice(2, 3).map(a => a.patients).filter(Boolean) || [],
+        critical: aptData?.slice(3, 4).map(a => a.patients).filter(Boolean) || []
+      });
+
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    router.replace('/login');
+
+  const confirmAppointment = async (id) => {
+    const { error } = await supabase.from('appointments').update({ status: 'confirmed' }).eq('id', id);
+    if (!error) {
+      toast.success('Appointment confirmed');
+      loadData();
+    }
   };
 
-  if (!doctor) return <div className="min-h-screen flex items-center justify-center bg-surface"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-plum-600"></div></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-8">
+      <div className="w-16 h-16 border-4 border-plum-100 border-t-plum-800 rounded-full animate-spin mb-4" />
+      <p className="text-plum-800 font-black uppercase tracking-widest text-sm">Loading Doctor Suite...</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 fixed top-0 w-full z-10">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-plum-600 to-plum-800 flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl">H</span>
+    <div className="min-h-screen bg-[#FDFDFD] pb-12 overflow-x-hidden">
+      {/* Dynamic Background Glows */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="relative z-10">
+        {/* Top Navigation Bar */}
+        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="w-10 h-10 bg-plum-800 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg ring-4 ring-plum-50"
+            >
+              H
+            </motion.div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold text-gray-900 leading-none">HealthON</h1>
+              <p className="text-[10px] font-black uppercase tracking-widest text-plum-600 mt-1">Doctor Portal</p>
             </div>
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-plum-900 to-teal-700">HealthOn Doctor</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="font-semibold text-gray-700">Dr. {doctor.name}</span>
-            <button onClick={handleLogout} className="p-2 hover:bg-red-50 text-gray-500 hover:text-red-500 rounded-lg transition-colors"><LogOut size={20} /></button>
+
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl border border-gray-100 focus-within:ring-2 focus-within:ring-plum-500/20 transition-all">
+              <Search size={18} className="text-gray-400" />
+              <input type="text" placeholder="Search patients..." className="bg-transparent border-none focus:outline-none text-sm font-medium w-48" />
+            </div>
+            {/* Bell Icon Removed */}
+            <div className="h-8 w-[1px] bg-gray-100 mx-1 md:mx-2 hidden sm:block"></div>
+            {/* Sidebar Toggle - BESIDE PROFILE */}
+            <button
+              onClick={toggle}
+              className="p-3 bg-white text-plum-900 rounded-full shadow-sm border border-gray-100 active:scale-95 transition-all hover:bg-plum-50"
+            >
+              <MoreHorizontal size={24} />
+            </button>
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-gray-900">
+                  {doctor?.name?.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor?.name || 'XYZ'}`}
+                </p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">{doctor?.specialty || 'General Physician'}</p>
+              </div>
+              <motion.div
+                whileHover={{ rotate: 5, scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg overflow-hidden shrink-0"
+              >
+                {doctor?.name?.[0] || 'D'}
+              </motion.div>
+            </div>
+            <button onClick={() => router.push('/')} className="p-2 text-gray-400 hover:text-rose-600 transition-colors">
+              <LogOut size={20} />
+            </button>
           </div>
-        </div>
-      </header>
+        </nav>
 
-      <main className="container mx-auto px-6 pt-28 pb-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+          {/* Welcome Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8 md:mb-10"
+          >
+            <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight text-center md:text-left">
+              {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}, {' '}
+              <span className="text-plum-800">
+                {doctor?.name?.toLowerCase().startsWith('dr')
+                  ? doctor.name.split(' ').slice(1).join(' ')
+                  : doctor?.name?.split(' ')[0] || 'Doctor'}
+              </span>! 👋
+            </h2>
+            <p className="text-gray-500 mt-2 font-medium text-center md:text-left max-w-2xl px-4 md:px-0">
+              You have <span className="text-plum-600 font-bold">{stats.todayApts} {stats.todayApts === 1 ? 'appointment' : 'appointments'}</span> scheduled for today. Your patients are waiting for your care.
+            </p>
+          </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid md:grid-cols-4 gap-6 mb-10">
-          <StatCard icon={Calendar} label="Today's Appointments" value={stats.today} color="plum" />
-          <StatCard icon={Clock} label="Pending Requests" value={stats.pending} color="teal" />
-          <StatCard icon={Users} label="Total Patients" value={stats.totalPatients} color="indigo" />
-          <StatCard icon={TrendingUp} label="Total Visits" value={stats.thisWeek} color="gray" />
-        </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
+            <StatCard label="Appointments" value={stats.todayApts} icon={<Calendar className="text-plum-600" />} color="plum" delay={0.1} onClick={() => router.push('/doctor/opd')} />
+            <StatCard label="Total Patients" value={stats.totalPatients} icon={<Users className="text-teal-600" />} color="teal" delay={0.2} onClick={() => router.push('/doctor/patients')} />
+            <StatCard label="Prescriptions" value={stats.prescriptions} icon={<FileText className="text-rose-600" />} color="rose" delay={0.3} onClick={() => router.push('/doctor/prescriptions')} />
+            <StatCard label="Requests" value={stats.newRequests} icon={<Clock className="text-amber-600" />} color="amber" delay={0.4} onClick={() => router.push('/doctor/opd?status=pending')} />
+          </div>
 
-        {/* Appointments Section */}
-        <div className="bg-white/60 backdrop-blur-lg rounded-3xl border border-white/40 shadow-xl overflow-hidden p-6 md:p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            Today's Appointments <span className="text-sm font-normal text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{stats.today} Active</span>
-          </h2>
-
-          <div className="space-y-4">
-            {appointments.filter(a => a.status !== 'completed').map((appt) => (
-              <div key={appt.id} className="group flex flex-col md:flex-row items-center justify-between p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-600">
-                    {appt.patients?.name?.[0]}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900">{appt.patients?.name}</h3>
-                    <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                      <span className="flex items-center gap-1"><Clock size={14} /> {appt.appointment_time}</span>
-                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-600 uppercase">{appt.consultation_type}</span>
-                    </div>
-                  </div>
+          <div className="grid grid-cols-1 gap-12">
+            {/* Today's Appointments Section */}
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col">
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
+                    <span className="w-1.5 h-6 bg-plum-800 rounded-full"></span> Today's Appointments
+                  </h3>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4 mt-1">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  </p>
                 </div>
+                <button onClick={() => router.push('/doctor/opd')} className="text-[10px] font-black text-plum-600 uppercase tracking-widest hover:bg-plum-100 transition-colors px-4 py-2 bg-plum-50 rounded-xl">Full Schedule</button>
+              </div>
 
-                <div className="flex gap-3 mt-4 md:mt-0 w-full md:w-auto">
-                  {appt.status === 'pending' ? (
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/20">
-                      <CheckCircle size={18} /> Confirm
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => router.push(`/doctor/consultation/${appt.id}`)}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-plum-700 text-white font-semibold rounded-xl hover:bg-plum-800 transition-colors shadow-lg shadow-plum-700/20"
-                    >
-                      <Play size={18} /> Start Consultation
-                    </button>
-                  )}
+              <div className="grid gap-4">
+                {appointments.length > 0 ? (
+                  <AnimatePresence>
+                    {appointments.map((apt, idx) => (
+                      <motion.div
+                        key={apt.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                      >
+                        <AppointmentCard
+                          apt={apt}
+                          idx={idx}
+                          onStart={() => {
+                            setSelectedPatient(apt.patients);
+                            setConsultingAptId(apt.id);
+                            setIsTelemedicine(apt.consultation_type === 'telemedicine');
+                            setIsConsulting(true);
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 py-20 text-center"
+                  >
+                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 opacity-40">
+                      <Clock size={32} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm font-black text-gray-900 uppercase tracking-widest mb-2">No active appointments for today</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-loose">
+                      Check "New Requests" below to approve incoming patient bookings <br /> or visit the <span className="text-plum-600 cursor-pointer" onClick={() => router.push('/doctor/opd')}>Full Schedule</span> for future dates.
+                    </p>
+                  </motion.div>
+                )}
+              </div>
+            </section>
+
+            {/* New Appointment Requests Section */}
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col">
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
+                    <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span> Incoming Requests
+                  </h3>
+                  <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest ml-4 mt-1">Pending approval</p>
                 </div>
               </div>
-            ))}
-            {appointments.length === 0 && <p className="text-center text-gray-500 py-10">No appointments scheduled for today.</p>}
+              <div className="bg-amber-50/30 rounded-[2.5rem] border border-amber-100/50 p-4 md:p-8">
+                {newRequests.length > 0 ? (
+                  <div className="grid gap-4">
+                    {newRequests.map((req, idx) => (
+                      <motion.div
+                        key={req.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                      >
+                        <RequestCard
+                          req={req}
+                          idx={idx}
+                          onView={() => setSelectedPatient(req.patients)}
+                          onConfirm={() => confirmAppointment(req.id)}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-16 text-center">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-amber-100">
+                      <Check size={24} className="text-amber-500" />
+                    </div>
+                    <p className="text-sm font-black text-amber-900/40 uppercase tracking-widest">Everything caught up! No active requests.</p>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
+
+
         </div>
 
-      </main>
+        {/* Patient Consultation Modal */}
+        <AnimatePresence>
+          {isConsulting && selectedPatient && (
+            <ConsultationModal
+              patient={selectedPatient}
+              appointmentId={consultingAptId}
+              isTelemedicine={isTelemedicine}
+              onClose={() => {
+                setIsConsulting(false);
+                setConsultingAptId(null);
+                setIsTelemedicine(false);
+                loadData(); // Reload to reflect completion
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Basic Detail Modal (Legacy - for non-consultation flows) */}
+        <AnimatePresence>
+          {selectedPatient && !isConsulting && (
+            <PatientDetailModal
+              patient={selectedPatient}
+              onClose={() => setSelectedPatient(null)}
+              onConfirm={() => {
+                const req = newRequests.find(r => r.patient_id === selectedPatient.id);
+                if (req) confirmAppointment(req.id);
+                setSelectedPatient(null);
+              }}
+              isConfirmation={newRequests.some(r => r.patient_id === selectedPatient.id)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-const StatCard = ({ icon: Icon, label, value, color }) => {
-  const colors = {
-    plum: 'bg-plum-50 text-plum-700',
-    teal: 'bg-teal-50 text-teal-700',
-    indigo: 'bg-indigo-50 text-indigo-700',
-    gray: 'bg-gray-50 text-gray-700',
+
+// Sub-components
+function StatCard({ label, value, icon, color, delay = 0, onClick }) {
+  const themes = {
+    plum: 'bg-plum-50/50 border-plum-100',
+    teal: 'bg-teal-50/50 border-teal-100',
+    rose: 'bg-rose-50/50 border-rose-100',
+    amber: 'bg-amber-50/50 border-amber-100'
   };
+  const iconBgs = {
+    plum: 'bg-plum-100',
+    teal: 'bg-teal-100',
+    rose: 'bg-rose-100',
+    amber: 'bg-amber-100'
+  };
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-      <div className={`p-3 rounded-xl ${colors[color]}`}><Icon size={24} /></div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm text-gray-500">{label}</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5 }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      onClick={onClick}
+      className={`p-4 md:p-6 rounded-[2rem] border ${themes[color]} bg-white shadow-sm hover:shadow-xl hover:shadow-${color}-500/5 transition-all group relative overflow-hidden cursor-pointer`}
+    >
+      <div className="flex justify-between items-start mb-2 md:mb-4">
+        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl ${iconBgs[color]} flex items-center justify-center group-hover:scale-110 transition-transform relative z-10`}>
+          {icon}
+        </div>
+        <MoreHorizontal className="text-gray-300 relative z-10" />
+      </div>
+      <div className="relative z-10">
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
+        <h4 className="text-xl md:text-2xl font-black text-gray-900 mt-1">{value}</h4>
+      </div>
+      {/* Decorative background element */}
+      <div className={`absolute -right-4 -bottom-4 w-24 h-24 ${iconBgs[color]} opacity-10 rounded-full blur-3xl`} />
+    </motion.div>
+  );
+}
+
+function AppointmentCard({ apt, idx, onStart }) {
+  return (
+    <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-5 bg-white rounded-3xl border border-gray-100 hover:border-plum-200 hover:shadow-lg hover:shadow-plum-500/5 transition-all group gap-4 md:gap-0">
+      <div className="flex items-center gap-4 md:gap-5 w-full md:w-auto">
+        <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-plum-100 to-plum-50 flex items-center justify-center text-plum-800 font-black shadow-inner border border-plum-100 overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+          {apt.patients?.avatar_url ? <img src={apt.patients.avatar_url} className="w-full h-full object-cover" /> : apt.patients?.name?.[0] || 'P'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-black text-gray-900 text-lg md:text-xl truncate tracking-tight">{apt.patients?.name || `Patient-${idx + 1}`}</p>
+            {apt.consultation_type === 'telemedicine' && (
+              <div className="p-1 px-2 bg-teal-50 rounded-lg flex items-center gap-1">
+                <Video size={12} className="text-teal-600" />
+                <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest hidden xs:block">Video</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+            <div className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <Clock size={12} className="text-plum-400" /> {apt.appointment_time}
+            </div>
+            <div className="hidden md:block w-1 h-1 bg-gray-300 rounded-full" />
+            <div className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <Video size={12} className="text-gray-400" /> {apt.consultation_type || 'In-Person'}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end border-t md:border-t-0 pt-4 md:pt-0">
+        <span className="hidden xs:inline-block px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100 shadow-sm">Confirmed</span>
+        <button className="px-4 md:px-6 py-2.5 bg-white text-gray-600 rounded-xl font-black text-[10px] uppercase tracking-widest border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Details</button>
+        <button
+          onClick={onStart}
+          className="flex-1 md:flex-none px-6 md:px-10 py-3 bg-plum-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-plum-800/30 group-hover:shadow-plum-800/40 relative overflow-hidden"
+        >
+          <span className="relative z-10">Start Session</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-plum-600 to-plum-800 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </button>
       </div>
     </div>
   );
+}
+
+function RequestCard({ req, idx, onView, onConfirm }) {
+  return (
+    <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-5 bg-white rounded-3xl border border-amber-100 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5 transition-all gap-4 md:gap-0">
+      <div className="flex items-center gap-4 md:gap-5 w-full md:w-auto">
+        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 font-black shadow-inner border border-amber-100 shrink-0">
+          {req.patients?.name?.[0] || 'P'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-gray-900 text-base md:text-lg truncate">{req.patients?.name || `Patient-${idx + 1}`}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+            <div className="flex items-center gap-1 text-[10px] font-black text-amber-600 uppercase tracking-widest">
+              <Clock size={12} /> Requested: {req.appointment_time || 'Next Slot'}
+            </div>
+            {req.consultation_type === 'telemedicine' && (
+              <>
+                <div className="hidden md:block w-1 h-1 bg-amber-200 rounded-full" />
+                <div className="flex items-center gap-1 text-[10px] font-black text-teal-600 uppercase tracking-widest">
+                  <Video size={12} /> Video
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
+        <span className="hidden xs:inline-block px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 mr-2">New</span>
+        <button onClick={onView} className="px-4 md:px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all">Decline</button>
+        <button onClick={onConfirm} className="flex-1 md:flex-none px-6 md:px-8 py-2.5 bg-teal-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">Confirm</button>
+      </div>
+    </div>
+  );
+}
+
+function QuickActionButton({ icon, label, gradient, onClick }) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-[2rem] hover:border-plum-500 hover:shadow-2xl hover:shadow-plum-500/10 transition-all group text-left relative overflow-hidden cursor-pointer"
+    >
+      <div className="flex items-center gap-4 relative z-10">
+        <div className={`w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-gradient-to-br ${gradient} group-hover:text-white transition-all duration-500`}>
+          {icon}
+        </div>
+        <span className="font-black text-[11px] uppercase tracking-widest text-gray-900">{label}</span>
+      </div>
+      <ArrowRight size={18} className="translate-x-0 group-hover:translate-x-2 transition-transform text-gray-300 group-hover:text-plum-600 relative z-10" />
+      {/* Subtle hover background effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-plum-500/0 to-plum-500/0 group-hover:from-plum-500/5 group-hover:to-transparent transition-all duration-500" />
+    </motion.button>
+  );
+}
+
+function PatientDetailModal({ patient, onClose, onConfirm, isConfirmation }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+        className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="bg-plum-800 p-8 text-white relative">
+          <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+          <h3 className="text-2xl font-black uppercase tracking-tight">Patient Information</h3>
+          <p className="opacity-60 font-bold text-sm">Review details carefully</p>
+        </div>
+        <div className="p-8 space-y-4 bg-gray-50/50">
+          <ModalItem label="Patient name" value={patient.name} />
+          <ModalItem label="Age" value={patient.age || '45 years'} />
+          <ModalItem label="Phone" value={patient.phone} />
+          <ModalItem label="Address" value={patient.address || '456 Patient Street, Healthcare City'} />
+          <ModalItem label="Payment Status" value="Paid" color="emerald" />
+        </div>
+        <div className="p-8 pt-2 flex gap-4">
+          <button onClick={onClose} className="flex-1 py-4 bg-white border border-gray-200 text-gray-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all">
+            Close
+          </button>
+          {isConfirmation && (
+            <button onClick={onConfirm} className="flex-1 py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-plum-800/20">
+              Confirm Appointment
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ModalItem({ label, value, color }) {
+  return (
+    <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
+      <span className={`text-sm font-black ${color === 'emerald' ? 'text-emerald-600' : 'text-gray-900'}`}>{value}</span>
+    </div>
+  );
+}
+
+// Full implementation of the detailed Consultation Modal
+function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('consultation');
+  const [diagnosis, setDiagnosis] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isDetailsConfirmed, setIsDetailsConfirmed] = useState(false);
+  const [medications, setMedications] = useState([
+    { name: '', dosage: '500mg', frequency: 'OD (Once daily)', duration: '7 days', instructions: 'After food' }
+  ]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const addMedication = () => {
+    setMedications([...medications, { name: '', dosage: '500mg', frequency: 'OD (Once daily)', duration: '7 days', instructions: 'After food' }]);
+  };
+
+  const updateMedication = (index, field, value) => {
+    const newMedications = [...medications];
+    newMedications[index][field] = value;
+    setMedications(newMedications);
+  };
+
+  const handleSharePrescription = async () => {
+    if (!diagnosis) return toast.error('Please enter a diagnosis');
+    if (medications.some(m => !m.name)) return toast.error('Please fill in all medication names');
+
+    setIsSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: doctorData } = await supabase.from('doctors').select('id').eq('user_id', userData.user.id).single();
+
+      const prescriptionData = {
+        patient_id: patient.id,
+        doctor_id: doctorData.id,
+        appointment_id: appointmentId,
+        diagnosis,
+        medications,
+        notes,
+        created_at: new Date().toISOString()
+      };
+
+      const { data: insertedData, error } = await supabase.from('prescriptions').insert([prescriptionData]).select();
+
+      if (error) throw error;
+
+      // Mark appointment as completed
+      if (appointmentId) {
+        const { error: updateError } = await supabase.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
+        if (updateError) console.error('Appointment Update Error:', updateError);
+      }
+
+      toast.success('Prescription shared and session completed! 🎉');
+      onClose();
+    } catch (error) {
+      console.error('Error saving prescription:', error);
+      const msg = error?.message || error?.details || 'Unknown error occurred';
+      toast.error(`Failed to save prescription: ${msg}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-0 md:p-8"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white/95 backdrop-blur-xl w-full h-full max-w-7xl md:h-[90vh] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border border-white/20"
+      >
+        {/* Modal Header */}
+        <div className="bg-white px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-plum-800 rounded-2xl flex items-center justify-center text-white font-black text-xl">
+              {patient.name?.[0] || 'P'}
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-gray-900 leading-tight">Patient Consultation</h2>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{patient.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <X size={24} className="text-gray-400" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+          {/* Left Sidebar: Patient Summary */}
+          <aside className="hidden md:block w-80 bg-white border-r border-gray-100 p-8 overflow-y-auto space-y-8">
+            <div>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Patient Details</h3>
+              <div className="space-y-4">
+                <PatientSummaryItem icon={<User size={14} />} label="Age" value={patient.age || "45 years"} />
+                <PatientSummaryItem icon={<Clock size={14} />} label="Phone" value={patient.phone} />
+                <PatientSummaryItem icon={<MapPin size={14} />} label="Address" value={patient.address || "456 Patient St"} />
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment</span>
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest">Paid</span>
+                </div>
+                <PatientSummaryItem icon={<Calendar size={14} />} label="Date" value={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} />
+                <PatientSummaryItem icon={<Video size={14} />} label="Type" value={isTelemedicine ? "Telemedicine" : "In-Person"} />
+              </div>
+
+              {isTelemedicine && (
+                <button
+                  onClick={() => router.push(`/doctor/telemedicine/room?id=${appointmentId}`)}
+                  className="w-full mt-4 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 active:scale-95"
+                >
+                  <Video size={16} /> Join Video Call
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsDetailsConfirmed(!isDetailsConfirmed)}
+                className={`w-full mt-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border ${isDetailsConfirmed
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-teal-600/10 text-teal-700 border-teal-200 hover:bg-teal-600 hover:text-white'
+                  }`}
+              >
+                {isDetailsConfirmed ? <><Check size={14} /> Details Confirmed</> : 'Confirm Details'}
+              </button>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 md:mb-4">Patient Profile</h3>
+              <p className="text-[10px] font-bold text-gray-400 leading-relaxed">Verification of patient identity and medical clearance is mandatory before proceeding with prescription sharing.</p>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col bg-[#F8FAFB] overflow-hidden">
+            {/* Tab Navigation */}
+            <div className="px-4 md:px-8 pt-6 md:pt-8 shrink-0">
+              <div className="bg-gray-100 p-1.5 rounded-[1.5rem] flex flex-wrap md:flex-nowrap gap-1.5 border border-gray-200/50 shadow-inner">
+                <TabButton
+                  active={activeTab === 'consultation'}
+                  onClick={() => setActiveTab('consultation')}
+                  label="Consultation"
+                />
+                <TabButton
+                  active={activeTab === 'prescription'}
+                  onClick={() => setActiveTab('prescription')}
+                  label="Prescription"
+                />
+                <TabButton
+                  active={activeTab === 'history'}
+                  onClick={() => setActiveTab('history')}
+                  label="History"
+                />
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto p-8 pt-6">
+              {activeTab === 'consultation' && (
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-50 pb-4">Diagnosis</h4>
+                    <textarea
+                      className="w-full h-64 bg-gray-50/50 rounded-2xl p-6 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-plum-500/20 text-gray-700 font-medium placeholder:text-gray-300 transition-all resize-none"
+                      placeholder="Enter diagnosis details..."
+                      value={diagnosis}
+                      onChange={(e) => setDiagnosis(e.target.value)}
+                    ></textarea>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'prescription' && (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <div className="flex justify-between items-center mb-6 border-b border-gray-50 pb-4">
+                      <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Write Prescription</h4>
+                      <button
+                        onClick={addMedication}
+                        className="p-2 bg-plum-50 text-plum-600 rounded-lg hover:bg-plum-100 transition-all"
+                      >
+                        <Plus size={18} />
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {medications.map((med, idx) => (
+                        <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                          <div className="md:col-span-3">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Medication</label>
+                            <input
+                              type="text"
+                              placeholder="Metformin 500mg"
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 transition-all"
+                              value={med.name}
+                              onChange={(e) => updateMedication(idx, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Dosage</label>
+                            <input
+                              type="text"
+                              placeholder="500mg"
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 transition-all"
+                              value={med.dosage}
+                              onChange={(e) => updateMedication(idx, 'dosage', e.target.value)}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Frequency</label>
+                            <select
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 transition-all cursor-pointer"
+                              value={med.frequency}
+                              onChange={(e) => updateMedication(idx, 'frequency', e.target.value)}
+                            >
+                              <option>OD (Once daily)</option>
+                              <option>BD (Twice daily)</option>
+                              <option>TDS (Three times daily)</option>
+                            </select>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Duration</label>
+                            <input
+                              type="text"
+                              placeholder="7 days"
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 transition-all"
+                              value={med.duration}
+                              onChange={(e) => updateMedication(idx, 'duration', e.target.value)}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Timing</label>
+                            <select
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 transition-all cursor-pointer"
+                              value={med.instructions}
+                              onChange={(e) => updateMedication(idx, 'instructions', e.target.value)}
+                            >
+                              <option>After food</option>
+                              <option>Before food</option>
+                              <option>With food</option>
+                            </select>
+                          </div>
+                          <div className="md:col-span-1">
+                            {medications.length > 1 && (
+                              <button
+                                onClick={() => setMedications(medications.filter((_, i) => i !== idx))}
+                                className="p-3 text-gray-300 hover:text-rose-500 transition-colors"
+                              >
+                                <X size={18} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-8">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Additional Instructions</label>
+                      <textarea
+                        className="w-full h-32 bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-plum-500/20 transition-all resize-none"
+                        placeholder="Other instructions..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                      ></textarea>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'history' && (
+                <div className="py-20 text-center opacity-40">
+                  <Clock size={48} className="mx-auto mb-4" />
+                  <p className="text-sm font-black uppercase tracking-widest">No previous history available</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white p-8 border-t border-gray-100 flex flex-wrap gap-4 items-center">
+              <button className="px-8 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest ml-auto hover:bg-gray-200 transition-all">
+                Save Draft
+              </button>
+              <button
+                onClick={handleSharePrescription}
+                disabled={isSaving}
+                className="px-10 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              >
+                {isSaving ? 'Sharing...' : <><Share2 size={14} /> Share Prescription</>}
+              </button>
+            </div>
+          </main>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// Modal Components
+function PatientSummaryItem({ icon, label, value }) {
+  return (
+    <div className="flex items-center justify-between text-slate-700">
+      <div className="flex items-center gap-3">
+        <div className="text-gray-400">{icon}</div>
+        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}:</span>
+      </div>
+      <span className="text-xs font-black text-gray-900">{value}</span>
+    </div>
+  );
+}
+
+
+function TabButton({ active, onClick, label }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 min-w-[100px] py-4 rounded-[1.25rem] font-black text-[10px] md:text-xs uppercase tracking-widest transition-all duration-300 ${active ? 'bg-white text-plum-800 shadow-lg shadow-plum-500/10' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-200/30'}`}
+    >
+      {label}
+    </button>
+  )
 }

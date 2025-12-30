@@ -2,22 +2,24 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, getVerifiedLabs, createLabBooking, getLabBookings } from '@/lib/supabase';
-import { FlaskConical, Search, Calendar, FileText, ArrowLeft, Check, Download } from 'lucide-react';
+import { FlaskConical, Search, Calendar, FileText, ArrowLeft, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { notifyLabTestBooked } from '@/lib/appointmentNotifications';
 
 export default function LabPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState(null);
   const [labs, setLabs] = useState([]);
   const [filteredLabs, setFilteredLabs] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLab, setSelectedLab] = useState(null);
+  const [locationSearch, setLocationSearch] = useState('');
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedLab, setSelectedLab] = useState(null);
   const [bookingData, setBookingData] = useState({
-    test_date: new Date().toISOString().split('T')[0],
     test_type: '',
+    test_date: '',
+    home_collection: false,
     notes: ''
   });
 
@@ -27,39 +29,47 @@ export default function LabPage() {
 
   useEffect(() => {
     filterLabs();
-  }, [labs, searchTerm]);
+  }, [labs, searchTerm, locationSearch]);
 
   const loadData = async () => {
-    const user = await getCurrentUser();
-    if (!user) {
-      router.push('/login');
-      return;
+    try {
+      const user = await getCurrentUser();
+      if (!user) return router.push('/login');
+
+      const [patientData, labsData, bookingsData] = await Promise.all([
+        getPatient(user.id).then(res => res.data),
+        getVerifiedLabs().then(res => res.data),
+        getLabBookings(user.id).then(res => res.data)
+      ]);
+
+      setPatient(patientData);
+      setLabs(labsData || []);
+      setFilteredLabs(labsData || []);
+      setMyBookings(bookingsData || []);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load labs');
+    } finally {
+      setLoading(false);
     }
-
-    const { data: patientData } = await getPatient(user.id);
-    if (!patientData) {
-      router.push('/complete-profile');
-      return;
-    }
-    setPatient(patientData);
-
-    const { data: labsData } = await getVerifiedLabs();
-    setLabs(labsData || []);
-
-    const { data: bookingsData } = await getLabBookings(patientData.id);
-    setMyBookings(bookingsData || []);
   };
 
   const filterLabs = () => {
-    if (!searchTerm) {
-      setFilteredLabs(labs);
-      return;
+    let filtered = labs;
+
+    if (searchTerm) {
+      filtered = filtered.filter(lab =>
+        lab.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lab.address?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
-    const filtered = labs.filter(lab =>
-      lab.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lab.address?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    if (locationSearch) {
+      filtered = filtered.filter(lab =>
+        lab.address?.toLowerCase().includes(locationSearch.toLowerCase())
+      );
+    }
+
     setFilteredLabs(filtered);
   };
 
@@ -68,94 +78,83 @@ export default function LabPage() {
       toast.error('Please select a test type');
       return;
     }
+    if (!bookingData.test_date) {
+      toast.error('Please select a test date');
+      return;
+    }
 
     try {
       await createLabBooking({
-        patient_id: patient.id,
+        patient_id: patient.user_id,
         lab_id: selectedLab.id,
         ...bookingData,
         status: 'pending'
       });
 
-      // Send notification
-      notifyLabTestBooked(bookingData, selectedLab);
-
       toast.success('Lab test booked successfully!');
       setShowBookingForm(false);
       setSelectedLab(null);
+      setBookingData({ test_type: '', test_date: '', home_collection: false, notes: '' });
       loadData();
     } catch (error) {
+      console.error('Error booking test:', error);
       toast.error('Error booking test: ' + error.message);
     }
   };
 
   const commonTests = [
-    'Complete Blood Count (CBC)',
-    'Lipid Profile',
-    'Liver Function Test (LFT)',
-    'Kidney Function Test (KFT)',
-    'Thyroid Profile',
-    'Blood Sugar (Fasting)',
-    'HbA1c',
-    'Vitamin D',
-    'Vitamin B12',
-    'Urine Routine'
+    { name: 'Complete Blood Count (CBC)', price: 15 },
+    { name: 'Lipid Profile', price: 25 },
+    { name: 'Liver Function Test (LFT)', price: 30 },
+    { name: 'Thyroid Profile (T3, T4, TSH)', price: 40 },
+    { name: 'HbA1c (Diabetes)', price: 20 },
+    { name: 'Vitamin D Total', price: 35 },
+    { name: 'Comprehensive Full Body Checkup', price: 99 },
   ];
 
-  if (!patient) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
-      <p className="text-gray-600">Loading...</p>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-plum-600"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50">
+    <div className="min-h-screen bg-surface font-sans text-slate-900 pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-emerald-100">
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/patient/dashboard')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-600"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-6 h-6" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Lab Tests</h1>
-              <p className="text-sm text-gray-600">Book lab tests and view reports</p>
+              <h1 className="text-2xl font-bold text-gray-900">Lab Tests & Diagnostics</h1>
+              <p className="text-sm text-gray-500">Book healthy checkups near you</p>
             </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        {/* My Bookings */}
+
+        {/* My Bookings Preview */}
         {myBookings.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">My Lab Bookings</h2>
-            <div className="space-y-4">
-              {myBookings.slice(0, 3).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="p-4 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl border border-emerald-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-gray-900">{booking.labs?.name || 'Lab'}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{booking.test_type}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {booking.test_date}
-                        </div>
-                      </div>
-                    </div>
-                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${booking.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                      {booking.status}
-                    </span>
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Recent Bookings</h2>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {myBookings.slice(0, 2).map((booking) => (
+                <div key={booking.id} className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-gray-900">{booking.labs?.name || 'Lab Partner'}</p>
+                    <p className="text-xs text-gray-500">{booking.test_type}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-plum-700 bg-plum-50 px-2 py-1 rounded-lg capitalize">{booking.status}</p>
                   </div>
                 </div>
               ))}
@@ -163,64 +162,79 @@ export default function LabPage() {
           </div>
         )}
 
-        {/* Search */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search labs by name or location..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            />
+        {/* Search and Filter */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search labs, tests..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 transition-all font-medium"
+              />
+            </div>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Location (e.g. Downtown)"
+                value={locationSearch}
+                onChange={(e) => setLocationSearch(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 transition-all font-medium"
+              />
+            </div>
           </div>
         </div>
 
         {/* Labs Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLabs.length === 0 ? (
-            <div className="col-span-full text-center py-12 bg-white rounded-2xl shadow-lg">
-              <FlaskConical className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">No labs found</p>
+            <div className="col-span-full text-center py-20">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FlaskConical className="w-10 h-10 text-gray-400" />
+              </div>
+              <p className="text-gray-500 font-medium">No labs found</p>
             </div>
           ) : (
             filteredLabs.map((lab) => (
               <div
                 key={lab.id}
-                className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all"
+                className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-plum-100 transition-all group"
               >
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-bold text-2xl flex-shrink-0 shadow-lg shadow-teal-500/20">
                     {lab.name?.charAt(0) || 'L'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-gray-900 truncate">{lab.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-teal-700 transition-colors">{lab.name}</h3>
                     {lab.verified && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        <span className="text-xs text-emerald-600 font-semibold">Verified</span>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Check className="w-3.5 h-3.5 text-teal-500" />
+                        <span className="text-xs text-gray-500 font-medium">Verified Partner</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {lab.address && (
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{lab.address}</p>
-                )}
-
-                {lab.phone && (
-                  <p className="text-sm text-gray-700 mb-4">
-                    <span className="font-semibold">Phone:</span> {lab.phone}
+                <div className="space-y-3 mb-6">
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <FileText size={16} className="text-gray-400" />
+                    Tests starting from <span className="font-bold text-gray-900">$15</span>
                   </p>
-                )}
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <Calendar size={16} className="text-gray-400" />
+                    Home Collection Available
+                  </p>
+                </div>
 
                 <button
                   onClick={() => {
                     setSelectedLab(lab);
                     setShowBookingForm(true);
                   }}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all"
+                  className="w-full bg-teal-600 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20"
                 >
                   Book Test
                 </button>
@@ -231,65 +245,83 @@ export default function LabPage() {
 
         {/* Booking Modal */}
         {showBookingForm && selectedLab && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowBookingForm(false)}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">Book Lab Test</h2>
-                <p className="text-gray-600">{selectedLab.name}</p>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setShowBookingForm(false)}>
+            <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-xl font-bold text-gray-900">Book Lab Test</h2>
+                <p className="text-sm text-gray-500">{selectedLab.name}</p>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Test Date</label>
-                  <input
-                    type="date"
-                    value={bookingData.test_date}
-                    onChange={(e) => setBookingData({ ...bookingData, test_date: e.target.value })}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Test Type</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Select Test</label>
                   <select
                     value={bookingData.test_type}
                     onChange={(e) => setBookingData({ ...bookingData, test_type: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none font-medium bg-white"
                   >
-                    <option value="">Select a test</option>
+                    <option value="">Choose a test...</option>
                     {commonTests.map(test => (
-                      <option key={test} value={test}>{test}</option>
+                      <option key={test.name} value={test.name}>
+                        {test.name} - ${test.price}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Additional Notes (Optional)</label>
-                  <textarea
-                    value={bookingData.notes}
-                    onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
-                    placeholder="Any special instructions or requirements..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
-                    rows="3"
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={bookingData.test_date}
+                    onChange={(e) => setBookingData({ ...bookingData, test_date: e.target.value })}
+                    min={new Date().toLocaleDateString('en-CA')}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-sm font-medium"
                   />
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={handleBookTest}
-                    className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
-                  >
-                    Confirm Booking
-                  </button>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">Home Collection</p>
+                    <p className="text-xs text-gray-500">Sample picked from your home</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bookingData.home_collection}
+                      onChange={(e) => setBookingData({ ...bookingData, home_collection: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Notes</label>
+                  <textarea
+                    value={bookingData.notes}
+                    onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
+                    placeholder="Instructions..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-sm"
+                    rows="2"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => {
                       setShowBookingForm(false);
                       setSelectedLab(null);
                     }}
-                    className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                    className="flex-1 bg-gray-100 text-gray-600 px-6 py-3.5 rounded-xl font-bold hover:bg-gray-200 transition-colors"
                   >
                     Cancel
+                  </button>
+                  <button
+                    onClick={handleBookTest}
+                    className="flex-1 bg-teal-600 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/20"
+                  >
+                    Confirm Booking
                   </button>
                 </div>
               </div>

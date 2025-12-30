@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getDoctor, getDoctorPatients } from '@/lib/supabase';
+import { getCurrentUser, getDoctor, getDoctorPatients, supabase } from '@/lib/supabase';
 import { Users, Search, Calendar, FileText, Activity, ArrowLeft, Phone, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -35,21 +35,34 @@ export default function PatientsPage() {
         }
         setDoctor(doctorData);
 
-        const { data: patientsData } = await getDoctorPatients(doctorData.id);
-        // Group by unique patients
-        const uniquePatients = [];
+        // Try getting assigned patients first
+        let { data: patientsData } = await getDoctorPatients(doctorData.id);
+
+        let uniquePatients = [];
         const patientIds = new Set();
 
-        (patientsData || []).forEach(apt => {
-            if (apt.patients && !patientIds.has(apt.patients.id)) {
-                patientIds.add(apt.patients.id);
-                uniquePatients.push({
-                    ...apt.patients,
-                    lastVisit: apt.appointment_date,
-                    appointmentCount: (patientsData || []).filter(a => a.patient_id === apt.patients.id).length
-                });
+        if (patientsData && patientsData.length > 0) {
+            (patientsData || []).forEach(apt => {
+                if (apt.patients && !patientIds.has(apt.patients.id)) {
+                    patientIds.add(apt.patients.id);
+                    uniquePatients.push({
+                        ...apt.patients,
+                        lastVisit: apt.appointment_date,
+                        appointmentCount: (patientsData || []).filter(a => a.patient_id === apt.patients.id).length
+                    });
+                }
+            });
+        } else {
+            // Fallback: Fetch ALL patients for directory view if no appointments exist
+            const { data: allPatients } = await supabase.from('patients').select('*');
+            if (allPatients) {
+                uniquePatients = allPatients.map(p => ({
+                    ...p,
+                    lastVisit: 'No visits yet',
+                    appointmentCount: 0
+                }));
             }
-        });
+        }
 
         setPatients(uniquePatients);
     };
@@ -217,7 +230,10 @@ export default function PatientsPage() {
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-900">{selectedPatient.name}</h2>
-                                        <p className="text-gray-600">Patient ID: {selectedPatient.id}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="w-2 h-2 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.4)]" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Verified HealthON Patient</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

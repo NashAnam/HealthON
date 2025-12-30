@@ -29,22 +29,22 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Decorations */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-100 rounded-full blur-[100px] -ml-20 -mt-20 opacity-50"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-violet-100 rounded-full blur-[100px] -mr-20 -mb-20 opacity-50"></div>
+      <div className="absolute top-0 left-0 w-96 h-96 bg-plum-100 rounded-full blur-[100px] -ml-20 -mt-20 opacity-50"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-teal-100 rounded-full blur-[100px] -mr-20 -mb-20 opacity-50"></div>
 
-      <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl shadow-slate-200/50 border border-slate-100 p-10 relative z-10 text-center">
+      <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-[32px] shadow-2xl shadow-plum-200/50 border border-white/50 p-10 relative z-10 text-center">
 
-        <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-indigo-600/20">
+        <div className="w-16 h-16 bg-gradient-to-br from-plum-600 to-plum-800 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-plum-600/20">
           <Activity className="w-8 h-8 text-white" />
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-3">Welcome Back</h1>
-        <p className="text-slate-500 mb-10 text-lg">Sign in to access your health dashboard</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-3 block">Welcome Back</h1>
+        <p className="text-gray-500 mb-10 text-lg">Sign in to access your health dashboard</p>
 
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 transform hover:-translate-y-0.5"
+          className="w-full bg-plum-700 hover:bg-plum-800 text-white py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:shadow-plum-700/30 disabled:opacity-50 transform hover:-translate-y-0.5"
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

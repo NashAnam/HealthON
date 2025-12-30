@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, saveVitals, getLatestVitals } from '@/lib/supabase';
+import { getCurrentUser, getPatient, createVitals, getLatestVitals } from '@/lib/supabase';
 import { Activity, Heart, Droplet, Save, ChevronLeft, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -58,7 +58,7 @@ export default function VitalsPage() {
                 // Height and Weight are not logged daily anymore
             };
 
-            const { error } = await saveVitals(patient.id, numericVitals);
+            const { error } = await createVitals({ ...numericVitals, patient_id: patient.user_id });
             if (error) throw error;
 
             toast.success('Vitals logged successfully!');

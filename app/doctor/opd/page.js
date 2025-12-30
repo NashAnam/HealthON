@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCurrentUser, getDoctor, getDoctorAppointments, createAppointment } from '@/lib/supabase';
 import { Calendar, Clock, Plus, Search, Filter, User, Phone, Mail, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function OpdPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [doctor, setDoctor] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
@@ -17,11 +18,18 @@ export default function OpdPage() {
     patient_name: '',
     patient_phone: '',
     patient_email: '',
-    appointment_date: new Date().toISOString().split('T')[0],
+    appointment_date: new Date().toLocaleDateString('en-CA'),
     appointment_time: '',
     consultation_type: 'in-person',
     reason: ''
   });
+
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam) {
+      setFilterStatus(statusParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadOpdData();
@@ -78,7 +86,7 @@ export default function OpdPage() {
   };
 
   const getTodayAppointments = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     return appointments.filter(apt => apt.appointment_date === today);
   };
 
@@ -306,9 +314,9 @@ export default function OpdPage() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${appointment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                            appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
+                        appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
+                          appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
                         }`}>
                         {appointment.status}
                       </span>
