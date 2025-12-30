@@ -131,7 +131,7 @@ export default function DoctorBookingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-surface font-sans text-slate-900 pb-20">
+    <div className="min-h-screen bg-surface font-sans text-slate-900 pb-20 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
         <div className="container mx-auto px-6 py-4">
