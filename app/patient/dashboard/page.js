@@ -33,27 +33,27 @@ function DashboardHeader({ patient }) {
     };
 
     return (
-        <div className="flex items-center justify-between mb-8 relative z-[90]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8 relative z-[90]">
             <div>
-                <h1 className="text-3xl font-black text-gray-900 leading-tight">Welcome back, <span className="text-plum-800">{patient?.name?.split(' ')[0] || 'User'}</span>!</h1>
-                <p className="text-gray-500 font-medium">Here's your health overview for today. Stay active and healthy! 👋</p>
+                <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">Welcome back, <span className="text-plum-800">{patient?.name?.split(' ')[0] || 'User'}</span>!</h1>
+                <p className="text-gray-500 text-sm md:text-base font-medium">Here's your health overview for today.</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
                 {/* Sidebar Toggle - BESIDE PROFILE */}
                 <button
                     onClick={toggle}
-                    className="p-3 bg-white text-plum-900 rounded-full shadow-sm border border-gray-100 active:scale-95 transition-all hover:bg-plum-50"
+                    className="md:hidden p-2 bg-white text-plum-900 rounded-lg shadow-sm border border-gray-100"
                 >
-                    <MoreHorizontal size={24} />
+                    <MoreHorizontal size={20} />
                 </button>
 
-                <div className="relative">
+                <div className="relative ml-auto md:ml-0">
                     <button
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-4 hover:opacity-80 transition-all cursor-pointer z-[95] bg-white p-2 pr-4 rounded-2xl border border-gray-100 shadow-sm"
+                        className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer z-[95] bg-white p-1.5 md:p-2 pr-3 md:pr-4 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm"
                     >
-                        <div className="w-12 h-12 rounded-full bg-plum-100 flex items-center justify-center text-plum-800 font-black border-2 border-white shadow-sm overflow-hidden text-xl">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-plum-100 flex items-center justify-center text-plum-800 font-black border-2 border-white shadow-sm overflow-hidden text-lg md:text-xl">
                             {patient?.name?.[0] || 'N'}
                         </div>
                         <div className="text-left hidden md:block">
@@ -61,7 +61,6 @@ function DashboardHeader({ patient }) {
                             <div className="flex items-center gap-2">
                                 <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Verified Patient</p>
                                 <span className="w-1 h-1 rounded-full bg-teal-200"></span>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Secure Profile</p>
                             </div>
                         </div>
                         <ChevronDown size={16} className={`text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
@@ -262,7 +261,7 @@ export default function PatientDashboard() {
             </div>
 
             {/* Trends Section */}
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 mb-10">
+            <div className="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-gray-100 mb-10 overflow-hidden w-full">
                 <div className="flex items-center justify-between mb-8 overflow-x-auto">
                     <div className="flex gap-2">
                         {['weekly', 'heart', 'sleep', 'activity'].map(tab => (
