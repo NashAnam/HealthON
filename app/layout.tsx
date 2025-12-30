@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://careon-indol.vercel.app',
+    url: 'https://healthon.app',
     siteName: 'HealthOn',
     title: 'HealthOn | Your Complete Digital Healthcare Companion',
     description: 'Manage your health journey with HealthOn. Book doctors, track vitals, schedule lab tests, and access prescriptions.',
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
   alternates: {
-    canonical: 'https://careon-indol.vercel.app',
+    canonical: 'https://healthon.app',
   },
 }
 

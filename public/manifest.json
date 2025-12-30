@@ -4,8 +4,8 @@
     "description": "Complete Healthcare Platform",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#4F46E5",
+    "background_color": "#F8FAFC",
+    "theme_color": "#5D2A42",
     "orientation": "portrait",
     "icons": [
         {
