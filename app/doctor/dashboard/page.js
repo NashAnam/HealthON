@@ -371,17 +371,17 @@ function StatCard({ label, value, icon, color, delay = 0, onClick }) {
 
 function AppointmentCard({ apt, idx, onStart }) {
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-5 bg-white rounded-3xl border border-gray-100 hover:border-plum-200 hover:shadow-lg hover:shadow-plum-500/5 transition-all group gap-4 md:gap-0">
-      <div className="flex items-center gap-4 md:gap-5 w-full md:w-auto">
-        <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-plum-100 to-plum-50 flex items-center justify-center text-plum-800 font-black shadow-inner border border-plum-100 overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 bg-white rounded-3xl border border-gray-100 hover:border-plum-200 hover:shadow-lg hover:shadow-plum-500/5 transition-all group gap-4 relative overflow-hidden">
+      <div className="flex items-center gap-4 w-full lg:w-auto z-10">
+        <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-2xl bg-gradient-to-br from-plum-100 to-plum-50 flex items-center justify-center text-plum-800 font-black shadow-inner border border-plum-100 overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
           {apt.patients?.avatar_url ? <img src={apt.patients.avatar_url} className="w-full h-full object-cover" /> : apt.patients?.name?.[0] || 'P'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-black text-gray-900 text-lg md:text-xl truncate tracking-tight">{apt.patients?.name || `Patient-${idx + 1}`}</p>
+            <p className="font-black text-gray-900 text-base lg:text-xl truncate tracking-tight">{apt.patients?.name || `Patient-${idx + 1}`}</p>
             {apt.consultation_type === 'telemedicine' && (
-              <div className="p-1 px-2 bg-teal-50 rounded-lg flex items-center gap-1">
-                <Video size={12} className="text-teal-600" />
+              <div className="p-1 px-2 bg-teal-50 rounded-lg flex items-center gap-1 shrink-0">
+                <Video size={10} className="text-teal-600" />
                 <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest hidden xs:block">Video</span>
               </div>
             )}
@@ -390,19 +390,20 @@ function AppointmentCard({ apt, idx, onStart }) {
             <div className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <Clock size={12} className="text-plum-400" /> {apt.appointment_time}
             </div>
-            <div className="hidden md:block w-1 h-1 bg-gray-300 rounded-full" />
+            <div className="hidden lg:block w-1 h-1 bg-gray-300 rounded-full" />
             <div className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <Video size={12} className="text-gray-400" /> {apt.consultation_type || 'In-Person'}
             </div>
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end border-t md:border-t-0 pt-4 md:pt-0">
-        <span className="hidden xs:inline-block px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100 shadow-sm">Confirmed</span>
-        <button className="px-4 md:px-6 py-2.5 bg-white text-gray-600 rounded-xl font-black text-[10px] uppercase tracking-widest border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Details</button>
+
+      <div className="flex items-center gap-2 w-full lg:w-auto justify-end border-t border-gray-50 lg:border-t-0 pt-3 lg:pt-0 z-10">
+        <span className="hidden sm:inline-block px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-teal-100 shadow-sm">Confirmed</span>
+        <button className="flex-1 lg:flex-none px-4 py-2.5 bg-white text-gray-600 rounded-xl font-black text-[10px] uppercase tracking-widest border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Details</button>
         <button
           onClick={onStart}
-          className="flex-1 md:flex-none px-6 md:px-10 py-3 bg-plum-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-plum-800/30 group-hover:shadow-plum-800/40 relative overflow-hidden"
+          className="flex-1 lg:flex-none px-6 lg:px-10 py-2.5 lg:py-3 bg-plum-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-plum-800/30 group-hover:shadow-plum-800/40 relative overflow-hidden"
         >
           <span className="relative z-10">Start Session</span>
           <div className="absolute inset-0 bg-gradient-to-r from-plum-600 to-plum-800 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -414,20 +415,20 @@ function AppointmentCard({ apt, idx, onStart }) {
 
 function RequestCard({ req, idx, onView, onConfirm }) {
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-5 bg-white rounded-3xl border border-amber-100 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5 transition-all gap-4 md:gap-0">
-      <div className="flex items-center gap-4 md:gap-5 w-full md:w-auto">
-        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 font-black shadow-inner border border-amber-100 shrink-0">
+    <div className="flex flex-col lg:flex-row items-center justify-between p-4 bg-white rounded-3xl border border-amber-100 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/5 transition-all gap-4">
+      <div className="flex items-center gap-4 w-full lg:w-auto">
+        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 font-black shadow-inner border border-amber-100 shrink-0">
           {req.patients?.name?.[0] || 'P'}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-black text-gray-900 text-base md:text-lg truncate">{req.patients?.name || `Patient-${idx + 1}`}</p>
+          <p className="font-black text-gray-900 text-base lg:text-lg truncate">{req.patients?.name || `Patient-${idx + 1}`}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
             <div className="flex items-center gap-1 text-[10px] font-black text-amber-600 uppercase tracking-widest">
               <Clock size={12} /> Requested: {req.appointment_time || 'Next Slot'}
             </div>
             {req.consultation_type === 'telemedicine' && (
               <>
-                <div className="hidden md:block w-1 h-1 bg-amber-200 rounded-full" />
+                <div className="hidden lg:block w-1 h-1 bg-amber-200 rounded-full" />
                 <div className="flex items-center gap-1 text-[10px] font-black text-teal-600 uppercase tracking-widest">
                   <Video size={12} /> Video
                 </div>
@@ -436,10 +437,10 @@ function RequestCard({ req, idx, onView, onConfirm }) {
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
-        <span className="hidden xs:inline-block px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 mr-2">New</span>
-        <button onClick={onView} className="px-4 md:px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all">Decline</button>
-        <button onClick={onConfirm} className="flex-1 md:flex-none px-6 md:px-8 py-2.5 bg-teal-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">Confirm</button>
+      <div className="flex items-center gap-2 w-full lg:w-auto justify-end border-t border-amber-100/50 lg:border-t-0 pt-3 lg:pt-0">
+        <span className="hidden sm:inline-block px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 mr-2">New</span>
+        <button onClick={onView} className="px-4 lg:px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all">Decline</button>
+        <button onClick={onConfirm} className="flex-1 lg:flex-none px-6 lg:px-8 py-2.5 bg-teal-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">Confirm</button>
       </div>
     </div>
   );

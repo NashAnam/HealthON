@@ -243,13 +243,15 @@ export default function PatientDashboard() {
             </div>
 
             {/* Bookings Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 w-full">
                 <ActionCard
                     icon={Calendar}
                     title="Book Appointment"
                     subtitle="Schedule with specialists"
                     onClick={() => router.push('/patient/doctor-booking')}
                     color="bg-teal-600"
+                    variant="horizontal"
+                    fullWidth
                 />
                 <ActionCard
                     icon={Microscope}
@@ -257,6 +259,8 @@ export default function PatientDashboard() {
                     subtitle="Diagnostics & Screenings"
                     onClick={() => router.push('/patient/reports?tab=labs')}
                     color="bg-plum-700"
+                    variant="horizontal"
+                    fullWidth
                 />
             </div>
 
@@ -359,21 +363,29 @@ export default function PatientDashboard() {
     );
 }
 
-function ActionCard({ icon: Icon, title, subtitle, onClick, color, active, fullWidth }) {
+function ActionCard({ icon: Icon, title, subtitle, onClick, color, active, fullWidth, variant = 'vertical' }) {
+    // variant: 'vertical' (icon top) or 'horizontal' (icon left)
+    const isHorizontal = variant === 'horizontal';
+
     return (
         <button
             onClick={onClick}
-            className={`p-3 md:p-6 rounded-2xl md:rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : 'w-full min-w-0'}`}
+            className={`p-4 md:p-6 rounded-2xl md:rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : 'w-full min-w-0'}`}
         >
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 relative z-10">
-                <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl ${active ? 'bg-gray-100 text-gray-400' : color + ' text-white shadow-lg'} group-hover:scale-110 transition-transform`}>
+            <div className={`flex ${isHorizontal ? 'flex-row items-center' : 'flex-col md:flex-row items-start md:items-center'} gap-3 md:gap-4 relative z-10`}>
+                <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl ${active ? 'bg-gray-100 text-gray-400' : color + ' text-white shadow-lg'} group-hover:scale-110 transition-transform shrink-0`}>
                     <Icon className="w-5 h-5 md:w-6 md:h-6" />
                 </div>
-                <div>
-                    <h4 className="font-black text-xs md:text-base text-gray-900 leading-tight">{title}</h4>
-                    <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">{subtitle}</p>
+                <div className="min-w-0 flex-1">
+                    <h4 className="font-black text-sm md:text-base text-gray-900 leading-tight truncate">{title}</h4>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest truncate">{subtitle}</p>
                 </div>
-                <ChevronRight className="ml-auto text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all hidden md:block" size={20} />
+                {isHorizontal && (
+                    <ChevronRight className="text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all shrink-0" size={20} />
+                )}
+                {!isHorizontal && (
+                    <ChevronRight className="ml-auto text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all hidden md:block" size={20} />
+                )}
             </div>
         </button>
     );

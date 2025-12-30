@@ -275,7 +275,7 @@ export default function ActionPlanPage() {
     const currentDayData = plan.find(d => d.day === selectedDay);
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] p-4 md:p-8 font-sans text-slate-900 transition-all duration-300">
+        <div className="min-h-screen bg-[#F8FAFB] p-4 md:p-8 font-sans text-slate-900 transition-all duration-300 overflow-x-hidden">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center md:justify-between gap-4 mb-8">
@@ -402,7 +402,7 @@ export default function ActionPlanPage() {
             {/* Integration Section */}
             <div className="mt-12 bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm overflow-hidden relative group hover:shadow-xl transition-all">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-teal-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
                     <div>
                         <h3 className="text-xl font-black text-gray-900 mb-2">Detailed Goals Setup</h3>
                         <p className="text-sm text-gray-500 font-medium">Create custom milestones based on your Action Plan to earn Power Points.</p>

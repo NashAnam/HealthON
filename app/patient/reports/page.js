@@ -114,9 +114,9 @@ ${comments || 'Staying committed to my health journey!'}`,
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFB]"><div className="w-12 h-12 border-4 border-plum-200 border-t-plum-800 rounded-full animate-spin"></div></div>;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] font-sans text-slate-900 pb-20">
+        <div className="min-h-screen bg-[#F8FAFB] font-sans text-slate-900 pb-20 overflow-x-hidden">
             {/* Compact Internal Header for Mobile Only */}
-            <div className="lg:hidden bg-white border-b border-gray-100 px-6 py-4 mb-4">
+            <div className="lg:hidden bg-white border-b border-gray-100 px-4 py-4 mb-4">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.replace('/patient/dashboard')} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                         <ArrowLeft className="w-5 h-5 text-gray-900" />
