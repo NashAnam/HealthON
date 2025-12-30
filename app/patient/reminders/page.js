@@ -190,10 +190,10 @@ export default function RemindersPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 w-full pb-32 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-blue-100">
-        <div className="container mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/patient/dashboard')}
@@ -214,7 +214,7 @@ export default function RemindersPage() {
                   toast.error('Permission denied. Please enable notifications in your browser settings.');
                 }
               }}
-              className="ml-auto text-xs font-black uppercase tracking-widest text-plum-600 bg-plum-50 px-4 py-2 rounded-lg border border-plum-100 hover:bg-plum-100 transition-all"
+              className="ml-auto hidden md:block text-xs font-black uppercase tracking-widest text-plum-600 bg-plum-50 px-4 py-2 rounded-lg border border-plum-100 hover:bg-plum-100 transition-all"
             >
               Test Notifications
             </button>
@@ -222,7 +222,7 @@ export default function RemindersPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Add Reminder Button */}
         <div className="mb-6">
           <button

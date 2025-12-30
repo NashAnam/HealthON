@@ -191,7 +191,7 @@ export default function PatientDashboard() {
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFB]"><div className="w-12 h-12 border-4 border-plum-200 border-t-plum-800 rounded-full animate-spin"></div></div>;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] p-4 md:p-8 font-sans text-slate-900 relative overflow-hidden">
+        <div className="min-h-screen bg-[#F8FAFB] font-sans text-slate-900 relative overflow-x-hidden pb-32">
             {/* Dynamic Background Glows */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
                 <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/40 rounded-full blur-[120px]" />
@@ -199,166 +199,169 @@ export default function PatientDashboard() {
                 <div className="absolute -bottom-[10%] left-[20%] w-[30%] h-[30%] bg-blue-50/40 rounded-full blur-[100px]" />
             </div>
 
-            <DashboardHeader patient={patient} />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
 
-            {/* Quick Actions Row - High Density Mobile */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
-                <ActionCard
-                    icon={Watch}
-                    title="Watch"
-                    subtitle="Sync"
-                    onClick={connectWatch}
-                    color="bg-plum-800"
-                    active={isConnectingWatch}
-                />
-                <ActionCard
-                    icon={Activity}
-                    title="Assess"
-                    subtitle="Risk Score"
-                    onClick={() => router.push('/patient/assessment')}
-                    color="bg-teal-500"
-                />
-                <ActionCard
-                    icon={Zap}
-                    title="Plan"
-                    subtitle="7-Day"
-                    onClick={() => router.push(assessment ? '/patient/action-plan' : '/patient/assessment')}
-                    color="bg-emerald-600"
-                />
-                <ActionCard
-                    icon={Activity}
-                    title="Track"
-                    subtitle="Goals"
-                    onClick={() => router.push('/patient/goals')}
-                    color="bg-indigo-600"
-                />
-            </div>
+                <DashboardHeader patient={patient} />
 
-            {/* Daily Stats Grid - High Density Mobile */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
-                <StatTile icon={Heart} label="Heart" value={vitals?.heart_rate ? `${vitals.heart_rate}` : '--'} subtitle="BPM" color="rose" progress={vitals?.heart_rate ? Math.min((vitals.heart_rate / 200) * 100, 100) : 0} />
-                <StatTile icon={Timer} label="Sleep" value={vitals?.sleep_hours ? `${vitals.sleep_hours}` : '--'} subtitle="Hours" color="indigo" progress={vitals?.sleep_hours ? Math.min((vitals.sleep_hours / 12) * 100, 100) : 0} />
-                <StatTile icon={Footprints} label="Steps" value={vitals?.steps ? (vitals.steps > 999 ? `${(vitals.steps / 1000).toFixed(1)}k` : vitals.steps) : '--'} subtitle="Steps" color="plum" progress={vitals?.steps ? Math.min((vitals.steps / 10000) * 100, 100) : 0} />
-                <StatTile icon={Activity} label="Active" value={vitals?.active_minutes ? `${vitals.active_minutes}` : '--'} subtitle="Mins" color="teal" progress={vitals?.active_minutes ? Math.min((vitals.active_minutes / 180) * 100, 100) : 0} />
-            </div>
-
-            {/* Bookings Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 w-full">
-                <ActionCard
-                    icon={Calendar}
-                    title="Book Appointment"
-                    subtitle="Schedule with specialists"
-                    onClick={() => router.push('/patient/doctor-booking')}
-                    color="bg-teal-600"
-                    variant="horizontal"
-                    fullWidth
-                />
-                <ActionCard
-                    icon={Microscope}
-                    title="Book Lab Test"
-                    subtitle="Diagnostics & Screenings"
-                    onClick={() => router.push('/patient/reports?tab=labs')}
-                    color="bg-plum-700"
-                    variant="horizontal"
-                    fullWidth
-                />
-            </div>
-
-            {/* Trends Section */}
-            <div className="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-gray-100 mb-10 overflow-hidden w-full">
-                <div className="flex items-center justify-between mb-8 overflow-x-auto">
-                    <div className="flex gap-2">
-                        {['weekly', 'heart', 'sleep', 'activity'].map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-plum-800 text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {tab === 'weekly' ? 'Weekly Overview' : tab === 'heart' ? 'Heart Rate' : tab === 'sleep' ? 'Sleep' : 'Activity'}
-                            </button>
-                        ))}
-                    </div>
-                    <button
-                        onClick={() => setShowManualLog(true)}
-                        className="flex items-center gap-2 px-6 py-3.5 bg-white text-emerald-600 border-2 border-emerald-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm hover:shadow-md"
-                    >
-                        <Plus size={18} /> Add Manual Vitals
-                    </button>
+                {/* Quick Actions Row - High Density Mobile */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 md:mb-10">
+                    <ActionCard
+                        icon={Watch}
+                        title="Watch"
+                        subtitle="Sync"
+                        onClick={connectWatch}
+                        color="bg-plum-800"
+                        active={isConnectingWatch}
+                    />
+                    <ActionCard
+                        icon={Activity}
+                        title="Assess"
+                        subtitle="Risk Score"
+                        onClick={() => router.push('/patient/assessment')}
+                        color="bg-teal-500"
+                    />
+                    <ActionCard
+                        icon={Zap}
+                        title="Plan"
+                        subtitle="7-Day"
+                        onClick={() => router.push(assessment ? '/patient/action-plan' : '/patient/assessment')}
+                        color="bg-emerald-600"
+                    />
+                    <ActionCard
+                        icon={Activity}
+                        title="Track"
+                        subtitle="Goals"
+                        onClick={() => router.push('/patient/goals')}
+                        color="bg-indigo-600"
+                    />
                 </div>
 
-                <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        {history.length > 0 ? (
-                            activeTab === 'weekly' || activeTab === 'heart' ? (
-                                <AreaChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), value: h.heart_rate, value2: h.systolic_bp }))}>
-                                    <defs>
-                                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#602E5A" stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor="#602E5A" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
-                                    <YAxis hide />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Area type="monotone" dataKey="value" name="Heart Rate" stroke="#602E5A" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" dot={{ r: 4, fill: '#602E5A', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                                    <Area type="monotone" dataKey="value2" name="BP Sys" stroke="#649488" strokeWidth={2} fillOpacity={0} dot={{ r: 3, fill: '#649488' }} />
-                                </AreaChart>
-                            ) : activeTab === 'activity' ? (
-                                <BarChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), calories: h.calories, minutes: h.active_minutes }))} barGap={8}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
-                                    <YAxis hide />
-                                    <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
-                                    <Bar dataKey="calories" name="Calories" fill="#602E5A" radius={[4, 4, 0, 0]} barSize={12} />
-                                    <Bar dataKey="minutes" name="Minutes" fill="#649488" radius={[4, 4, 0, 0]} barSize={12} />
-                                </BarChart>
+                {/* Daily Stats Grid - High Density Mobile */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 md:mb-10">
+                    <StatTile icon={Heart} label="Heart" value={vitals?.heart_rate ? `${vitals.heart_rate}` : '--'} subtitle="BPM" color="rose" progress={vitals?.heart_rate ? Math.min((vitals.heart_rate / 200) * 100, 100) : 0} />
+                    <StatTile icon={Timer} label="Sleep" value={vitals?.sleep_hours ? `${vitals.sleep_hours}` : '--'} subtitle="Hours" color="indigo" progress={vitals?.sleep_hours ? Math.min((vitals.sleep_hours / 12) * 100, 100) : 0} />
+                    <StatTile icon={Footprints} label="Steps" value={vitals?.steps ? (vitals.steps > 999 ? `${(vitals.steps / 1000).toFixed(1)}k` : vitals.steps) : '--'} subtitle="Steps" color="plum" progress={vitals?.steps ? Math.min((vitals.steps / 10000) * 100, 100) : 0} />
+                    <StatTile icon={Activity} label="Active" value={vitals?.active_minutes ? `${vitals.active_minutes}` : '--'} subtitle="Mins" color="teal" progress={vitals?.active_minutes ? Math.min((vitals.active_minutes / 180) * 100, 100) : 0} />
+                </div>
+
+                {/* Bookings Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-10 w-full">
+                    <ActionCard
+                        icon={Calendar}
+                        title="Book Appointment"
+                        subtitle="Schedule with specialists"
+                        onClick={() => router.push('/patient/doctor-booking')}
+                        color="bg-teal-600"
+                        variant="horizontal"
+                        fullWidth
+                    />
+                    <ActionCard
+                        icon={Microscope}
+                        title="Book Lab Test"
+                        subtitle="Diagnostics & Screenings"
+                        onClick={() => router.push('/patient/reports?tab=labs')}
+                        color="bg-plum-700"
+                        variant="horizontal"
+                        fullWidth
+                    />
+                </div>
+
+                {/* Trends Section */}
+                <div className="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-gray-100 mb-10 overflow-hidden w-full">
+                    <div className="flex items-center justify-between mb-8 overflow-x-auto">
+                        <div className="flex gap-2">
+                            {['weekly', 'heart', 'sleep', 'activity'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-plum-800 text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    {tab === 'weekly' ? 'Weekly Overview' : tab === 'heart' ? 'Heart Rate' : tab === 'sleep' ? 'Sleep' : 'Activity'}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setShowManualLog(true)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-white text-emerald-600 border-2 border-emerald-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm hover:shadow-md"
+                        >
+                            <Plus size={18} /> Add Manual Vitals
+                        </button>
+                    </div>
+
+                    <div className="h-[400px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            {history.length > 0 ? (
+                                activeTab === 'weekly' || activeTab === 'heart' ? (
+                                    <AreaChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), value: h.heart_rate, value2: h.systolic_bp }))}>
+                                        <defs>
+                                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#602E5A" stopOpacity={0.1} />
+                                                <stop offset="95%" stopColor="#602E5A" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
+                                        <YAxis hide />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Area type="monotone" dataKey="value" name="Heart Rate" stroke="#602E5A" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" dot={{ r: 4, fill: '#602E5A', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                                        <Area type="monotone" dataKey="value2" name="BP Sys" stroke="#649488" strokeWidth={2} fillOpacity={0} dot={{ r: 3, fill: '#649488' }} />
+                                    </AreaChart>
+                                ) : activeTab === 'activity' ? (
+                                    <BarChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), calories: h.calories, minutes: h.active_minutes }))} barGap={8}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
+                                        <YAxis hide />
+                                        <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
+                                        <Bar dataKey="calories" name="Calories" fill="#602E5A" radius={[4, 4, 0, 0]} barSize={12} />
+                                        <Bar dataKey="minutes" name="Minutes" fill="#649488" radius={[4, 4, 0, 0]} barSize={12} />
+                                    </BarChart>
+                                ) : (
+                                    <AreaChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), value: h.sleep_hours }))}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
+                                        <YAxis hide />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Area type="monotone" dataKey="value" name="Sleep Hours" stroke="#649488" strokeWidth={4} fill="#64948833" dot={{ r: 4, fill: '#649488' }} />
+                                    </AreaChart>
+                                )
                             ) : (
-                                <AreaChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), value: h.sleep_hours }))}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
-                                    <YAxis hide />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Area type="monotone" dataKey="value" name="Sleep Hours" stroke="#649488" strokeWidth={4} fill="#64948833" dot={{ r: 4, fill: '#649488' }} />
-                                </AreaChart>
-                            )
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                                <Activity size={48} className="mb-4 opacity-20" />
-                                <p className="font-bold">No historical data found</p>
-                                <p className="text-xs">Sync your watch or log vitals to see trends</p>
-                            </div>
-                        )}
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Health Tip Section */}
-            <HealthTipSection assessment={assessment} />
-
-            {/* Manual Log Modal */}
-            {showManualLog && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95">
-                        <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
-                            <Plus className="text-teal-600" /> Manual Entry
-                        </h3>
-                        <form onSubmit={handleManualLog} className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormInput label="BP Sys (mmHg)" placeholder="120" value={manualEntry.bp_sys} onChange={v => setManualEntry({ ...manualEntry, bp_sys: v })} />
-                                <FormInput label="BP Dia (mmHg)" placeholder="80" value={manualEntry.bp_dia} onChange={v => setManualEntry({ ...manualEntry, bp_dia: v })} />
-                            </div>
-                            <FormInput label="Sugar Level (mg/dL)" placeholder="95" value={manualEntry.sugar} onChange={v => setManualEntry({ ...manualEntry, sugar: v })} />
-
-                            <div className="flex gap-4 pt-4">
-                                <button type="button" onClick={() => setShowManualLog(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all">Cancel</button>
-                                <button type="submit" className="flex-1 py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-plum-800/20">Save Logs</button>
-                            </div>
-                        </form>
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                    <Activity size={48} className="mb-4 opacity-20" />
+                                    <p className="font-bold">No historical data found</p>
+                                    <p className="text-xs">Sync your watch or log vitals to see trends</p>
+                                </div>
+                            )}
+                        </ResponsiveContainer>
                     </div>
                 </div>
-            )}
+
+                {/* Health Tip Section */}
+                <HealthTipSection assessment={assessment} />
+
+                {/* Manual Log Modal */}
+                {showManualLog && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95">
+                            <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                                <Plus className="text-teal-600" /> Manual Entry
+                            </h3>
+                            <form onSubmit={handleManualLog} className="space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormInput label="BP Sys (mmHg)" placeholder="120" value={manualEntry.bp_sys} onChange={v => setManualEntry({ ...manualEntry, bp_sys: v })} />
+                                    <FormInput label="BP Dia (mmHg)" placeholder="80" value={manualEntry.bp_dia} onChange={v => setManualEntry({ ...manualEntry, bp_dia: v })} />
+                                </div>
+                                <FormInput label="Sugar Level (mg/dL)" placeholder="95" value={manualEntry.sugar} onChange={v => setManualEntry({ ...manualEntry, sugar: v })} />
+
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setShowManualLog(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all">Cancel</button>
+                                    <button type="submit" className="flex-1 py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-plum-800/20">Save Logs</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

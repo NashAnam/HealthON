@@ -134,28 +134,28 @@ export default function GoalsPage() {
     return (
         <div className="min-h-screen bg-[#F8FAFB] pb-20">
             <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
-                <div className="container mx-auto px-6 py-5">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => router.push('/patient/dashboard')} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <button onClick={() => router.push('/patient/dashboard')} className="p-2 hover:bg-gray-100 rounded-xl transition-colors shrink-0">
                                 <ArrowLeft className="w-6 h-6 text-gray-900" />
                             </button>
                             <div>
-                                <h1 className="text-2xl font-black text-gray-900">Treatment Plan</h1>
-                                <p className="text-sm font-bold text-gray-400">Goals & Nutrition Tracking</p>
+                                <h1 className="text-xl md:text-2xl font-black text-gray-900">Treatment Plan</h1>
+                                <p className="text-xs md:text-sm font-bold text-gray-400">Goals & Nutrition Tracking</p>
                             </div>
                         </div>
-                        <div className="flex gap-2 bg-gray-100 p-1 rounded-2xl">
+                        <div className="flex gap-2 bg-gray-100 p-1 rounded-2xl w-full md:w-auto justify-between md:justify-start">
                             <button
                                 onClick={() => setActiveTab('goals')}
-                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'goals' ? 'bg-white text-plum-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                                className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'goals' ? 'bg-white text-plum-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                                     }`}
                             >
                                 <Target className="inline-block mr-2 w-4 h-4" /> Goals
                             </button>
                             <button
                                 onClick={() => setActiveTab('diet')}
-                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'diet' ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                                className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'diet' ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                                     }`}
                             >
                                 <Utensils className="inline-block mr-2 w-4 h-4" /> Nutrition
@@ -165,7 +165,7 @@ export default function GoalsPage() {
                 </div>
             </header>
 
-            <div className="container mx-auto px-6 py-8 max-w-4xl">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
 
                 {activeTab === 'goals' ? (
@@ -174,9 +174,9 @@ export default function GoalsPage() {
                             <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Active Goals</h2>
                             <button
                                 onClick={() => setShowGoalForm(!showGoalForm)}
-                                className="px-5 py-2.5 bg-plum-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-plum-800/20 active:scale-95 flex items-center gap-2"
+                                className="px-3 md:px-5 py-2.5 bg-plum-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-plum-800/20 active:scale-95 flex items-center gap-2"
                             >
-                                <Plus size={16} /> Custom Goal
+                                <Plus size={16} /> <span className="hidden xs:inline">Custom Goal</span>
                             </button>
                         </div>
 

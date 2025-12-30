@@ -71,8 +71,8 @@ export function AssessmentResultPage() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 py-8 md:py-12 px-4 font-sans text-slate-900 transition-all duration-300 overflow-x-hidden">
-            <div className="max-w-3xl mx-auto">
+        <div className="min-h-screen bg-slate-50 py-8 md:py-12 font-sans text-slate-900 transition-all duration-300 overflow-x-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-8 md:mb-12">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
                         <Activity className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
