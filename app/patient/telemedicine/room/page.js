@@ -78,7 +78,18 @@ function TelemedicineRoomContent() {
                 setLocalStream(stream);
             } catch (err) {
                 console.error("Camera access error:", err);
-                toast.error("Camera access denied. Please check your browser settings.");
+                if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    toast.error("Camera is in use by another app. Trying audio-only...");
+                    try {
+                        const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                        setLocalStream(audioStream);
+                        toast.success("Connected with audio only.");
+                    } catch (audioErr) {
+                        toast.error("Could not access microphone either. Please check hardware.");
+                    }
+                } else {
+                    toast.error("Camera access denied or hardware error. Using audio if possible.");
+                }
             }
         } catch (error) {
             console.error('Error loading appointment:', error);
