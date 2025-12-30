@@ -113,7 +113,7 @@ export default function DoctorDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] pb-12 lg:pl-64 overflow-x-hidden transition-all duration-300">
+    <div className="min-h-screen bg-[#FDFDFD] pb-12 lg:pl-64 overflow-x-hidden transition-all duration-300 w-full max-w-[100vw]">
       {/* Dynamic Background Glows */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />

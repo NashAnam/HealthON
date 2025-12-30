@@ -55,7 +55,7 @@ export default function LandingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[#648C81]/10 overflow-x-hidden">
+        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[#648C81]/10 overflow-x-hidden w-full relative">
             {/* Clinical Background Decor */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-0 right-0 w-[50%] h-screen bg-gradient-to-l from-[#648C81]/5 to-transparent" />

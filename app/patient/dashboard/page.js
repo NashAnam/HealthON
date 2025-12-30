@@ -364,7 +364,7 @@ function ActionCard({ icon: Icon, title, subtitle, onClick, color, active, fullW
     return (
         <button
             onClick={onClick}
-            className={`p-4 md:p-6 rounded-2xl md:rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : ''}`}
+            className={`p-3 md:p-6 rounded-2xl md:rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : 'w-full min-w-0'}`}
         >
             <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 relative z-10">
                 <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl ${active ? 'bg-gray-100 text-gray-400' : color + ' text-white shadow-lg'} group-hover:scale-110 transition-transform`}>
