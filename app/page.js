@@ -9,22 +9,22 @@ import { useState, useEffect } from 'react';
 
 const FEATURES = [
     {
-        title: "AI Screening",
-        desc: "Clinically validated AI assessments for early detection and health risk profiling.",
+        title: "AI Health Risk Screening",
+        desc: "Clinically validated assessments for early detection of heart risk, diabetes, and more.",
         icon: <Sparkles className="text-teal-600" />,
         link: "/patient/assessment"
     },
     {
-        title: "Virtual Consultations",
-        desc: "Secure, high-definition video encounters with certified medical specialists.",
+        title: "HD Telemedicine",
+        desc: "Secure, bidirectional video consultations with certified medical specialists from anywhere.",
         icon: <Video className="text-plum-600" />,
         link: "/patient/telemedicine/room"
     },
     {
-        title: "Health Vault",
-        desc: "AES-256 encrypted storage for your vitals, lab reports, and medical history.",
-        icon: <Lock className="text-indigo-600" />,
-        link: "/patient/dashboard"
+        title: "Smart Medication Reminders",
+        desc: "Unified medication and appointment tracking with intelligent notification sync.",
+        icon: <Zap className="text-indigo-600" />,
+        link: "/patient/reminders"
     }
 ];
 
@@ -142,25 +142,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Trust Badges - Factual descriptions only */}
-            <section className="py-20 border-y border-slate-50 bg-slate-50/30">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
-                        {[
-                            { label: "Clinical Logic", desc: "Evidence-based protocols" },
-                            { label: "Encryption", desc: "AES-256 secure storage" },
-                            { label: "Specialists", desc: "Verified medical professionals" },
-                            { label: "Connectivity", desc: "HD telemedicine suite" }
-                        ].map((item, i) => (
-                            <div key={i} className="text-center group">
-                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1 group-hover:scale-110 transition-transform">{item.label}</p>
-                                <p className="text-sm font-bold text-slate-400">{item.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             {/* Features Grid */}
             <section className="py-32 px-6">
                 <div className="max-w-7xl mx-auto text-center mb-24">
@@ -209,15 +190,15 @@ export default function LandingPage() {
                         <div>
                             <p className="text-xs font-black uppercase tracking-widest text-white mb-8">Ecosystem</p>
                             <ul className="space-y-4">
-                                {['Telemedicine', 'Smart Labs', 'AI Assessment', 'Health Vault'].map(item => (
+                                {['AI Assessment', 'Telemedicine Room', 'Lab Reports', 'Vitals Insights'].map(item => (
                                     <li key={item} className="text-sm font-bold text-slate-400 hover:text-teal-400 transition-colors cursor-pointer">{item}</li>
                                 ))}
                             </ul>
                         </div>
                         <div>
-                            <p className="text-xs font-black uppercase tracking-widest text-white mb-8">Trust</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-white mb-8">Patient Care</p>
                             <ul className="space-y-4">
-                                {['Privacy Policy', 'Data Security', 'Clinician Vetting', 'Help Center'].map(item => (
+                                {['Medication Reminders', '7-Day Action Plan', 'Doctor Booking', 'Lifestyle Tracking'].map(item => (
                                     <li key={item} className="text-sm font-bold text-slate-400 hover:text-teal-400 transition-colors cursor-pointer">{item}</li>
                                 ))}
                             </ul>
