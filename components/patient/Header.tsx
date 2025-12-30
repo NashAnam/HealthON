@@ -27,7 +27,9 @@ export default function Header({ userName, userImage }: HeaderProps) {
                 {/* Mobile Menu Trigger & Logo (Mobile Only) */}
                 <div className="flex items-center gap-3 lg:hidden">
                     <Link href="/patient/dashboard" className="flex items-center gap-2 group">
-                        <div className="w-9 h-9 bg-gradient-to-br from-plum-800 to-plum-600 rounded-xl flex items-center justify-center font-bold text-white">H</div>
+                        <div className="w-10 h-10 flex items-center justify-center p-1">
+                            <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
+                        </div>
                     </Link>
                 </div>
 

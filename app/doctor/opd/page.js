@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCurrentUser, getDoctor, getDoctorAppointments, createAppointment } from '@/lib/supabase';
 import { Calendar, Clock, Plus, Search, Filter, User, Phone, Mail, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function OpdPage() {
+function OpdContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [doctor, setDoctor] = useState(null);
@@ -110,9 +110,14 @@ export default function OpdPage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">OPD Management</h1>
-              <p className="text-sm text-gray-600">Manage your outpatient appointments</p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center p-1">
+                <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">OPD Management</h1>
+                <p className="text-sm text-gray-600">Manage your outpatient appointments</p>
+              </div>
             </div>
           </div>
         </div>
@@ -332,5 +337,17 @@ export default function OpdPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OpdPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
+        <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+    }>
+      <OpdContent />
+    </Suspense>
   );
 }

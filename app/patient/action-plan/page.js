@@ -197,7 +197,7 @@ export default function ActionPlanPage() {
             setPlan(personalizedPlan);
 
             // Load completion state from local storage for now (MVP)
-            const saved = localStorage.getItem('careon_action_plan_completed');
+            const saved = localStorage.getItem('healthon_action_plan_completed');
             if (saved) setCompletedTasks(JSON.parse(saved));
 
             setLoading(false);
@@ -212,7 +212,7 @@ export default function ActionPlanPage() {
         const isCompleting = !completedTasks[key];
         const newCompleted = { ...completedTasks, [key]: isCompleting };
         setCompletedTasks(newCompleted);
-        localStorage.setItem('careon_action_plan_completed', JSON.stringify(newCompleted));
+        localStorage.setItem('healthon_action_plan_completed', JSON.stringify(newCompleted));
 
         if (isCompleting) {
             toast.success('Task marked as complete! +20 Points', { icon: '👏' });

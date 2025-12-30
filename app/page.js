@@ -142,6 +142,25 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Trust Cards */}
+            <section className="py-20 border-y border-slate-50 bg-slate-50/30">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                        {[
+                            { label: "Clinical Logic", desc: "Evidence-based protocols" },
+                            { label: "Encryption", desc: "AES-256 secure storage" },
+                            { label: "Specialists", desc: "Verified medical professionals" },
+                            { label: "Connectivity", desc: "HD telemedicine suite" }
+                        ].map((item, i) => (
+                            <div key={i} className="text-center group">
+                                <p className="text-[10px] font-black text-[#648C81] uppercase tracking-widest mb-1 group-hover:scale-110 transition-transform">{item.label}</p>
+                                <p className="text-sm font-bold text-slate-400">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Features Grid */}
             <section className="py-32 px-6">
                 <div className="max-w-7xl mx-auto text-center mb-24">
@@ -154,7 +173,7 @@ export default function LandingPage() {
                         <motion.div
                             key={i}
                             whileHover={{ y: -10 }}
-                            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-teal-100 transition-all group"
+                            className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-[#648C81]/20 transition-all group"
                         >
                             <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-10 group-hover:scale-110 transition-transform">
                                 {f.icon}
@@ -163,7 +182,7 @@ export default function LandingPage() {
                             <p className="text-slate-500 font-medium leading-relaxed mb-10">{f.desc}</p>
                             <button
                                 onClick={() => router.push(f.link)}
-                                className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-teal-600 hover:gap-5 transition-all"
+                                className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-[#648C81] hover:gap-5 transition-all"
                             >
                                 Explore Feature <ArrowRight size={14} />
                             </button>
@@ -214,5 +233,3 @@ export default function LandingPage() {
         </div>
     );
 }
-   
- 

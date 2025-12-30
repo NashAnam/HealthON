@@ -124,15 +124,12 @@ export default function DoctorDashboard() {
         {/* Top Navigation Bar */}
         <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="w-10 h-10 bg-plum-800 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg ring-4 ring-plum-50"
-            >
-              H
-            </motion.div>
+            <div className="w-10 h-10 flex items-center justify-center p-1">
+              <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
+            </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-gray-900 leading-none">HealthON</h1>
-              <p className="text-[10px] font-black uppercase tracking-widest text-plum-600 mt-1">Doctor Portal</p>
+              <h1 className="text-xl font-bold text-gray-900 leading-none">Health<span className="text-[#648C81]">ON</span></h1>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#5D2A42] mt-1">Doctor Portal</p>
             </div>
           </div>
 

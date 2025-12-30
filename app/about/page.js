@@ -21,7 +21,7 @@ export default function AboutPage() {
                     <div className="flex items-center gap-3">
                         <div className="relative w-10 h-10 drop-shadow-md">
                             <Image
-                                src="/images/careon-logo.png"
+                                src="/logo.png"
                                 alt="HealthOn Logo"
                                 fill
                                 className="object-contain"

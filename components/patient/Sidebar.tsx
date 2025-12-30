@@ -47,11 +47,11 @@ export default function Sidebar() {
                 {/* Logo Area */}
                 <div className="p-6 mb-2 flex justify-between items-center">
                     <Link href="/patient/dashboard" className="flex items-center gap-2 group">
-                        <div className="w-9 h-9 bg-gradient-to-br from-plum-800 to-plum-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <span className="text-white font-bold text-lg">H</span>
+                        <div className="w-9 h-9 flex items-center justify-center p-1">
+                            <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
                         </div>
-                        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-plum-900 to-teal-700">
-                            HealthON
+                        <span className="text-2xl font-bold text-slate-900">
+                            Health<span className="text-[#648C81]">ON</span>
                         </span>
                     </Link>
                     <button onClick={close} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full">
