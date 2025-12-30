@@ -176,7 +176,7 @@ export default function GoalsPage() {
                                 onClick={() => setShowGoalForm(!showGoalForm)}
                                 className="px-3 md:px-5 py-2.5 bg-plum-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-plum-800/20 active:scale-95 flex items-center gap-2"
                             >
-                                <Plus size={16} /> <span className="hidden xs:inline">Custom Goal</span>
+                                <Plus size={16} /> <span className="hidden sm:inline">Custom Goal</span>
                             </button>
                         </div>
 
