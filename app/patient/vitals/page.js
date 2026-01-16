@@ -25,6 +25,10 @@ export default function VitalsPage() {
         const user = await getCurrentUser();
         if (!user) return router.replace('/login');
         const { data } = await getPatient(user.id);
+        if (!data) {
+            console.error('Patient record missing');
+            return;
+        }
         setPatient(data);
 
         // Check if vitals were logged today

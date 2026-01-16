@@ -25,6 +25,11 @@ export default function RemindersPage() {
       if (!user) return router.push('/login');
 
       const { data: patientData } = await getPatient(user.id);
+      if (!patientData) {
+        console.error('Patient record missing');
+        // Handle gracefully, maybe redirect to complete-profile
+        return setLoading(false);
+      }
       setPatient(patientData);
 
       const { data, error } = await getReminders(patientData.id);
@@ -121,9 +126,9 @@ export default function RemindersPage() {
                     <Bell size={28} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[#4a2b3d] mb-0.5">{rem.title}</h3>
+                    <h3 className="text-lg font-bold text-[#4a2b3d] mb-0.5">{rem.title || 'Untitled Reminder'}</h3>
                     <div className="flex items-center gap-3 text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                      <span className="flex items-center gap-1.2"><Clock size={12} /> {rem.reminder_time}</span>
+                      <span className="flex items-center gap-1.5"><Clock size={12} /> {rem.reminder_time || 'N/A'}</span>
                       <span className="w-1 h-1 rounded-full bg-slate-200" />
                       <span>{rem.reminder_type || 'General'}</span>
                     </div>
