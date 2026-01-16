@@ -90,7 +90,7 @@ export default function LabReportsPage() {
                                             <span>•</span>
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
-                                                {new Date(report.test_date).toLocaleDateString()}
+                                                {report.test_date ? new Date(report.test_date).toLocaleDateString() : 'Date N/A'}
                                             </span>
                                         </p>
                                     </div>

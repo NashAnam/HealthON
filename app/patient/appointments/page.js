@@ -269,7 +269,7 @@ export default function AppointmentsPage() {
                                         <div className="space-y-1">
                                             <h4 className="text-lg font-black text-[#4a2b3d] tracking-tight">{appointment.appointment_type || 'Follow-up Visit'}</h4>
                                             <p className="text-xs font-bold text-gray-400">
-                                                {appointment.type === 'doctor' ? `Dr. ${appointment.doctors?.name || 'Sarah Johnson'}` : (appointment.doctors?.name || 'Lab')} • {new Date(appointment.appointment_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })} at {appointment.appointment_time}
+                                                {appointment.type === 'doctor' ? `Dr. ${appointment.doctors?.name || 'Sarah Johnson'}` : (appointment.doctors?.name || 'Lab')} • {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Date N/A'} at {appointment.appointment_time || 'Time N/A'}
                                             </p>
                                         </div>
                                     </div>

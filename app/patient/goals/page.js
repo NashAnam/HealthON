@@ -358,7 +358,7 @@ export default function GoalsPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-black text-gray-900 capitalize">{log.meal_type}</p>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{new Date(log.date).toLocaleDateString()}</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{log.date ? new Date(log.date).toLocaleDateString() : 'Date N/A'}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">

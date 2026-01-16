@@ -48,7 +48,14 @@ export default function ProgressReportPage() {
                 const logsByDate = {};
 
                 logs.forEach(log => {
-                    const date = new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short' });
+                    let date;
+                    try {
+                        date = log.created_at ? new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short' }) : 'N/A';
+                    } catch (e) {
+                        console.error('Date parsing error in progress report:', e);
+                        date = 'N/A'; // Fallback in case of parsing error
+                    }
+
                     if (!logsByDate[date]) {
                         logsByDate[date] = { date, hr: null, sys: null, dia: null, sugar: null };
                     }

@@ -92,7 +92,9 @@ export default function ReportsPage() {
                                                     <h3 className="text-lg font-black text-slate-900 leading-none">{report.test_type || 'Lab Test'}</h3>
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <Calendar className="w-4 h-4 text-slate-500" />
-                                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{new Date(report.test_date).toLocaleDateString()}</span>
+                                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                                            {report.test_date ? new Date(report.test_date).toLocaleDateString() : 'Date N/A'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>

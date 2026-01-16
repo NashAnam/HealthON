@@ -38,7 +38,7 @@ export default function VitalsVisualizationPage() {
 
         if (vitals) {
             const formatted = vitals.reverse().map(v => ({
-                date: new Date(v.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                date: v.recorded_at ? new Date(v.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
                 heart_rate: v.heart_rate,
                 systolic_bp: v.systolic_bp,
                 diastolic_bp: v.diastolic_bp,

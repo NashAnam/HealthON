@@ -868,7 +868,7 @@ export default function HealthTrackerPage() {
                                                 <div>
                                                     <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Date</p>
                                                     <p className="text-lg font-black text-slate-800">
-                                                        {new Date(nextAppointment.appointment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                                        {nextAppointment?.appointment_date ? new Date(nextAppointment.appointment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -1053,7 +1053,7 @@ export default function HealthTrackerPage() {
                                                                     <span className="bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Normal</span>
                                                                 </td>
                                                                 <td className="px-6 py-4 font-medium text-slate-400">
-                                                                    {new Date(test.created_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                    {test.created_at ? new Date(test.created_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                                                                 </td>
                                                             </tr>
                                                         ))
@@ -1272,7 +1272,7 @@ export default function HealthTrackerPage() {
                                                                     {trackerLogs[0].value} <span className="text-lg text-slate-500 font-medium">{config.unit}</span>
                                                                 </p>
                                                                 <p className="text-xs text-slate-500 font-medium mt-1">
-                                                                    {new Date(trackerLogs[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                    {trackerLogs?.[0]?.created_at ? new Date(trackerLogs[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                                                                 </p>
                                                             </div>
                                                         </>
@@ -1435,7 +1435,7 @@ export default function HealthTrackerPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between mb-1">
                                             <span className="text-xs font-black text-slate-800 uppercase tracking-widest">{log.log_type}</span>
-                                            <span className="text-xs font-bold text-slate-500">{new Date(log.created_at).toLocaleDateString()}</span>
+                                            <span className="text-xs font-bold text-slate-500">{log?.created_at ? new Date(log.created_at).toLocaleDateString() : 'N/A'}</span>
                                         </div>
                                         <p className="text-base font-bold text-slate-700 truncate">
                                             {log.value ? <span className="text-slate-900 mr-2">{log.value} {log.unit}</span> : null}

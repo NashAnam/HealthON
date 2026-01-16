@@ -19,6 +19,7 @@ export default function PatientDashboard() {
     const [reminders, setReminders] = useState([]);
     const [activity, setActivity] = useState([]);
     const [showTerms, setShowTerms] = useState(false);
+    const [termsStep, setTermsStep] = useState(1);
 
     useEffect(() => {
         loadDashboard();
@@ -431,7 +432,7 @@ export default function PatientDashboard() {
                                         <div>
                                             <h4 className="font-bold text-slate-800">{appt.doctors?.name || 'Doctor Visit'}</h4>
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
-                                                {new Date(appt.appointment_date).toLocaleDateString()}
+                                                {appt.appointment_date ? new Date(appt.appointment_date).toLocaleDateString() : 'N/A'}
                                             </p>
                                         </div>
                                         <div className="text-right">

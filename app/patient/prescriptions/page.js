@@ -140,7 +140,7 @@ export default function PrescriptionsPage() {
                             {prescription.follow_up_date && (
                                 <div className="flex items-center gap-2 mt-4 text-sm text-gray-600">
                                     <Calendar className="w-4 h-4" />
-                                    <span>Follow-up: {new Date(prescription.follow_up_date).toLocaleDateString()}</span>
+                                    <span>Follow-up: {prescription.follow_up_date ? new Date(prescription.follow_up_date).toLocaleDateString() : 'N/A'}</span>
                                 </div>
                             )}
                         </div>
