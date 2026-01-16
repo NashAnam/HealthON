@@ -58,7 +58,7 @@ export default function VitalsPage() {
                 // Height and Weight are not logged daily anymore
             };
 
-            const { error } = await createVitals({ ...numericVitals, patient_id: patient.user_id });
+            const { error } = await createVitals({ ...numericVitals, patient_id: patient.id });
             if (error) throw error;
 
             toast.success('Vitals logged successfully!');

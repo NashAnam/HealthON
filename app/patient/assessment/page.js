@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, saveAssessment, getLatestAssessment } from '@/lib/supabase';
-import { calculateRiskScores } from '@/lib/riskCalculator';
+import { calculateAllRisks } from '@/lib/whoStepsRiskCalculator';
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -261,8 +261,8 @@ export default function AssessmentPage() {
         finalAnswers.bmi = parseFloat((w / (h * h)).toFixed(1));
       }
 
-      // 2. Calculate Scores
-      const scores = calculateRiskScores(finalAnswers);
+      // 2. Calculate Scores using WHO STEPS
+      const { scores } = calculateAllRisks(finalAnswers);
 
       // 3. Save to Database
       const { error } = await saveAssessment(patient.id, finalAnswers, scores);
@@ -283,7 +283,7 @@ export default function AssessmentPage() {
     }
   };
 
-  if (!patient) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
+  if (!patient) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#5D2A42]"></div></div>;
 
   const currentQ = QUESTIONS[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / QUESTIONS.length) * 100;
@@ -293,7 +293,7 @@ export default function AssessmentPage() {
     : (answers[currentQ.key] !== undefined);
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 font-sans text-slate-900 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-white py-8 px-4 font-sans text-slate-900 flex flex-col items-center justify-center">
       <div className="w-full max-w-2xl">
 
         {/* Progress Bar */}
@@ -304,7 +304,7 @@ export default function AssessmentPage() {
           </div>
           <div className="h-4 bg-slate-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-600 transition-all duration-500 ease-out"
+              className="h-full bg-[#5D2A42] transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -333,7 +333,7 @@ export default function AssessmentPage() {
                     placeholder="170"
                     value={answers.height || ''}
                     onChange={(e) => setAnswers(prev => ({ ...prev, height: e.target.value }))}
-                    className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl text-2xl font-bold focus:outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
+                    className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl text-2xl font-bold focus:outline-none focus:border-[#5D2A42] focus:bg-white transition-all shadow-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -343,13 +343,13 @@ export default function AssessmentPage() {
                     placeholder="70"
                     value={answers.weight || ''}
                     onChange={(e) => setAnswers(prev => ({ ...prev, weight: e.target.value }))}
-                    className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl text-2xl font-bold focus:outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-sm"
+                    className="w-full bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl text-2xl font-bold focus:outline-none focus:border-[#5D2A42] focus:bg-white transition-all shadow-sm"
                   />
                 </div>
               </div>
               {answers.height && answers.weight && (
-                <div className="p-6 bg-indigo-50 rounded-3xl border-2 border-indigo-100 animation-in fade-in zoom-in">
-                  <p className="text-indigo-600 font-bold text-center text-xl">
+                <div className="p-6 bg-[#648C81]/10 rounded-3xl border-2 border-[#648C81]/20 animation-in fade-in zoom-in">
+                  <p className="text-[#648C81] font-bold text-center text-xl">
                     Calculated BMI: {((parseFloat(answers.weight) / Math.pow(parseFloat(answers.height) / 100, 2)) || 0).toFixed(1)}
                   </p>
                 </div>
@@ -362,8 +362,8 @@ export default function AssessmentPage() {
                   key={opt.value}
                   onClick={() => handleAnswer(opt.value)}
                   className={`w-full text-left px-8 py-6 rounded-3xl text-xl font-bold border-2 transition-all shadow-sm hover:shadow-md flex items-center justify-between group ${answers[currentQ.key] === opt.value
-                    ? 'border-indigo-600 bg-indigo-600 text-white ring-4 ring-indigo-600/20'
-                    : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'
+                    ? 'border-[#5D2A42] bg-[#5D2A42] text-white ring-4 ring-[#5D2A42]/20'
+                    : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-[#648C81]/30 hover:bg-white'
                     }`}
                 >
                   {opt.label}
@@ -394,7 +394,7 @@ export default function AssessmentPage() {
             <button
               onClick={handleSubmit}
               disabled={!hasAnsweredCurrent || loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl font-bold text-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#648C81] hover:bg-[#527569] text-white px-10 py-4 rounded-2xl font-bold text-xl shadow-lg shadow-[#648C81]/20 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Submitting...' : 'Finish Assessment'}
               {!loading && <CheckCircle2 className="w-6 h-6" />}
@@ -404,7 +404,7 @@ export default function AssessmentPage() {
               onClick={handleNext}
               disabled={!hasAnsweredCurrent}
               className={`flex items-center gap-2 text-lg font-bold px-8 py-4 rounded-2xl transition-all ${hasAnsweredCurrent
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'
+                ? 'bg-[#5D2A42] text-white shadow-lg shadow-[#5D2A42]/20 hover:bg-[#4a2135]'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
             >

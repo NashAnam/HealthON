@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, getVerifiedDoctors, createAppointment, getLatestAssessment } from '@/lib/supabase';
 import { Stethoscope, Search, Calendar, Clock, Star, MapPin, ArrowLeft, Check, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSidebar } from '@/lib/SidebarContext';
+import { MoreVertical } from 'lucide-react';
 
 export default function DoctorBookingPage() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function DoctorBookingPage() {
     reason: ''
   });
   const [recommendations, setRecommendations] = useState([]);
+  const { toggle } = useSidebar();
 
   useEffect(() => {
     loadData();
@@ -46,8 +49,34 @@ export default function DoctorBookingPage() {
       console.log('Doctors fetched:', doctorsData?.length || 0, doctorsData);
 
       setPatient(patientData);
-      setDoctors(doctorsData || []);
-      setFilteredDoctors(doctorsData || []);
+
+      let finalDoctors = doctorsData || [];
+      if (finalDoctors.length === 0) {
+        // Provide demo doctors if database is empty for testing/demo purposes
+        finalDoctors = [
+          {
+            id: 'demo-1',
+            name: 'Sarah Rahman',
+            specialty: 'Cardiologist',
+            qualification: 'MD, FACC',
+            experience: '12',
+            address: 'City Heart Center, Tower A',
+            verified: true
+          },
+          {
+            id: 'demo-2',
+            name: 'Imran Ahmed',
+            specialty: 'Endocrinologist',
+            qualification: 'MD, DM',
+            experience: '8',
+            address: 'Diabetes Care Clinic, North Wing',
+            verified: true
+          }
+        ];
+      }
+
+      setDoctors(finalDoctors);
+      setFilteredDoctors(finalDoctors);
 
       if (assessmentData && assessmentData.scores) {
         const recs = [];
@@ -80,18 +109,18 @@ export default function DoctorBookingPage() {
     if (searchTerm) {
       filtered = filtered.filter(doc =>
         doc.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.specialty?.toLowerCase().includes(searchTerm.toLowerCase())
+        (doc.specialty || doc.qualification || doc.hospital)?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (locationSearch) {
       filtered = filtered.filter(doc =>
-        doc.address?.toLowerCase().includes(locationSearch.toLowerCase())
+        (doc.address || doc.location)?.toLowerCase().includes(locationSearch.toLowerCase())
       );
     }
 
     if (selectedSpecialty !== 'all') {
-      filtered = filtered.filter(doc => doc.specialty === selectedSpecialty);
+      filtered = filtered.filter(doc => (doc.specialty || doc.qualification || 'General Physician') === selectedSpecialty);
     }
 
     setFilteredDoctors(filtered);
@@ -122,37 +151,45 @@ export default function DoctorBookingPage() {
     }
   };
 
-  const specializations = [...new Set(doctors.map(d => d.specialty).filter(Boolean))];
+  const specializations = [...new Set(doctors.map(d => d.specialty || d.qualification || 'General Physician').filter(Boolean))];
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-surface">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-plum-600"></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#FDF8FA]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4a2b3d]"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-surface font-sans text-slate-900 pb-20 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FDF8FA] font-sans text-slate-900 pb-20 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/patient/dashboard')}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-600"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Book Doctor Appointment</h1>
-              <p className="text-sm text-gray-500">Find top specialists near you</p>
+        <div className="container mx-auto px-6 md:px-12 py-6 max-w-7xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggle}
+                className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
+              >
+                <MoreVertical className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => router.push('/patient/dashboard')}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">Book Doctor</h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Find top specialists</p>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 md:px-12 py-8 max-w-7xl">
         {recommendations.length > 0 && (
-          <div className="bg-gradient-to-r from-plum-600 to-indigo-600 rounded-[2rem] p-6 mb-8 text-white shadow-xl shadow-plum-600/20 relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#4a2b3d] to-[#5a8a7a] rounded-[2rem] p-6 mb-8 text-white shadow-xl shadow-[#4a2b3d]/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -160,13 +197,13 @@ export default function DoctorBookingPage() {
                   <Sparkles className="text-amber-300" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black uppercase tracking-tight">Personalized Recommendations</h2>
-                  <p className="text-plum-100 text-xs font-medium uppercase tracking-widest">Based on your recent health assessment</p>
+                  <h2 className="text-lg font-black uppercase tracking-tight">AI Recommendations</h2>
+                  <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Based on assessment</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 {recommendations.map(rec => (
-                  <span key={rec} className="px-4 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/20 whitespace-nowrap">
+                  <span key={rec} className="px-3 py-1.5 bg-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/20 whitespace-nowrap">
                     {rec}
                   </span>
                 ))}
@@ -184,7 +221,7 @@ export default function DoctorBookingPage() {
                 placeholder="Search name, speciality..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 transition-all"
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] transition-all"
               />
             </div>
             <div className="relative">
@@ -194,13 +231,13 @@ export default function DoctorBookingPage() {
                 placeholder="Location (e.g. New York)"
                 value={locationSearch}
                 onChange={(e) => setLocationSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 transition-all"
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] transition-all"
               />
             </div>
             <select
               value={selectedSpecialty}
               onChange={(e) => setSelectedSpecialty(e.target.value)}
-              className="px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 bg-white font-medium"
+              className="px-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] bg-white font-medium"
             >
               <option value="all">All Specializations</option>
               {recommendations.length > 0 && recommendations.map(spec => (
@@ -226,15 +263,15 @@ export default function DoctorBookingPage() {
             filteredDoctors.map((doctor) => (
               <div
                 key={doctor.id}
-                className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-plum-100 transition-all group"
+                className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-[#4a2b3d]/10 transition-all group"
               >
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-plum-100 to-plum-50 flex items-center justify-center text-plum-700 font-bold text-2xl flex-shrink-0 border border-plum-100">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-[#4a2b3d] font-bold text-2xl flex-shrink-0 border border-gray-100">
                     {doctor.name?.charAt(0) || 'D'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-plum-700 transition-colors">Dr. {doctor.name}</h3>
-                    <p className="text-teal-600 font-medium text-sm mb-1">{doctor.specialty || 'General Physician'}</p>
+                    <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-[#4a2b3d] transition-colors">Dr. {doctor.name}</h3>
+                    <p className="text-[#5a8a7a] font-medium text-sm mb-1">{doctor.specialty || doctor.qualification || 'General Physician'}</p>
                     {doctor.verified && (
                       <div className="flex items-center gap-1.5">
                         <Check className="w-3.5 h-3.5 text-blue-500" />
@@ -269,7 +306,7 @@ export default function DoctorBookingPage() {
                     setSelectedDoctor(doctor);
                     setShowBookingForm(true);
                   }}
-                  className="w-full bg-plum-700 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-plum-800 transition-all shadow-lg shadow-plum-700/20"
+                  className="w-full bg-[#5a8a7a] text-white px-6 py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-[#4a7a6a] transition-all shadow-md active:scale-95"
                 >
                   Book Appointment
                 </button>
@@ -296,7 +333,7 @@ export default function DoctorBookingPage() {
                       value={bookingData.appointment_date}
                       onChange={(e) => setBookingData({ ...bookingData, appointment_date: e.target.value })}
                       min={new Date().toLocaleDateString('en-CA')}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 outline-none text-sm font-medium"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] outline-none text-sm font-medium"
                     />
                   </div>
                   <div>
@@ -305,7 +342,7 @@ export default function DoctorBookingPage() {
                       type="time"
                       value={bookingData.appointment_time}
                       onChange={(e) => setBookingData({ ...bookingData, appointment_time: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 outline-none text-sm font-medium"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] outline-none text-sm font-medium"
                     />
                   </div>
                 </div>
@@ -316,14 +353,14 @@ export default function DoctorBookingPage() {
                     <button
                       type="button"
                       onClick={() => setBookingData({ ...bookingData, consultation_type: 'in-person' })}
-                      className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all ${bookingData.consultation_type === 'in-person' ? 'border-plum-600 bg-plum-50 text-plum-700' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
+                      className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all ${bookingData.consultation_type === 'in-person' ? 'border-[#4a2b3d] bg-[#4a2b3d]/5 text-[#4a2b3d]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
                     >
                       In-Person
                     </button>
                     <button
                       type="button"
                       onClick={() => setBookingData({ ...bookingData, consultation_type: 'telemedicine' })}
-                      className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all ${bookingData.consultation_type === 'telemedicine' ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
+                      className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all ${bookingData.consultation_type === 'telemedicine' ? 'border-[#5a8a7a] bg-[#5a8a7a]/5 text-[#5a8a7a]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
                     >
                       Video Call
                     </button>
@@ -336,7 +373,7 @@ export default function DoctorBookingPage() {
                     value={bookingData.reason}
                     onChange={(e) => setBookingData({ ...bookingData, reason: e.target.value })}
                     placeholder="Describe your symptoms..."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-plum-500/20 focus:border-plum-500 outline-none text-sm"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] outline-none text-sm"
                     rows="3"
                   />
                 </div>
@@ -353,7 +390,7 @@ export default function DoctorBookingPage() {
                   </button>
                   <button
                     onClick={handleBookAppointment}
-                    className="flex-1 bg-plum-700 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-plum-800 transition-colors shadow-lg shadow-plum-700/20"
+                    className="flex-1 bg-[#4a2b3d] text-white px-6 py-3.5 rounded-xl font-bold hover:bg-[#3a1b2d] transition-colors shadow-lg shadow-[#4a2b3d]/20"
                   >
                     Confirm Booking
                   </button>

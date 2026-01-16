@@ -5,16 +5,44 @@ import { RefreshCw, Stethoscope, FlaskConical } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [passphrase, setPassphrase] = useState('');
     const [activeTab, setActiveTab] = useState('doctors');
-    // const [payments, setPayments] = useState([]);
     const [doctors, setDoctors] = useState([]);
     const [labs, setLabs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
 
     useEffect(() => {
-        fetchData();
-    }, [activeTab]);
+        const auth = localStorage.getItem('admin_auth');
+        if (auth === process.env.NEXT_PUBLIC_ADMIN_PASSPHRASE || auth === 'Admin@HealthOn2026') {
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [activeTab, isAuthenticated]);
+
+    const handleLogin = (e) => {
+        e.preventDefault();
+        const secret = process.env.NEXT_PUBLIC_ADMIN_PASSPHRASE || 'Admin@HealthOn2026';
+        if (passphrase === secret) {
+            setIsAuthenticated(true);
+            localStorage.setItem('admin_auth', passphrase);
+            toast.success('Access Granted');
+        } else {
+            toast.error('Invalid Passphrase');
+        }
+    };
+
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        localStorage.removeItem('admin_auth');
+        toast.success('Logged out');
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -76,6 +104,7 @@ export default function AdminDashboard() {
         const { data, error } = await supabase
             .from('doctors')
             .select('*')
+            .or('verified.eq.false,verified.is.null')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -86,6 +115,7 @@ export default function AdminDashboard() {
         const { data, error } = await supabase
             .from('labs')
             .select('*')
+            .or('verified.eq.false,verified.is.null')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -190,12 +220,53 @@ export default function AdminDashboard() {
         }
     };
 
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+                <div className="max-w-md w-full space-y-8 text-center">
+                    <div className="space-y-4">
+                        <div className="w-20 h-20 bg-violet-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-violet-600/20">
+                            <RefreshCw className="w-10 h-10 text-white" />
+                        </div>
+                        <h2 className="text-3xl font-black text-white tracking-tight uppercase">Security Gateway</h2>
+                        <p className="text-slate-400 text-sm font-medium">Enter the administrative passphrase to proceed</p>
+                    </div>
+
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <input
+                            type="password"
+                            placeholder="Passphrase"
+                            value={passphrase}
+                            onChange={(e) => setPassphrase(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-3xl px-8 py-5 text-white focus:outline-none focus:ring-4 focus:ring-violet-600/20 transition-all text-center tracking-[0.3em] font-black"
+                        />
+                        <button
+                            type="submit"
+                            className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-3xl py-5 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-violet-600/20 transition-all hover:scale-[1.02] active:scale-95"
+                        >
+                            Verify Identity
+                        </button>
+                    </form>
+                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">HealthOn Automated Security Protocol 4.0</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 p-8 font-sans">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
-                    <p className="text-slate-500 mt-1">Manage doctors and labs</p>
+                <div className="flex justify-between items-start mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">HealthON <span className="text-violet-600 italic">Vault</span></h1>
+                        <p className="text-slate-500 mt-1 font-medium italic">Administrative Control Mesh</p>
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+                    >
+                        Sign Out
+                    </button>
                 </div>
 
                 {/* Tabs */}

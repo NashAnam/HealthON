@@ -161,6 +161,73 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* About / Mission Section */}
+            <section className="py-32 px-6 bg-slate-900 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-[60%] h-full bg-[#5D2A42] opacity-5 rounded-l-full blur-3xl pointer-events-none" />
+                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center relative z-10">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-8 border border-white/10">
+                            <Activity className="w-4 h-4 text-[#648C81]" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest">Our Mission</span>
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-8">
+                            Most chronic diseases generally don’t <br /> <span className="text-[#648C81]">start with pain.</span>
+                        </h2>
+                        <div className="space-y-6 text-slate-400 font-medium text-lg leading-relaxed">
+                            <p>
+                                They start quietly — in daily habits, small body changes, missed medicines, and numbers no one is tracking together.
+                            </p>
+                            <p>
+                                <strong className="text-white">HealthON exists so you don’t have to guess.</strong> We bring your daily body readings, prescriptions, medicines, diet, lab reports, and activity into one place and connect the dots over time.
+                            </p>
+                            <p>
+                                Instead of scattered reports and forgotten reminders, you see what’s actually happening to your health — early, continuously, and clearly.
+                            </p>
+                            <ul className="space-y-4 mt-8">
+                                {[
+                                    "Early flagging before complications arise",
+                                    "Speak to doctors with real data, not assumptions",
+                                    "Focus on prevention and early action"
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-sm font-bold text-white">
+                                        <CheckCircle2 className="w-5 h-5 text-[#648C81]" /> {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-[#648C81] to-[#5D2A42] rounded-[3rem] opacity-20 blur-2xl transform rotate-6 scale-95" />
+                        <div className="bg-slate-800 p-10 rounded-[3rem] border border-slate-700 relative">
+                            <h3 className="text-2xl font-black text-white mb-6">Why HealthON?</h3>
+                            <p className="text-slate-400 leading-relaxed mb-8">
+                                Built for India’s growing burden of chronic lifestyle diseases, HealthON focuses on prevention, continuity, and early action, not one-day checkups or disconnected care.
+                            </p>
+                            <div className="space-y-4">
+                                <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-700 flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-[#5D2A42]/20 flex items-center justify-center text-[#5D2A42]">
+                                        <Lock size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-white uppercase tracking-widest">Secure & Private</p>
+                                        <p className="text-xs text-slate-500">AES-256 Encrypted Health Data</p>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-700 flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-[#648C81]/20 flex items-center justify-center text-[#648C81]">
+                                        <Microscope size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-white uppercase tracking-widest">Clinically Validated</p>
+                                        <p className="text-xs text-slate-500">Based on Global Medical Standards</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Features Grid */}
             <section className="py-32 px-6">
                 <div className="max-w-7xl mx-auto text-center mb-24">

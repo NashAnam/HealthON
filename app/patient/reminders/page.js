@@ -1,427 +1,156 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, getReminders, createReminder, updateReminder, supabase } from '@/lib/supabase';
-import { Bell, Plus, Clock, Pill, Calendar as CalendarIcon, Activity, ArrowLeft, Check, X } from 'lucide-react';
+import { getCurrentUser, getPatient, getReminders, supabase } from '@/lib/supabase';
+import { Bell, Clock, ChevronLeft, Plus, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { requestNotificationPermission, showInstantNotification } from '@/lib/notifications';
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
-import { requestNotificationPermission, scheduleNotification, showInstantNotification } from '@/lib/notifications';
+
+import ReminderModal from '@/components/ReminderModal';
 
 export default function RemindersPage() {
   const router = useRouter();
-  const [patient, setPatient] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [reminders, setReminders] = useState([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newReminder, setNewReminder] = useState({
-    reminder_type: 'medication',
-    title: '',
-    description: '',
-    reminder_time: '',
-    dosage: '',
-    frequency: 'daily',
-    reminder_date: ''
-  });
-  const [selectedReminder, setSelectedReminder] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    loadReminders();
+    loadData();
   }, []);
 
-  const loadReminders = async () => {
+  const loadData = async () => {
     try {
       const user = await getCurrentUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
+      if (!user) return router.push('/login');
 
       const { data: patientData } = await getPatient(user.id);
-      if (!patientData) return;
       setPatient(patientData);
 
-      const pid = patientData.id;
-
-      // Fetch manual reminders (including meds)
-      const { data: remindersData } = await getReminders(pid);
-
-      // Fetch upcoming doctor appointments
-      const { data: appointmentData } = await supabase
-        .from('appointments')
-        .select('*, doctors(name)')
-        .eq('patient_id', pid)
-        .eq('status', 'confirmed')
-        .gte('appointment_date', new Date().toISOString().split('T')[0]);
-
-      // Fetch upcoming lab bookings
-      const { data: labData } = await supabase
-        .from('lab_bookings')
-        .select('*, labs(name)')
-        .eq('patient_id', pid)
-        .neq('status', 'cancelled')
-        .gte('test_date', new Date().toISOString().split('T')[0]);
-
-      const manualReminders = (remindersData || []).map(r => ({
-        ...r,
-        source: 'manual'
-      }));
-
-      const appointmentReminders = (appointmentData || []).map(a => ({
-        id: `apt-${a.id}`,
-        title: `Appointment with Dr. ${a.doctors?.name || 'Specialist'}`,
-        description: `Type: ${a.consultation_type || 'General'}`,
-        reminder_time: a.appointment_time || 'Check Details',
-        frequency: new Date(a.appointment_date).toLocaleDateString(),
-        reminder_type: 'appointment',
-        is_active: true,
-        source: 'appointment'
-      }));
-
-      const labReminders = (labData || []).map(l => ({
-        id: `lab-${l.id}`,
-        title: `Lab Test: ${l.test_type}`,
-        description: `Lab: ${l.labs?.name || 'Diagnostic Center'}`,
-        reminder_time: 'Scheduled Date',
-        frequency: new Date(l.test_date).toLocaleDateString(),
-        reminder_type: 'health_check',
-        is_active: true,
-        source: 'lab'
-      }));
-
-      setReminders([...manualReminders, ...appointmentReminders, ...labReminders]);
+      const { data, error } = await getReminders(patientData.id);
+      if (error) throw error;
+      setReminders(data || []);
     } catch (error) {
-      console.error('Error loading reminders:', error);
-      toast.error('Failed to load all reminders');
+      console.error(error);
+      toast.error('Failed to load reminders');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddReminder = async () => {
-    if (!newReminder.title || !newReminder.reminder_time) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
+  const markComplete = async (id) => {
+    toast.success('Reminder completed!');
+    setReminders(reminders.filter(r => r.id !== id));
+  };
 
+  const testNotification = async () => {
+    const tid = toast.loading('Requesting permission...');
     try {
-      const payload = {
-        patient_id: patient.id,
-        ...newReminder,
-        is_active: true
-      };
-
-      // Ensure reminder_date is only sent if frequency is specific to avoid potential schema issues
-      if (newReminder.frequency !== 'specific') {
-        delete payload.reminder_date;
+      const hasPermission = await requestNotificationPermission();
+      if (hasPermission) {
+        toast.success('Permission granted!', { id: tid });
+        showInstantNotification('HealthON Test', 'This is a test notification! Your reminders are working correctly.');
+      } else {
+        toast.error('Notification permission denied', { id: tid });
       }
-
-      await createReminder(payload);
-
-      // Schedule local notification
-      try {
-        const hasPermission = await requestNotificationPermission();
-        if (hasPermission) {
-          const [hours, minutes] = newReminder.reminder_time.split(':');
-          const scheduleDate = new Date(newReminder.frequency === 'specific' ? newReminder.reminder_date : new Date());
-          scheduleDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-          if (scheduleDate < new Date() && newReminder.frequency !== 'specific') {
-            scheduleDate.setDate(scheduleDate.getDate() + 1);
-          }
-
-          if (scheduleDate >= new Date()) {
-            await scheduleNotification(
-              newReminder.title,
-              newReminder.description || `Time for your ${newReminder.reminder_type} reminder`,
-              scheduleDate.toISOString()
-            );
-          }
-        }
-      } catch (notifyError) {
-        console.error('Failed to schedule notification:', notifyError);
-      }
-
-      toast.success('Reminder created successfully!');
-      setShowAddForm(false);
-      setNewReminder({
-        reminder_type: 'medication',
-        title: '',
-        description: '',
-        reminder_time: '',
-        frequency: 'daily',
-        reminder_date: ''
-      });
-      loadReminders();
     } catch (error) {
-      console.error('Error creating reminder:', error);
-      toast.error('Error creating reminder: ' + error.message);
+      toast.error('Error testing notifications', { id: tid });
     }
   };
 
-  const handleToggleReminder = async (reminderId, currentStatus) => {
-    try {
-      await updateReminder(reminderId, { is_active: !currentStatus });
-      toast.success(currentStatus ? 'Reminder disabled' : 'Reminder enabled');
-      loadReminders();
-    } catch (error) {
-      toast.error('Error updating reminder: ' + error.message);
-    }
-  };
-
-  const getReminderIcon = (type) => {
-    switch (type) {
-      case 'medication': return <Pill className="w-5 h-5" />;
-      case 'appointment': return <CalendarIcon className="w-5 h-5" />;
-      case 'health_check': return <Activity className="w-5 h-5" />;
-      default: return <Bell className="w-5 h-5" />;
-    }
-  };
-
-  const getReminderColor = (type) => {
-    switch (type) {
-      case 'medication': return 'from-blue-500 to-indigo-600';
-      case 'appointment': return 'from-green-500 to-emerald-600';
-      case 'health_check': return 'from-purple-500 to-pink-600';
-      default: return 'from-gray-500 to-gray-600';
-    }
-  };
-
-  if (!patient) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-      <p className="text-gray-600">Loading...</p>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a2b3d]"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 w-full pb-32 overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/patient/dashboard')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Reminders</h1>
-              <p className="text-sm text-gray-600">Manage your health reminders</p>
-            </div>
-            <button
-              onClick={async () => {
-                const hasPermission = await requestNotificationPermission();
-                if (hasPermission) {
-                  showInstantNotification('🔔 HealthON Test', 'Your notifications are working perfectly!');
-                } else {
-                  toast.error('Permission denied. Please enable notifications in your browser settings.');
-                }
-              }}
-              className="ml-auto hidden md:block text-xs font-black uppercase tracking-widest text-plum-600 bg-plum-50 px-4 py-2 rounded-lg border border-plum-100 hover:bg-plum-100 transition-all"
-            >
-              Test Notifications
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white py-8 px-4 font-sans text-slate-900">
+      <div className="max-w-2xl mx-auto">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Add Reminder Button */}
-        <div className="mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.back()} className="p-2 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
+              <ChevronLeft className="w-6 h-6 text-slate-600" />
+            </button>
+            <h1 className="text-2xl font-bold text-[#4a2b3d]">Health Reminders</h1>
+          </div>
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+            onClick={() => setIsModalOpen(true)}
+            className="p-3 bg-[#4a2b3d] text-white rounded-2xl flex items-center gap-2 font-bold text-sm shadow-lg shadow-[#4a2b3d]/20 hover:opacity-90 transition-all active:scale-95"
           >
-            <Plus className="w-5 h-5" />
-            Add New Reminder
+            <Plus size={18} /> Add New
           </button>
         </div>
 
-        {/* Add Reminder Form */}
-        {showAddForm && (
-          <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Create New Reminder</h3>
-            <div className="space-y-4">
+        {/* Browser Notification Sync Card - Two Color Style */}
+        <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm mb-8 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[#4a2b3d]">
+                <Bell size={28} />
+              </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Reminder Type</label>
-                <select
-                  value={newReminder.reminder_type}
-                  onChange={(e) => setNewReminder({ ...newReminder, reminder_type: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="medication">Medication</option>
-                  <option value="appointment">Appointment</option>
-                  <option value="health_check">Health Check</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={newReminder.title}
-                    onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
-                    placeholder="e.g., Take Multivitamin"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Dosage (Optional)</label>
-                  <input
-                    type="text"
-                    value={newReminder.dosage}
-                    onChange={(e) => setNewReminder({ ...newReminder, dosage: e.target.value })}
-                    placeholder="e.g., 500mg"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
-                <textarea
-                  value={newReminder.description}
-                  onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
-                  placeholder="Additional details..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  rows="2"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Time</label>
-                  <input
-                    type="time"
-                    value={newReminder.reminder_time}
-                    onChange={(e) => setNewReminder({ ...newReminder, reminder_time: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Frequency</label>
-                  <select
-                    value={newReminder.frequency}
-                    onChange={(e) => setNewReminder({ ...newReminder, frequency: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="specific">Specific Date</option>
-                  </select>
-                </div>
-              </div>
-
-              {newReminder.frequency === 'specific' && (
-                <div className="animate-in slide-in-from-top-2 duration-200">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Select Date</label>
-                  <input
-                    type="date"
-                    value={newReminder.reminder_date}
-                    onChange={(e) => setNewReminder({ ...newReminder, reminder_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                    min={new Date().toLocaleDateString('en-CA')}
-                  />
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleAddReminder}
-                  className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Create Reminder
-                </button>
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
+                <h3 className="text-sm font-black text-[#4a2b3d] uppercase tracking-widest">Browser Notifications</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">Stay updated even when app is closed</p>
               </div>
             </div>
+            <button
+              onClick={testNotification}
+              className="w-full md:w-auto px-6 py-3 bg-white border-2 border-[#4a2b3d] text-[#4a2b3d] rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 hover:bg-[#4a2b3d] hover:text-white"
+            >
+              <RefreshCw size={14} /> Test Notifications
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Reminders List */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Active Reminders</h2>
-          {reminders.length === 0 ? (
-            <div className="text-center py-12">
-              <Bell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">No reminders set</p>
-              <p className="text-sm text-gray-500 mt-2">Create your first reminder to stay on track</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {reminders.map((reminder) => (
-                <div
-                  key={reminder.id}
-                  onClick={() => setSelectedReminder(reminder)}
-                  className={`p-5 rounded-xl border-2 transition-all cursor-pointer hover:shadow-md ${reminder.is_active ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200' : 'bg-gray-50 border-gray-200 opacity-60'
-                    }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getReminderColor(reminder.reminder_type)} flex items-center justify-center text-white flex-shrink-0`}>
-                        {getReminderIcon(reminder.reminder_type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                          {reminder.title}
-                          {reminder.dosage && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">{reminder.dosage}</span>}
-                        </h3>
-                        {reminder.description && (
-                          <p className="text-sm text-gray-600 mt-1">{reminder.description}</p>
-                        )}
-                        <div className="flex flex-wrap gap-3 mt-3 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {reminder.reminder_time}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <CalendarIcon className="w-4 h-4" />
-                            {reminder.frequency === 'specific' ? reminder.reminder_date : reminder.frequency}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      {reminder.source === 'manual' ? (
-                        <button
-                          onClick={() => handleToggleReminder(reminder.id, reminder.is_active)}
-                          className={`p-2 rounded-lg transition-colors ${reminder.is_active ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                            }`}
-                          title={reminder.is_active ? 'Disable reminder' : 'Enable reminder'}
-                        >
-                          {reminder.is_active ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-100">
-                          Auto-Sync
-                        </span>
-                      )}
+        {/* Reminders List Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2 px-2">
+            <Clock size={16} className="text-slate-300" />
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Active Records</span>
+          </div>
+
+          {reminders.length > 0 ? (
+            reminders.map((rem) => (
+              <div key={rem.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 flex items-center justify-between group hover:border-[#4a2b3d]/20 transition-all">
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-12 bg-slate-50 text-[#4a2b3d]">
+                    <Bell size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[#4a2b3d] mb-0.5">{rem.title}</h3>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                      <span className="flex items-center gap-1.2"><Clock size={12} /> {rem.reminder_time}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      <span>{rem.reminder_type || 'General'}</span>
                     </div>
                   </div>
                 </div>
-              ))}
+                <button
+                  onClick={() => markComplete(rem.id)}
+                  className="p-3 bg-slate-50 text-slate-400 hover:text-[#4a2b3d] hover:bg-[#4a2b3d]/5 rounded-2xl transition-all active:scale-90"
+                >
+                  <CheckCircle size={24} />
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="bg-white p-16 rounded-[40px] border border-dashed border-slate-200 text-center">
+              <AlertCircle className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+              <p className="text-slate-300 font-black uppercase tracking-widest text-[10px]">No active reminders</p>
             </div>
           )}
         </div>
 
-        {/* Info Card */}
-        <div className="mt-8 bg-gradient-to-r from-blue-100 to-purple-100 p-6 rounded-2xl border border-blue-200">
-          <div className="flex items-start gap-4">
-            <Bell className="w-8 h-8 text-blue-600 flex-shrink-0" />
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Stay on Track</h3>
-              <p className="text-sm text-gray-700">
-                Set reminders for medications, appointments, and health checks to maintain your wellness routine. You'll receive notifications at the scheduled times.
-              </p>
-            </div>
-          </div>
-        </div>
+        <ReminderModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          patientId={patient?.id}
+          onSuccess={loadData}
+        />
       </div>
     </div>
   );

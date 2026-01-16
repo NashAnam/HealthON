@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getDoctor, supabase } from '@/lib/supabase';
-import { FileText, Search, ArrowLeft, Calendar, User, Download, ExternalLink } from 'lucide-react';
+import { FileText, Search, ArrowLeft, Calendar, User, Download, ExternalLink, Mic, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PrescriptionsPage() {
@@ -11,6 +11,18 @@ export default function PrescriptionsPage() {
     const [prescriptions, setPrescriptions] = useState([]);
     const [filteredPrescriptions, setFilteredPrescriptions] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showNewPrescription, setShowNewPrescription] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const [formData, setFormData] = useState({
+        patient_id: '',
+        medication_name: '',
+        dosage: '',
+        frequency: '',
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: '',
+        instructions: ''
+    });
 
     useEffect(() => {
         loadPrescriptions();
@@ -59,6 +71,88 @@ export default function PrescriptionsPage() {
         setFilteredPrescriptions(filtered);
     };
 
+    const startVoiceInput = () => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            toast.error('Voice input not supported');
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            toast.success('Listening...');
+        };
+
+        recognition.onresult = (event) => {
+            const text = Array.from(event.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('');
+
+            setTranscript(text);
+            setFormData(prev => ({ ...prev, instructions: text }));
+        };
+
+        recognition.onerror = (event) => {
+            setIsListening(false);
+            toast.error('Voice input error');
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognition.start();
+    };
+
+    const handleSavePrescription = async () => {
+        if (!formData.patient_id || !formData.medication_name) {
+            toast.error('Please fill required fields');
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('prescriptions')
+                .insert([{
+                    doctor_id: doctor.id,
+                    patient_id: formData.patient_id,
+                    medication_name: formData.medication_name,
+                    dosage: formData.dosage,
+                    frequency: formData.frequency,
+                    start_date: formData.start_date,
+                    end_date: formData.end_date || null,
+                    instructions: formData.instructions,
+                    voice_transcription: transcript || null
+                }]);
+
+            if (error) throw error;
+
+            toast.success('Prescription saved!');
+            setShowNewPrescription(false);
+            setFormData({
+                patient_id: '',
+                medication_name: '',
+                dosage: '',
+                frequency: '',
+                start_date: new Date().toISOString().split('T')[0],
+                end_date: '',
+                instructions: ''
+            });
+            setTranscript('');
+            loadPrescriptions();
+        } catch (error) {
+            console.error('Save error:', error);
+            toast.error('Failed to save prescription');
+        }
+    };
+
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString();
     };
@@ -96,6 +190,122 @@ export default function PrescriptionsPage() {
                         />
                     </div>
                 </div>
+
+                {/* New Prescription Button */}
+                <button
+                    onClick={() => setShowNewPrescription(!showNewPrescription)}
+                    className="mb-6 bg-[#5D2A42] hover:bg-[#4a2135] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all"
+                >
+                    <Plus className="w-5 h-5" />
+                    New Prescription
+                </button>
+
+                {/* New Prescription Form */}
+                {showNewPrescription && (
+                    <div className="bg-white border-2 border-[#648C81]/20 rounded-3xl p-6 mb-8">
+                        <h2 className="text-xl font-black text-slate-900 mb-6">Create Prescription</h2>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Patient ID</label>
+                                <input
+                                    type="text"
+                                    value={formData.patient_id}
+                                    onChange={(e) => setFormData({ ...formData, patient_id: e.target.value })}
+                                    placeholder="Patient UUID"
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Medication Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.medication_name}
+                                    onChange={(e) => setFormData({ ...formData, medication_name: e.target.value })}
+                                    placeholder="e.g., Metformin"
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Dosage</label>
+                                <input
+                                    type="text"
+                                    value={formData.dosage}
+                                    onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
+                                    placeholder="e.g., 500mg"
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Frequency</label>
+                                <input
+                                    type="text"
+                                    value={formData.frequency}
+                                    onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+                                    placeholder="e.g., Twice daily"
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Start Date</label>
+                                <input
+                                    type="date"
+                                    value={formData.start_date}
+                                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">End Date (Optional)</label>
+                                <input
+                                    type="date"
+                                    value={formData.end_date}
+                                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Instructions</label>
+                            <div className="flex gap-2 mb-2">
+                                <button
+                                    onClick={startVoiceInput}
+                                    disabled={isListening}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all ${isListening
+                                            ? 'bg-rose-500 text-white'
+                                            : 'bg-[#648C81]/10 text-[#648C81] hover:bg-[#648C81]/20'
+                                        }`}
+                                >
+                                    <Mic className="w-4 h-4" />
+                                    {isListening ? 'Listening...' : 'Voice Input'}
+                                </button>
+                            </div>
+                            <textarea
+                                value={formData.instructions}
+                                onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+                                placeholder="Add prescription instructions..."
+                                rows={4}
+                                className="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-[#5D2A42] focus:outline-none resize-none"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleSavePrescription}
+                                className="flex-1 bg-[#5D2A42] hover:bg-[#4a2135] text-white p-3 rounded-xl font-bold transition-all"
+                            >
+                                Save Prescription
+                            </button>
+                            <button
+                                onClick={() => setShowNewPrescription(false)}
+                                className="px-6 bg-slate-200 hover:bg-slate-300 text-slate-700 p-3 rounded-xl font-bold transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* List */}
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">

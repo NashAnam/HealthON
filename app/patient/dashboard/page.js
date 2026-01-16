@@ -1,96 +1,24 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-    getCurrentUser,
-    getPatient,
-    getDoctor,
-    getLatestVitals,
-    getPatientAppointments,
-    getLatestAssessment,
-    createVitals,
-    signOut,
-    supabase
-} from '@/lib/supabase';
+import { Heart, Activity, Thermometer, Droplets, Scale, AlertCircle, Calendar, Bell, ChevronRight, FileText, Pill, Stethoscope, Utensils, Clock } from 'lucide-react';
+import { getCurrentUser, getPatient, getLatestVitals, supabase, getAppointments, getReminders } from '@/lib/supabase';
 import toast from 'react-hot-toast';
-import {
-    Activity, Calendar, FileText, ChevronRight, Heart, Footprints, Flame, Timer, Search, Bell, User, LogOut, ChevronDown, Watch, Microscope, Users, Plus, Zap, MoreHorizontal
-} from 'lucide-react';
-// ... imports
+import Link from 'next/link';
 import { useSidebar } from '@/lib/SidebarContext';
-import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
-} from 'recharts';
-
-function DashboardHeader({ patient }) {
-    const router = useRouter();
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const { toggle } = useSidebar();
-
-    const handleLogout = async () => {
-        await signOut();
-        router.push('/login');
-    };
-
-    return (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8 relative z-[90]">
-            <div>
-                <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">Welcome back, <span className="text-plum-800">{patient?.name?.split(' ')[0] || 'User'}</span>!</h1>
-                <p className="text-gray-500 text-sm md:text-base font-medium">Here's your health overview for today.</p>
-            </div>
-
-            <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4">
-                {/* Sidebar Toggle - BESIDE PROFILE */}
-                <button
-                    onClick={toggle}
-                    className="md:hidden p-2 bg-white text-plum-900 rounded-lg shadow-sm border border-gray-100"
-                >
-                    <MoreHorizontal size={20} />
-                </button>
-
-                <div className="relative ml-auto md:ml-0">
-                    <button
-                        onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="flex items-center gap-3 hover:opacity-80 transition-all cursor-pointer z-[95] bg-white p-1.5 md:p-2 pr-3 md:pr-4 rounded-xl md:rounded-2xl border border-gray-100 shadow-sm"
-                    >
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-plum-100 flex items-center justify-center text-plum-800 font-black border-2 border-white shadow-sm overflow-hidden text-lg md:text-xl">
-                            {patient?.name?.[0] || 'N'}
-                        </div>
-                        <div className="text-left hidden md:block">
-                            <p className="text-sm font-black text-gray-900 leading-none mb-1">{patient?.name || 'User Profile'}</p>
-                            <div className="flex items-center gap-2">
-                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Verified Patient</p>
-                                <span className="w-1 h-1 rounded-full bg-teal-200"></span>
-                            </div>
-                        </div>
-                        <ChevronDown size={16} className={`text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {showProfileMenu && (
-                        <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-gray-50 py-2 z-[999] animate-in fade-in slide-in-from-top-2">
-                            <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-bold flex items-center gap-3 transition-colors">
-                                <LogOut size={16} /> Sign Out
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
+import { Menu, MoreVertical } from 'lucide-react';
 
 export default function PatientDashboard() {
     const router = useRouter();
+    const { toggle } = useSidebar();
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null);
     const [patient, setPatient] = useState(null);
     const [vitals, setVitals] = useState(null);
     const [appointments, setAppointments] = useState([]);
-    const [isConnectingWatch, setIsConnectingWatch] = useState(false);
-    const [activeTab, setActiveTab] = useState('weekly');
-    const [showManualLog, setShowManualLog] = useState(false);
-    const [manualEntry, setManualEntry] = useState({ bp_sys: '', bp_dia: '', sugar: '' });
-    const [assessment, setAssessment] = useState(null);
-    const [history, setHistory] = useState([]);
+    const [reminders, setReminders] = useState([]);
+    const [activity, setActivity] = useState([]);
+    const [showTerms, setShowTerms] = useState(false);
 
     useEffect(() => {
         loadDashboard();
@@ -99,398 +27,462 @@ export default function PatientDashboard() {
     const loadDashboard = async () => {
         try {
             const user = await getCurrentUser();
-            if (!user) return router.push('/login');
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+            setUser(user);
 
             const { data: patientData } = await getPatient(user.id);
             if (!patientData) {
-                const { data: doctorData } = await getDoctor(user.id);
-                if (doctorData) {
-                    toast.error('Access restricted: You are registered as a Doctor.');
-                    return router.push('/doctor/dashboard');
-                }
-                return router.push('/complete-profile');
+                router.push('/complete-profile');
+                return;
             }
 
-            const [vitalsData, appointmentsData, assessmentData, historyData] = await Promise.all([
-                getLatestVitals(patientData.id).then(res => res.data),
-                getPatientAppointments(patientData.id).then(res => res.data),
-                getLatestAssessment(patientData.id).then(res => res.data),
-                supabase.from('vitals').select('*').eq('patient_id', patientData.id).order('recorded_at', { ascending: false }).limit(7).then(res => res.data)
+            setPatient(patientData);
+
+            // Show Terms & Conditions if not accepted
+            if (!patientData.accepted_terms) {
+                setShowTerms(true);
+            }
+
+            // Fetch data in parallel
+            const [vitalsRes, apptsRes, recordsRes, prescriptionsRes, remindersRes] = await Promise.all([
+                getLatestVitals(patientData.id),
+                getAppointments(patientData.id),
+                supabase.from('lab_reports').select('*').eq('patient_id', patientData.id).order('created_at', { ascending: false }).limit(3),
+                supabase.from('prescriptions').select('*').eq('patient_id', patientData.id).order('created_at', { ascending: false }).limit(3),
+                getReminders(patientData.id)
             ]);
 
-            setPatient(patientData);
-            setVitals(vitalsData);
-            setAppointments(appointmentsData || []);
-            setAssessment(assessmentData);
-            setHistory(historyData ? historyData.reverse() : []);
+            setVitals(vitalsRes.data);
+            setAppointments((apptsRes.data || []).slice(0, 3));
+            setReminders(remindersRes.data || []);
+
+
+            // Combine for activity
+            const activities = [];
+            if (vitalsRes.data) {
+                activities.push({
+                    type: 'vitals',
+                    title: 'Vitals recorded',
+                    date: new Date(vitalsRes.data.recorded_at),
+                    icon: Activity
+                });
+            }
+            if (recordsRes.data) {
+                recordsRes.data.forEach(report => {
+                    activities.push({
+                        type: 'report',
+                        title: `Lab results uploaded: ${report.test_name || 'Report'}`,
+                        date: new Date(report.created_at),
+                        icon: FileText
+                    });
+                });
+            }
+            if (prescriptionsRes.data) {
+                prescriptionsRes.data.forEach(rx => {
+                    activities.push({
+                        type: 'prescription',
+                        title: 'Prescription written',
+                        date: new Date(rx.created_at),
+                        icon: Pill
+                    });
+                });
+            }
+
+            setActivity(activities.sort((a, b) => b.date - a.date).slice(0, 3));
+
         } catch (error) {
-            console.error(error);
+            console.error('Dashboard load error:', error);
             toast.error('Failed to load dashboard data');
         } finally {
             setLoading(false);
         }
     };
 
-    const connectWatch = async () => {
-        if (!patient) return toast.error('Please wait for profile to load');
-        setIsConnectingWatch(true);
-        const tid = toast.loading('Syncing with SmartWatch...');
-        await new Promise(r => setTimeout(r, 2000));
+    const handleAcceptTerms = async () => {
+        try {
+            const user = await getCurrentUser();
+            if (!user) {
+                console.error('No user found');
+                return;
+            }
 
-        const mockVitals = {
-            patient_id: patient.id,
-            user_id: patient.user_id,
-            heart_rate: 72,
-            sleep_hours: 7.5,
-            steps: 8500,
-            calories: 450,
-            active_minutes: 45,
-            recorded_at: new Date().toISOString()
-        };
+            console.log('Updating terms for user:', user.id);
 
-        const { data, error } = await createVitals(mockVitals);
-        if (!error) {
-            setVitals(data);
-            toast.success('Health data synced!', { id: tid });
-            loadDashboard(); // Refresh dashboard to show new vitals in history
-        } else {
-            toast.error('Sync failed', { id: tid });
-        }
-        setIsConnectingWatch(false);
-    };
+            const { data, error } = await supabase
+                .from('patients')
+                .update({ accepted_terms: true })
+                .eq('user_id', user.id)
+                .select();
 
-    const handleManualLog = async (e) => {
-        e.preventDefault();
-        if (!patient) return;
-        const tid = toast.loading('Saving vitals...');
+            console.log('Update result:', { data, error });
 
-        const newVitals = {
-            patient_id: patient.id,
-            user_id: patient.user_id,
-            heart_rate: null,
-            systolic_bp: parseInt(manualEntry.bp_sys),
-            diastolic_bp: parseInt(manualEntry.bp_dia),
-            blood_sugar: parseInt(manualEntry.sugar),
-            recorded_at: new Date().toISOString()
-        };
+            if (error) throw error;
 
-        const { data, error } = await createVitals(newVitals);
-        if (!error) {
-            setVitals(data);
-            toast.success('Logged successfully!', { id: tid });
-            setShowManualLog(false);
-            setManualEntry({ bp_sys: '', bp_dia: '', sugar: '' });
-            // Refresh history
-            loadDashboard();
-        } else {
-            console.error('Save error:', error);
-            toast.error('Failed to save: ' + error.message, { id: tid });
+            setShowTerms(false);
+            setPatient({ ...patient, accepted_terms: true });
+            toast.success('Terms accepted. Welcome to your Health Portal!');
+        } catch (error) {
+            console.error('Terms acceptance error:', error);
+            toast.error('Failed to save your preference');
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFB]"><div className="w-12 h-12 border-4 border-plum-200 border-t-plum-800 rounded-full animate-spin"></div></div>;
+    const calculateBMI = () => {
+        const weight = vitals?.weight || patient?.weight;
+        const height = patient?.height; // Assuming height in cm
+        if (weight && height) {
+            const heightInMeters = height / 100;
+            return (weight / (heightInMeters * heightInMeters)).toFixed(1);
+        }
+        return '--';
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#FDF8FA]">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4a2b3d]"></div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] font-sans text-slate-900 relative overflow-x-hidden pb-32">
-            {/* Dynamic Background Glows */}
-            <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/40 rounded-full blur-[120px]" />
-                <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
-                <div className="absolute -bottom-[10%] left-[20%] w-[30%] h-[30%] bg-blue-50/40 rounded-full blur-[100px]" />
-            </div>
+        <div className="min-h-screen bg-[#FDF8FA] pb-10">
+            {/* Terms & Conditions Overlay */}
+            {showTerms && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 md:p-8">
+                    <div className="absolute inset-0 bg-[#4a2b3d]/60 backdrop-blur-md" />
+                    <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col md:flex-row max-h-[90vh] animate-in fade-in zoom-in duration-500">
+                        {/* Summary Side */}
+                        <div className="md:w-1/3 bg-[#4a2b3d] p-10 flex flex-col justify-between text-white">
+                            <div>
+                                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
+                                    <AlertCircle className="w-8 h-8 text-white" />
+                                </div>
+                                <h2 className="text-3xl font-black uppercase tracking-tight leading-tight mb-4">Terms & Conditions</h2>
+                                <p className="text-white/60 text-sm font-medium leading-relaxed">
+                                    Please review and accept our medical disclaimer to access your dashboard.
+                                </p>
+                            </div>
+                            <div className="pt-8 border-t border-white/10">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Last Updated</p>
+                                <p className="text-sm font-bold">January 2026</p>
+                            </div>
+                        </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
-                {/* Profile Section Ellipse - High Impact */}
-                <div className="absolute top-0 left-0 w-full md:w-[600px] h-[300px] bg-plum-100/60 rounded-full blur-[80px] -translate-x-1/4 -translate-y-1/2 pointer-events-none -z-10 mix-blend-multiply" />
+                        {/* Content Side */}
+                        <div className="flex-1 p-8 md:p-12 overflow-y-auto bg-gray-50 flex flex-col">
+                            <div className="flex-1 space-y-8 pb-8">
+                                <div className="space-y-4">
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Medical Disclaimer</h3>
+                                    <p className="text-lg font-bold text-slate-700 leading-relaxed">
+                                        This Patient Portal is a health tracking and organization tool only. It helps you record and manage your health information to share with your healthcare providers.
+                                    </p>
+                                </div>
 
-                <DashboardHeader patient={patient} />
+                                <div className="space-y-6">
+                                    <div className="space-y-6">
+                                        <div className="prose prose-sm max-w-none text-gray-600">
+                                            {termsStep === 1 ? (
+                                                <>
+                                                    <h4 className="font-bold text-gray-900 text-lg">1. Purpose of HealthON</h4>
+                                                    <p>HealthON is designed to support awareness, tracking, and early understanding of health patterns, especially related to chronic lifestyle conditions such as diabetes, hypertension, and cardiovascular risk. HealthON helps users organize health data, observe trends, and take informed action, but it does not replace medical care.</p>
 
-                {/* Quick Actions Row - High Density Mobile */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 md:mb-10">
-                    <ActionCard
-                        icon={Watch}
-                        title="Watch"
-                        subtitle="Sync"
-                        onClick={connectWatch}
-                        color="bg-plum-800"
-                        active={isConnectingWatch}
-                    />
-                    <ActionCard
-                        icon={Activity}
-                        title="Assess"
-                        subtitle="Risk Score"
-                        onClick={() => router.push('/patient/assessment')}
-                        color="bg-teal-500"
-                    />
-                    <ActionCard
-                        icon={Zap}
-                        title="Plan"
-                        subtitle="7-Day"
-                        onClick={() => router.push(assessment ? '/patient/action-plan' : '/patient/assessment')}
-                        color="bg-emerald-600"
-                    />
-                    <ActionCard
-                        icon={Activity}
-                        title="Track"
-                        subtitle="Goals"
-                        onClick={() => router.push('/patient/goals')}
-                        color="bg-indigo-600"
-                    />
-                </div>
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">2. Not a Medical Device or Diagnosis Tool</h4>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li>HealthON is not a medical device.</li>
+                                                        <li>HealthON does not diagnose, treat, cure, or prevent any disease.</li>
+                                                        <li>All insights, alerts, or summaries provided by HealthON are informational only.</li>
+                                                        <li>Users must consult a qualified healthcare professional for diagnosis, treatment, or medical decisions.</li>
+                                                    </ul>
 
-                {/* Daily Stats Grid - High Density Mobile */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 md:mb-10">
-                    <StatTile icon={Heart} label="Heart" value={vitals?.heart_rate ? `${vitals.heart_rate}` : '--'} subtitle="BPM" color="rose" progress={vitals?.heart_rate ? Math.min((vitals.heart_rate / 200) * 100, 100) : 0} />
-                    <StatTile icon={Timer} label="Sleep" value={vitals?.sleep_hours ? `${vitals.sleep_hours}` : '--'} subtitle="Hours" color="indigo" progress={vitals?.sleep_hours ? Math.min((vitals.sleep_hours / 12) * 100, 100) : 0} />
-                    <StatTile icon={Footprints} label="Steps" value={vitals?.steps ? (vitals.steps > 999 ? `${(vitals.steps / 1000).toFixed(1)}k` : vitals.steps) : '--'} subtitle="Steps" color="plum" progress={vitals?.steps ? Math.min((vitals.steps / 10000) * 100, 100) : 0} />
-                    <StatTile icon={Activity} label="Active" value={vitals?.active_minutes ? `${vitals.active_minutes}` : '--'} subtitle="Mins" color="teal" progress={vitals?.active_minutes ? Math.min((vitals.active_minutes / 180) * 100, 100) : 0} />
-                </div>
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">3. Use of Health Data</h4>
+                                                    <p>HealthON may collect and process health-related data such as:</p>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li>Body measurements and vitals (manual or device-linked)</li>
+                                                        <li>Lifestyle information (diet, activity, habits)</li>
+                                                        <li>Medication intake details entered by the user</li>
+                                                        <li>Lab report information uploaded by the user</li>
+                                                    </ul>
+                                                    <p className="mt-2">This data is used only to generate personal health insights and trends and is handled according to our Privacy Policy.</p>
 
-                {/* Bookings Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-10 w-full">
-                    <ActionCard
-                        icon={Calendar}
-                        title="Book Appointment"
-                        subtitle="Schedule with specialists"
-                        onClick={() => router.push('/patient/doctor-booking')}
-                        color="bg-teal-600"
-                        variant="horizontal"
-                        fullWidth
-                    />
-                    <ActionCard
-                        icon={Microscope}
-                        title="Book Lab Test"
-                        subtitle="Diagnostics & Screenings"
-                        onClick={() => router.push('/patient/reports?tab=labs')}
-                        color="bg-plum-700"
-                        variant="horizontal"
-                        fullWidth
-                    />
-                </div>
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">4. Accuracy and User Responsibility</h4>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li>HealthON relies on user-provided information and connected device data.</li>
+                                                        <li>Users are responsible for ensuring the accuracy and completeness of the data they enter.</li>
+                                                        <li>HealthON cannot guarantee accuracy if data is incomplete, outdated, or incorrectly entered.</li>
+                                                        <li>Decisions should never be made solely based on app information.</li>
+                                                    </ul>
 
-                {/* Trends Section */}
-                <div className="bg-white rounded-[2rem] p-4 md:p-8 shadow-sm border border-gray-100 mb-10 overflow-hidden w-full">
-                    <div className="flex items-center justify-between mb-8 overflow-x-auto">
-                        <div className="flex gap-2">
-                            {['weekly', 'heart', 'sleep', 'activity'].map(tab => (
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">5. AI-Generated Insights</h4>
+                                                    <p>HealthON may use AI to identify patterns, highlight potential risks, and summarize health trends.</p>
+                                                    <p className="font-semibold text-xs uppercase tracking-wide text-plum-700 mt-2">AI Insights Are:</p>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li>Supportive, not definitive</li>
+                                                        <li>Not clinical judgments</li>
+                                                        <li>May not account for all personal or medical factors</li>
+                                                    </ul>
+                                                    <p className="mt-2 font-bold">Always validate insights with a healthcare professional.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">6. Emergency Situations</h4>
+                                                    <p className="text-red-600 font-bold">HealthON is not intended for approaches.</p>
+                                                    <p>If you experience severe symptoms, sudden pain, loss of consciousness, or medical distress, <span className="font-bold underline">seek immediate medical attention or contact emergency services.</span></p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">7. External Services & Providers</h4>
+                                                    <p>HealthON may help users discover doctors, labs, or health services. HealthON does not control or guarantee the quality, outcomes, or advice of external providers. Any engagement with third parties is at the user’s discretion.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">8. No Guaranteed Outcomes</h4>
+                                                    <p>HealthON does not guarantee improved health outcomes, disease prevention, or risk reduction. Health outcomes depend on multiple factors, including medical care, lifestyle, and individual conditions.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">9. Eligibility</h4>
+                                                    <p>HealthON is intended for adults aged 18 and above. Users must be capable of understanding health information. Parents or guardians must supervise usage if permitted for minors (if applicable).</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">10. Limitation of Liability</h4>
+                                                    <p>To the extent permitted by law: HealthON is not liable for medical decisions made based on app content. HealthON is not responsible for harm resulting from misuse or misinterpretation of information. Use of the app is at the user’s own risk.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">11. Contact & Support</h4>
+                                                    <p>For questions, concerns, or feedback:</p>
+                                                    <p className="font-bold">📧 Email: contact@healthon.app</p>
+                                                    <p className="font-bold">🌐 Website: healthon.app</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <h3 className="text-2xl font-black text-[#4a2b3d] mb-6">HealthON – Privacy & Consent</h3>
+                                                    <p className="font-medium text-gray-500 mb-4">Last Updated: January 2026</p>
+                                                    <p className="mb-6">Your health data is personal. HealthON is built to respect that. This page explains what data we collect, why we collect it, how it’s used, and the choices you have. By using HealthON, you consent to the practices described below.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">1. What HealthON Collects</h4>
+                                                    <p>HealthON may collect the following information only when you choose to provide it:</p>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li><strong>Health & Lifestyle Data:</strong> Body readings, connected device data, medications, lab reports, diet, habits, symptoms.</li>
+                                                        <li><strong>Basic Account Information:</strong> Name, age, gender, contact details.</li>
+                                                    </ul>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">2. Why We Collect This Data</h4>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li>Organize your health information in one place</li>
+                                                        <li>Identify patterns and trends over time</li>
+                                                        <li>Provide reminders and non-clinical insights</li>
+                                                        <li>Support better conversations with healthcare professionals</li>
+                                                    </ul>
+                                                    <p className="mt-2 font-bold text-plum-700">HealthON does not sell your health data.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">3. AI & Insights Consent</h4>
+                                                    <p>HealthON may use AI systems to analyze trends, highlight risks, and generate summaries. AI insights are informational, not medical advice.</p>
+                                                    <p className="mt-2">By using HealthON, you consent to this processing.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">4. What HealthON Does NOT Do</h4>
+                                                    <ul className="list-disc pl-4 space-y-1">
+                                                        <li>We do not diagnose diseases</li>
+                                                        <li>We do not provide treatment decisions</li>
+                                                        <li>We do not share your personal health data without consent</li>
+                                                        <li>We do not use your data for advertising targeting</li>
+                                                    </ul>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">5. Data Sharing</h4>
+                                                    <p>Your data is shared only when necessary with secure service providers or when required by law.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">6. Your Choices & Control</h4>
+                                                    <p>You can view, edit, or delete your data, and withdraw consent at any time.</p>
+
+                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">7. Contact Us</h4>
+                                                    <p>For questions or privacy requests: contact@healthon.app</p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {termsStep === 1 ? (
+                                        <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100">
+                                            <p className="text-sm font-bold text-rose-700 leading-relaxed italic text-center">
+                                                In case of a medical emergency, please call your local emergency services immediately.
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                </div>
+
                                 <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-plum-800 text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                                        }`}
+                                    onClick={() => {
+                                        if (termsStep === 1) {
+                                            setTermsStep(2);
+                                        } else {
+                                            handleAcceptTerms();
+                                        }
+                                    }}
+                                    className="w-full py-5 bg-[#5a8a7a] hover:bg-[#4a7a6a] text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#5a8a7a]/20 transition-all hover:scale-[1.02] active:scale-95 mt-4"
                                 >
-                                    {tab === 'weekly' ? 'Weekly Overview' : tab === 'heart' ? 'Heart Rate' : tab === 'sleep' ? 'Sleep' : 'Activity'}
+                                    {termsStep === 1 ? 'I Acknowledge & Accept' : 'I Consent & Enter Dashboard'}
                                 </button>
-                            ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sketch Header */}
+            <header className="bg-white px-6 md:px-12 py-5 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={toggle}
+                        className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
+                    >
+                        <MoreVertical className="w-6 h-6" />
+                    </button>
+                    <div className="flex flex-col">
+                        <h1 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-1">Health Portal</h1>
+                        <p className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">{patient?.name || 'Dashboard'}</p>
+                    </div>
+                </div>
+                <div
+                    onClick={() => router.push('/about')}
+                    className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100"
+                >
+                    <span className="text-[10px] font-black text-[#5a8a7a] uppercase tracking-[0.2em]">HealthOn</span>
+                    <div className="w-10 h-10 rounded-full bg-[#4a2b3d] flex items-center justify-center text-white font-bold shadow-md">
+                        {patient?.name?.[0] || 'U'}
+                    </div>
+                </div>
+            </header>
+
+            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8">
+
+                {/* 2x2 Grid for Dashboard Sections */}
+                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8 mb-8">
+
+                    {/* 1st: Health Assessment */}
+                    <button
+                        onClick={() => router.push('/patient/assessment')}
+                        className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center hover:shadow-xl hover:border-[#5a8a7a]/30 transition-all group active:scale-95 min-h-[180px] md:min-h-[280px]"
+                    >
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-[#5a8a7a]/10 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-[#5a8a7a] group-hover:scale-110 group-hover:bg-[#5a8a7a] group-hover:text-white transition-all duration-300">
+                            <FileText className="w-7 h-7 md:w-10 md:h-10" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight leading-tight">Health Assessment</h3>
+                            <p className="hidden md:block text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest opacity-60">Analyze primary risks</p>
+                        </div>
+                    </button>
+
+                    {/* 2nd: Health Tracker (Standard Style) */}
+                    <button
+                        onClick={() => router.push('/patient/health-tracker')}
+                        className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center hover:shadow-xl hover:border-plum-100 transition-all group active:scale-95 min-h-[180px] md:min-h-[280px]"
+                    >
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-plum-50 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-plum-600 group-hover:scale-110 group-hover:bg-plum-600 group-hover:text-white transition-all duration-300">
+                            <Activity className="w-7 h-7 md:w-10 md:h-10" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight leading-tight">Health Tracker</h3>
+                            <p className="hidden md:block text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest opacity-60">Log vitals, diet & metrics</p>
+                        </div>
+                    </button>
+
+                    {/* 3rd: Book Appointment */}
+                    <div className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center min-h-[180px] md:min-h-[280px]">
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-blue-50 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-blue-600">
+                            <Calendar className="w-7 h-7 md:w-10 md:h-10" />
+                        </div>
+                        <h3 className="text-sm md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight leading-tight">Book Appointment</h3>
+                        <div className="flex flex-col sm:flex-row gap-2 md:gap-4 w-full mt-2">
+                            <button
+                                onClick={() => router.push('/patient/doctor-booking')}
+                                className="flex-1 bg-[#5a8a7a] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:shadow-lg active:scale-95 transition-all"
+                            >
+                                Doctor Visit
+                            </button>
+                            <button
+                                onClick={() => router.push('/patient/lab-booking')}
+                                className="flex-1 bg-[#4a2b3d] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:shadow-lg active:scale-95 transition-all"
+                            >
+                                Lab Test
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 4th: Weekly Progress */}
+                    <button
+                        onClick={() => router.push('/patient/progress-report')}
+                        className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center hover:shadow-xl hover:border-rose-100 transition-all group active:scale-95 min-h-[180px] md:min-h-[280px]"
+                    >
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-rose-50 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-rose-600 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
+                            <Clock className="w-7 h-7 md:w-10 md:h-10" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight leading-tight">Weekly Progress</h3>
+                            <p className="hidden md:block text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest opacity-60">View visual health trends</p>
+                        </div>
+                    </button>
+                </div>
+
+                {/* New Widgets: Appointments & Reminders */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Upcoming Appointments */}
+                    <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm h-full">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-black text-[#4a2b3d] uppercase tracking-tight">Upcoming Appointments</h3>
+                            <Calendar className="text-[#5a8a7a]" size={24} />
+                        </div>
+                        <div className="space-y-4">
+                            {appointments.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400 text-sm font-bold">No upcoming appointments.</div>
+                            ) : (
+                                appointments.map((appt, i) => (
+                                    <div key={i} className="bg-emerald-50/50 p-4 rounded-2xl border-l-4 border-[#5a8a7a] flex justify-between items-center group hover:bg-emerald-50 transition-colors">
+                                        <div>
+                                            <h4 className="font-bold text-slate-800">{appt.doctors?.name || 'Doctor Visit'}</h4>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
+                                                {new Date(appt.appointment_date).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[#5a8a7a] font-black text-sm">{appt.appointment_time?.slice(0, 5)}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                         <button
-                            onClick={() => setShowManualLog(true)}
-                            className="flex items-center gap-2 px-6 py-3.5 bg-white text-emerald-600 border-2 border-emerald-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm hover:shadow-md"
+                            onClick={() => router.push('/patient/appointments')}
+                            className="w-full mt-6 py-3 bg-[#5a8a7a] text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#5a8a7a]/20 hover:bg-[#4a7a6a] transition-all"
                         >
-                            <Plus size={18} /> Add Manual Vitals
+                            View All Appointments
                         </button>
                     </div>
 
-                    <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            {history.length > 0 ? (
-                                activeTab === 'weekly' || activeTab === 'heart' ? (
-                                    <AreaChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), value: h.heart_rate, value2: h.systolic_bp }))}>
-                                        <defs>
-                                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#602E5A" stopOpacity={0.1} />
-                                                <stop offset="95%" stopColor="#602E5A" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
-                                        <YAxis hide />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Area type="monotone" dataKey="value" name="Heart Rate" stroke="#602E5A" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" dot={{ r: 4, fill: '#602E5A', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
-                                        <Area type="monotone" dataKey="value2" name="BP Sys" stroke="#649488" strokeWidth={2} fillOpacity={0} dot={{ r: 3, fill: '#649488' }} />
-                                    </AreaChart>
-                                ) : activeTab === 'activity' ? (
-                                    <BarChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), calories: h.calories, minutes: h.active_minutes }))} barGap={8}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
-                                        <YAxis hide />
-                                        <Tooltip cursor={{ fill: 'transparent' }} content={<CustomTooltip />} />
-                                        <Bar dataKey="calories" name="Calories" fill="#602E5A" radius={[4, 4, 0, 0]} barSize={12} />
-                                        <Bar dataKey="minutes" name="Minutes" fill="#649488" radius={[4, 4, 0, 0]} barSize={12} />
-                                    </BarChart>
-                                ) : (
-                                    <AreaChart data={history.map(h => ({ name: new Date(h.recorded_at).toLocaleDateString('en-US', { weekday: 'short' }), value: h.sleep_hours }))}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontWeight: 800, fontSize: 12 }} dy={10} />
-                                        <YAxis hide />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Area type="monotone" dataKey="value" name="Sleep Hours" stroke="#649488" strokeWidth={4} fill="#64948833" dot={{ r: 4, fill: '#649488' }} />
-                                    </AreaChart>
-                                )
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                                    <Activity size={48} className="mb-4 opacity-20" />
-                                    <p className="font-bold">No historical data found</p>
-                                    <p className="text-xs">Sync your watch or log vitals to see trends</p>
-                                </div>
-                            )}
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Health Tip Section */}
-                <HealthTipSection assessment={assessment} />
-
-                {/* Manual Log Modal */}
-                {showManualLog && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95">
-                            <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
-                                <Plus className="text-teal-600" /> Manual Entry
-                            </h3>
-                            <form onSubmit={handleManualLog} className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormInput label="BP Sys (mmHg)" placeholder="120" value={manualEntry.bp_sys} onChange={v => setManualEntry({ ...manualEntry, bp_sys: v })} />
-                                    <FormInput label="BP Dia (mmHg)" placeholder="80" value={manualEntry.bp_dia} onChange={v => setManualEntry({ ...manualEntry, bp_dia: v })} />
-                                </div>
-                                <FormInput label="Sugar Level (mg/dL)" placeholder="95" value={manualEntry.sugar} onChange={v => setManualEntry({ ...manualEntry, sugar: v })} />
-
-                                <div className="flex gap-4 pt-4">
-                                    <button type="button" onClick={() => setShowManualLog(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all">Cancel</button>
-                                    <button type="submit" className="flex-1 py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-plum-800/20">Save Logs</button>
-                                </div>
-                            </form>
+                    {/* Reminders */}
+                    <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm h-full">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-black text-[#4a2b3d] uppercase tracking-tight">Reminders</h3>
+                            <Bell className="text-rose-600" size={24} />
                         </div>
+                        <div className="space-y-4">
+                            {reminders.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400 text-sm font-bold">No active reminders.</div>
+                            ) : (
+                                reminders.filter(r => r.is_active).slice(0, 3).map((rem, i) => (
+                                    <div key={i} className={`p-4 rounded-2xl border-l-4 flex justify-between items-center group hover:opacity-100 transition-colors ${rem.reminder_type === 'medication' ? 'bg-rose-50/50 border-rose-500 hover:bg-rose-50' : 'bg-blue-50/50 border-blue-500 hover:bg-blue-50'}`}>
+                                        <div>
+                                            <h4 className="font-bold text-slate-800">{rem.title}</h4>
+                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
+                                                {rem.frequency}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className={`font-black text-sm ${rem.reminder_type === 'medication' ? 'text-rose-600' : 'text-blue-600'}`}>{rem.reminder_time}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <button
+                            onClick={() => router.push('/patient/reminders')}
+                            className="w-full mt-6 py-3 bg-[#4a2b3d] text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4a2b3d]/20 hover:bg-[#3a1b2d] transition-all"
+                        >
+                            View All Records
+                        </button>
                     </div>
-                )}
-            </div>
+                </div>
+            </main>
         </div>
     );
-}
-
-function ActionCard({ icon: Icon, title, subtitle, onClick, color, active, fullWidth, variant = 'vertical' }) {
-    // variant: 'vertical' (icon top) or 'horizontal' (icon left)
-    const isHorizontal = variant === 'horizontal';
-
-    return (
-        <button
-            onClick={onClick}
-            className={`p-4 md:p-6 rounded-2xl md:rounded-[2rem] text-left transition-all hover:translate-y-[-4px] active:scale-95 group relative overflow-hidden ${active ? 'opacity-50 pointer-events-none' : ''} bg-white border border-gray-100 shadow-sm hover:shadow-xl ${fullWidth ? 'w-full' : 'w-full min-w-0'}`}
-        >
-            <div className={`flex ${isHorizontal ? 'flex-row items-center' : 'flex-col md:flex-row items-start md:items-center'} gap-3 md:gap-4 relative z-10`}>
-                <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl ${active ? 'bg-gray-100 text-gray-400' : color + ' text-white shadow-lg'} group-hover:scale-110 transition-transform shrink-0`}>
-                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <h4 className="font-black text-sm md:text-base text-gray-900 leading-tight truncate">{title}</h4>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest truncate">{subtitle}</p>
-                </div>
-                {isHorizontal && (
-                    <ChevronRight className="text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all shrink-0" size={20} />
-                )}
-                {!isHorizontal && (
-                    <ChevronRight className="ml-auto text-gray-300 group-hover:text-plum-800 group-hover:translate-x-1 transition-all hidden md:block" size={20} />
-                )}
-            </div>
-        </button>
-    );
-}
-
-function HealthTipSection({ assessment }) {
-    const tips = [
-        "Stay hydrated! Drinking 8 glasses of water daily helps maintain energy levels and supports overall health.",
-        "A 30-minute brisk walk daily can significantly reduce cardiovascular risk and improve mood.",
-        "Quality sleep (7-9 hours) is essential for metabolic health and cognitive function.",
-        "Adding more fiber to your diet helps stabilize blood sugar and improves digestion.",
-        "Managing stress through deep breathing or meditation can lower blood pressure naturally."
-    ];
-
-    const specificTips = [];
-    if (assessment?.scores) {
-        const s = assessment.scores;
-        if (s.diabetes > 30) specificTips.push("Replacing refined carbs with whole grains can help manage your glucose levels effectively.");
-        if (s.hypertension > 4) specificTips.push("Reducing salt intake to less than 5g daily is a key step in managing blood pressure.");
-        if (s.thyroid > 5) specificTips.push("Consistent medication timing is crucial for maintaining stable thyroid hormone levels.");
-    }
-
-    const allTips = [...tips, ...specificTips];
-    const [tip, setTip] = useState(allTips[0]);
-
-    useEffect(() => {
-        const randomTip = allTips[Math.floor(Math.random() * allTips.length)];
-        setTip(randomTip);
-    }, [assessment]);
-
-    return (
-        <div className="bg-gradient-to-r from-teal-600 to-teal-800 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-xl shadow-teal-900/10 mb-10">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
-            <div className="relative z-10 max-w-2xl">
-                <h3 className="text-2xl font-black mb-3">Health Tip of the Day</h3>
-                <p className="text-teal-50 font-medium leading-relaxed">
-                    {tip}
-                </p>
-            </div>
-        </div>
-    );
-}
-
-function StatTile({ icon: Icon, label, value, subtitle, color, progress = 65 }) {
-    const variants = {
-        rose: 'text-rose-500 bg-rose-50',
-        indigo: 'text-indigo-500 bg-indigo-50',
-        plum: 'text-plum-700 bg-plum-50',
-        teal: 'text-teal-600 bg-teal-50',
-    };
-    return (
-        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-lg transition-all group">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
-                <div>
-                    <h4 className="text-[8px] md:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{label}</h4>
-                    <p className="text-lg md:text-2xl font-black text-gray-900 tracking-tight leading-none mb-1 group-hover:text-plum-800 transition-colors">{value}</p>
-                    <p className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{subtitle}</p>
-                </div>
-                <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${variants[color]} group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-4 h-4 md:w-5 md:h-5" />
-                </div>
-            </div>
-            <div className="h-1 bg-gray-50 rounded-full overflow-hidden">
-                <div
-                    className={`h-full rounded-full transition-all duration-1000 ${variants[color].split(' ')[0].replace('text-', 'bg-')}`}
-                    style={{ width: `${progress}%` }}
-                />
-            </div>
-        </div>
-    );
-}
-
-function FormInput({ label, placeholder, value, onChange }) {
-    return (
-        <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{label}</label>
-            <input
-                type="number"
-                placeholder={placeholder}
-                value={value}
-                onChange={e => onChange(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 p-4 rounded-xl text-sm font-black focus:outline-none focus:ring-2 focus:ring-plum-800/20 focus:bg-white transition-all"
-            />
-        </div>
-    );
-}
-
-
-function CustomTooltip({ active, payload, label }) {
-    if (active && payload && payload.length) {
-        return (
-            <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-gray-100">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-                {payload.map((entry, index) => (
-                    <p key={index} className="text-sm font-black" style={{ color: entry.color }}>
-                        {entry.name}: {entry.value}
-                    </p>
-                ))}
-            </div>
-        );
-    }
-    return null;
 }

@@ -112,8 +112,67 @@ export default function DoctorDashboard() {
     </div>
   );
 
+  if (doctor && !doctor.verified) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center p-6 lg:pl-64 relative overflow-hidden">
+        {/* Dynamic Background Glows */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
+          <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
+        </div>
+
+        <div className="max-w-xl w-full text-center relative z-10 space-y-8 animate-in fade-in zoom-in duration-700">
+          <div className="w-24 h-24 bg-white rounded-3xl shadow-xl border border-plum-100 flex items-center justify-center mx-auto relative overflow-hidden group">
+            <div className="absolute inset-0 bg-plum-50 opacity-10 group-hover:opacity-20 transition-opacity" />
+            <Clock className="w-12 h-12 text-plum-800 animate-pulse" />
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight leading-tight uppercase">
+              Verification <span className="text-plum-800">Pending</span>
+            </h2>
+            <p className="text-gray-500 font-medium text-lg leading-relaxed">
+              Hello, <span className="text-plum-700 font-bold">{doctor.name}</span>! Your profile is currently under review by our medical administration team.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 text-left">
+            {[
+              { icon: <Check className="w-4 h-4 text-teal-600" />, text: "Professional credentials check", status: "Ongoing" },
+              { icon: <Check className="w-4 h-4 text-teal-600" />, text: "Medical license verification", status: "Ongoing" },
+              { icon: <Check className="w-4 h-4 text-teal-600" />, text: "Admin security clearance", status: "Ongoing" }
+            ].map((item, idx) => (
+              <div key={idx} className="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center">
+                    {item.icon}
+                  </div>
+                  <span className="text-sm font-bold text-gray-700">{item.text}</span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#5a8a7a] bg-[#5a8a7a]/5 px-3 py-1 rounded-full whitespace-nowrap">
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] leading-loose">
+            You will receive a notification once your account <br /> is activated for clinical practice.
+          </p>
+
+          <button
+            onClick={() => router.push('/')}
+            className="px-10 py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-plum-800/20"
+          >
+            Logout to Homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#FDFDFD] pb-12 lg:pl-64 overflow-x-hidden transition-all duration-300 w-full max-w-[100vw]">
+    <div className="min-h-screen bg-[#FDFDFD] pb-12 lg:pl-72 overflow-x-hidden transition-all duration-300 w-full max-w-[100vw]">
       {/* Dynamic Background Glows */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
@@ -185,7 +244,7 @@ export default function DoctorDashboard() {
 
           {/* Stats Grid - High Density Mobile */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
-            <StatCard label="Apts" value={stats.todayApts} icon={<Calendar className="w-5 h-5 text-plum-600" />} color="plum" delay={0.1} onClick={() => router.push('/doctor/opd')} />
+            <StatCard label="Appointments" value={stats.todayApts} icon={<Calendar className="w-5 h-5 text-plum-600" />} color="plum" delay={0.1} onClick={() => router.push('/doctor/opd')} />
             <StatCard label="Patients" value={stats.totalPatients} icon={<Users className="w-5 h-5 text-teal-600" />} color="teal" delay={0.2} onClick={() => router.push('/doctor/patients')} />
             <StatCard label="Prescriptions" value={stats.prescriptions} icon={<FileText className="w-5 h-5 text-rose-600" />} color="rose" delay={0.3} onClick={() => router.push('/doctor/prescriptions')} />
             <StatCard label="Requests" value={stats.newRequests} icon={<Clock className="w-5 h-5 text-amber-600" />} color="amber" delay={0.4} onClick={() => router.push('/doctor/opd?status=pending')} />
@@ -324,7 +383,7 @@ export default function DoctorDashboard() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </div >
   );
 }
 

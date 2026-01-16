@@ -39,7 +39,8 @@ export default function CompleteProfilePage() {
   const [formData, setFormData] = useState({
     name: '', age: '', phone: '', email: '',
     qualification: '', experience: '', available_days: '', timings: '',
-    address: '', license_number: '', tests_list: '', report_delivery_method: ''
+    address: '', license_number: '', tests_list: '', report_delivery_method: '',
+    specialty: '', fee: ''
   });
 
   useEffect(() => { checkProfile(); }, []);
@@ -91,6 +92,7 @@ export default function CompleteProfilePage() {
         if (!agreedToTerms) { toast.error('Please accept T&C'); setSubmitting(false); return; }
         const result = await createDoctor({
           user_id: user.id, name: formData.name, qualification: formData.qualification,
+          specialty: formData.specialty, fee: formData.fee, address: formData.address,
           experience: formData.experience, available_days: formData.available_days.split(',').map(d => d.trim()),
           timings: formData.timings, verified: true
         });
@@ -183,6 +185,9 @@ export default function CompleteProfilePage() {
                 {userType === 'doctor' && (
                   <>
                     <InputField icon={Award} label="Qualification" placeholder="MBBS, MD" value={formData.qualification} onChange={e => setFormData({ ...formData, qualification: e.target.value })} />
+                    <InputField icon={Stethoscope} label="Specialty" placeholder="Cardiologist, General Physician" value={formData.specialty} onChange={e => setFormData({ ...formData, specialty: e.target.value })} />
+                    <InputField icon={DollarSign} label="Consultation Fee" placeholder="500" value={formData.fee} onChange={e => setFormData({ ...formData, fee: e.target.value })} />
+                    <InputField icon={MapPin} label="Clinic Address" placeholder="City Clinic, 123 Main St" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                     <InputField icon={Clock} label="Experience" placeholder="5 years" value={formData.experience} onChange={e => setFormData({ ...formData, experience: e.target.value })} />
                     <InputField icon={Calendar} label="Available Days" placeholder="Mon, Wed, Fri" value={formData.available_days} onChange={e => setFormData({ ...formData, available_days: e.target.value })} />
                     <InputField icon={Clock} label="Timings" placeholder="9 AM - 5 PM" value={formData.timings} onChange={e => setFormData({ ...formData, timings: e.target.value })} />

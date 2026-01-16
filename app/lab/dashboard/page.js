@@ -72,6 +72,65 @@ export default function LabDashboard() {
 
   if (!lab) return <div className="min-h-screen flex items-center justify-center bg-surface"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div></div>;
 
+  if (lab && !lab.verified) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center p-6 relative overflow-hidden">
+        {/* Dynamic Background Glows */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-teal-50/30 rounded-full blur-[120px]" />
+          <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-plum-50/40 rounded-full blur-[100px]" />
+        </div>
+
+        <div className="max-w-xl w-full text-center relative z-10 space-y-8 animate-in fade-in zoom-in duration-700">
+          <div className="w-24 h-24 bg-white rounded-3xl shadow-xl border border-teal-100 flex items-center justify-center mx-auto relative overflow-hidden group">
+            <div className="absolute inset-0 bg-teal-50 opacity-10 group-hover:opacity-20 transition-opacity" />
+            <Clock className="w-12 h-12 text-teal-600 animate-pulse" />
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight leading-tight uppercase">
+              Lab Verification <span className="text-teal-600">Pending</span>
+            </h2>
+            <p className="text-gray-500 font-medium text-lg leading-relaxed">
+              Hello, <span className="text-teal-700 font-bold">{lab.name}</span>! Your laboratory profile is currently being verified by our network administrators.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 text-left">
+            {[
+              { text: "Facility compliance check", status: "Ongoing" },
+              { text: "Laboratory certification review", status: "Ongoing" },
+              { text: "Security and data protocol audit", status: "Ongoing" }
+            ].map((item, idx) => (
+              <div key={idx} className="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center">
+                    <FlaskConical className="w-4 h-4 text-teal-600" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-700">{item.text}</span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] leading-loose">
+            You will receive access to test bookings and <br /> report management once verified.
+          </p>
+
+          <button
+            onClick={handleLogout}
+            className="px-10 py-4 bg-teal-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-teal-700/20"
+          >
+            Logout to Homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
@@ -85,13 +144,14 @@ export default function LabDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <span className="font-semibold text-gray-700">{lab.name}</span>
-            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><LogOut size={20} className="text-gray-500" /></button>
+            <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <LogOut size={20} className="text-gray-500" />
+            </button>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-6 pt-28 pb-10">
-
         {/* Stats */}
         <div className="grid md:grid-cols-3 gap-6 mb-10">
           <StatCard icon={FileText} label="Total Bookings" value={stats.total} color="teal" />
@@ -147,7 +207,6 @@ export default function LabDashboard() {
             {bookings.length === 0 && <p className="text-center text-gray-500 py-8">No bookings found.</p>}
           </div>
         </div>
-
       </main>
     </div>
   );

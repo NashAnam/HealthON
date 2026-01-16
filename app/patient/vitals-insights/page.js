@@ -86,10 +86,10 @@ export default function VitalsVisualizationPage() {
         { key: 'respiratory_rate', label: 'Resp. Rate', unit: 'rpm', color: '#8b5cf6', icon: Wind, gradient: ['#ede9fe', '#8b5cf6'] },
     ];
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#5D2A42]"></div></div>;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+        <div className="min-h-screen bg-white p-4 md:p-8 font-sans">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
@@ -105,6 +105,8 @@ export default function VitalsVisualizationPage() {
                     </button>
                 </div>
 
+
+
                 {/* Metric Cards Row */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     {metrics.map(metric => {
@@ -117,26 +119,26 @@ export default function VitalsVisualizationPage() {
                                 key={metric.key}
                                 onClick={() => setSelectedMetric(metric.key)}
                                 className={`relative overflow-hidden p-5 rounded-[24px] transition-all duration-300 text-left group ${isSelected
-                                    ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 scale-105 z-10'
-                                    : 'bg-white text-slate-900 shadow-sm border border-slate-100 hover:shadow-md'
+                                    ? 'bg-teal-600 text-white shadow-xl shadow-teal-600/20 scale-105 z-10'
+                                    : 'bg-white text-slate-900 shadow-sm border-2 border-slate-100 hover:shadow-md hover:border-teal-100'
                                     }`}
                             >
                                 <div className="flex flex-col h-full justify-between">
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-white/20' : 'bg-slate-100'}`}>
-                                            <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                                        <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-white/20' : 'bg-slate-50'}`}>
+                                            <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
                                         </div>
                                         {trend !== 0 && (
-                                            <div className={`flex items-center gap-0.5 text-[10px] font-bold ${isSelected ? 'text-white' : (trend > 0 ? 'text-emerald-500' : 'text-rose-500')}`}>
+                                            <div className={`flex items-center gap-0.5 text-[10px] font-bold ${isSelected ? 'text-white' : (trend > 0 ? 'text-amber-500' : 'text-teal-500')}`}>
                                                 {trend > 0 ? '+' : ''}{trend.toFixed(0)}
                                             </div>
                                         )}
                                     </div>
                                     <div>
-                                        <p className={`text-xs font-medium mb-1 ${isSelected ? 'text-indigo-100' : 'text-slate-500'}`}>{metric.label}</p>
+                                        <p className={`text-xs font-medium mb-1 ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>{metric.label}</p>
                                         <p className="text-xl font-bold tracking-tight">
                                             {getLatestValue(metric.key)}
-                                            <span className={`text-xs font-normal ml-1 ${isSelected ? 'text-indigo-100' : 'text-slate-500'}`}>{metric.unit}</span>
+                                            <span className={`text-xs font-normal ml-1 ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>{metric.unit}</span>
                                         </p>
                                     </div>
                                 </div>
@@ -152,14 +154,14 @@ export default function VitalsVisualizationPage() {
                         <div className="flex items-center justify-between mb-8">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900">{metrics.find(m => m.key === selectedMetric)?.label} History</h3>
-                                <p className="text-sm text-slate-500">Last 30 days performance</p>
+                                <p className="text-sm text-slate-500">Last 30 days trends</p>
                             </div>
                             <div className="flex gap-2">
                                 {['1W', '1M', '3M', '1Y'].map(period => (
                                     <button
                                         key={period}
                                         className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${period === '1M'
-                                            ? 'bg-indigo-600 text-white'
+                                            ? 'bg-teal-600 text-white'
                                             : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                                             }`}
                                     >
@@ -218,35 +220,35 @@ export default function VitalsVisualizationPage() {
                     <div className="space-y-6">
                         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden">
                             <div className="relative z-10">
-                                <h3 className="text-lg font-bold text-slate-900 mb-1">Health Status</h3>
-                                <p className="text-slate-500 text-sm mb-6">Based on your assessment</p>
+                                <h3 className="text-lg font-bold text-slate-900 mb-1">Risk Pattern Analysis</h3>
+                                <p className="text-slate-500 text-sm mb-6">Non-diagnostic assessment</p>
                                 {assessment ? (
                                     <>
                                         <div className="space-y-4">
                                             {Object.entries(assessment.scores).map(([key, score]) => (
                                                 <div key={key} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{key} Risk</span>
-                                                    <span className={`text-sm font-black ${score > 50 ? 'text-rose-600' : score > 20 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                        {score > 50 ? 'High' : score > 20 ? 'Moderate' : 'Low'}
+                                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{key} Pattern</span>
+                                                    <span className={`text-xs font-black uppercase tracking-wider ${score > 50 ? 'text-amber-600' : score > 20 ? 'text-blue-600' : 'text-teal-600'}`}>
+                                                        {score > 50 ? 'Attention' : score > 20 ? 'Moderate' : 'Stable'}
                                                     </span>
                                                 </div>
                                             ))}
                                         </div>
                                         <button
                                             onClick={() => router.push('/patient/assessment/result')}
-                                            className="w-full mt-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all"
+                                            className="w-full mt-6 py-3 bg-teal-50 text-teal-700 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-teal-100 transition-all"
                                         >
-                                            View Full Report
+                                            View Safe Report
                                         </button>
                                     </>
                                 ) : (
                                     <div className="text-center py-4">
-                                        <p className="text-slate-400">No assessment data</p>
+                                        <p className="text-slate-400 text-sm">No assessment data</p>
                                         <button
                                             onClick={() => router.push('/patient/assessment')}
-                                            className="mt-4 text-indigo-600 font-bold hover:underline"
+                                            className="mt-4 text-teal-600 font-bold hover:underline text-sm"
                                         >
-                                            Take Assessment
+                                            Start Assessment
                                         </button>
                                     </div>
                                 )}
@@ -254,19 +256,16 @@ export default function VitalsVisualizationPage() {
                         </div>
 
                         <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100">
-                            <h3 className="font-bold text-slate-900 mb-4">Recent Activity</h3>
+                            <h3 className="font-bold text-slate-900 mb-4">Activity Log</h3>
                             <div className="space-y-4">
                                 {vitalsData.length > 0 ? vitalsData.slice(0, 3).map((vital, i) => (
                                     <div key={i} className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                                        <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 font-bold text-xs">
                                             {vital.date.split(' ')[0]}
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-slate-900">Vitals Logged</p>
                                             <p className="text-xs text-slate-500">{vital.date}</p>
-                                        </div>
-                                        <div className="ml-auto text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
-                                            Normal
                                         </div>
                                     </div>
                                 )) : (

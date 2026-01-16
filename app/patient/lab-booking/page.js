@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, supabase } from '@/lib/supabase';
 import { ArrowLeft, FlaskConical, Calendar, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSidebar } from '@/lib/SidebarContext';
+import { MoreVertical } from 'lucide-react';
 
 export default function LabBookingPage() {
     const router = useRouter();
@@ -16,6 +18,7 @@ export default function LabBookingPage() {
         test_date: '',
         notes: ''
     });
+    const { toggle } = useSidebar();
 
     useEffect(() => {
         loadData();
@@ -65,25 +68,31 @@ export default function LabBookingPage() {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFB]"><div className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin"></div></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#FDF8FA]"><div className="w-12 h-12 border-4 border-[#5a8a7a]/20 border-t-[#5a8a7a] rounded-full animate-spin"></div></div>;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] font-sans text-slate-900 pb-20">
+        <div className="min-h-screen bg-[#FDF8FA] font-sans text-slate-900 pb-20">
             <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
-                <div className="container mx-auto px-6 py-5">
+                <div className="container mx-auto px-6 md:px-12 py-6 max-w-7xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
+                        <button
+                            onClick={toggle}
+                            className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
+                        >
+                            <MoreVertical className="w-6 h-6" />
+                        </button>
                         <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                            <ArrowLeft className="w-6 h-6 text-gray-900" />
+                            <ArrowLeft className="w-6 h-6 text-gray-400" />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-black text-gray-900">Book Lab Test</h1>
-                            <p className="text-sm font-bold text-gray-400">Schedule your diagnostic tests</p>
+                            <h1 className="text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">Book Lab Test</h1>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Schedule diagnostics</p>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <div className="container mx-auto px-6 py-8 max-w-4xl">
+            <main className="container mx-auto px-6 md:px-12 py-8 max-w-7xl">
                 <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
                     <h2 className="text-xl font-black text-gray-900 mb-6">Test Details</h2>
 
@@ -121,18 +130,18 @@ export default function LabBookingPage() {
                                             key={lab.id}
                                             onClick={() => setSelectedLab(lab)}
                                             className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedLab?.id === lab.id
-                                                ? 'border-teal-600 bg-teal-50'
-                                                : 'border-gray-200 hover:border-teal-300'
+                                                ? 'border-[#5a8a7a] bg-[#5a8a7a]/5'
+                                                : 'border-gray-100 hover:border-[#5a8a7a]/30'
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                                                    <FlaskConical className="w-5 h-5 text-teal-600" />
+                                                <div className="w-10 h-10 bg-[#5a8a7a]/10 rounded-lg flex items-center justify-center">
+                                                    <FlaskConical className="w-5 h-5 text-[#5a8a7a]" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <h3 className="font-bold text-gray-900">{lab.name}</h3>
+                                                    <h3 className="font-bold text-[#4a2b3d]">{lab.name}</h3>
                                                     {lab.address && (
-                                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                        <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1 uppercase font-bold">
                                                             <MapPin className="w-3 h-3" />
                                                             {lab.address}
                                                         </p>
@@ -164,14 +173,14 @@ export default function LabBookingPage() {
                             </button>
                             <button
                                 onClick={handleBooking}
-                                className="flex-1 py-4 bg-teal-600 text-white rounded-2xl font-bold hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20"
+                                className="flex-1 py-4 bg-[#4a2b3d] text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#3a1b2d] transition-all shadow-lg active:scale-95"
                             >
                                 Book Test
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </main>
+        </div >
     );
 }

@@ -1,17 +1,29 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, supabase } from '@/lib/supabase';
-import { User, Mail, Phone, Calendar, Droplet, MapPin, LogOut, Edit2, Shield, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { User, Mail, Phone, MapPin, Calendar, Save, Camera, ArrowLeft, Heart, Shield, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function ProfilePage() {
+export default function PatientProfilePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [patient, setPatient] = useState(null);
-    const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [formData, setFormData] = useState({});
+    const [patient, setPatient] = useState(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        dob: '',
+        gender: '',
+        bloodGroup: '',
+        address: '',
+        height: '',
+        weight: '',
+        emergencyContact: '',
+        allergies: '',
+        medicalHistory: ''
+    });
 
     useEffect(() => {
         loadProfile();
@@ -19,14 +31,32 @@ export default function ProfilePage() {
 
     const loadProfile = async () => {
         try {
-            const user = await getCurrentUser();
-            if (!user) return router.push('/login');
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return router.push('/login');
 
-            const { data } = await getPatient(user.id);
-            if (data) {
-                setPatient(data);
-                setFormData(data);
-            }
+            const { data, error } = await supabase
+                .from('patients')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .single();
+
+            if (error) throw error;
+
+            setPatient(data);
+            setFormData({
+                name: data.name || '',
+                email: data.email || session.user.email,
+                phone: data.phone || '',
+                dob: data.dob || '',
+                gender: data.gender || '',
+                bloodGroup: data.blood_group || '',
+                address: data.address || '',
+                height: data.height || '',
+                weight: data.weight || '',
+                emergencyContact: data.emergency_contact || '',
+                allergies: data.allergies || '',
+                medicalHistory: data.medical_history || ''
+            });
         } catch (error) {
             console.error('Error loading profile:', error);
             toast.error('Failed to load profile');
@@ -35,231 +65,208 @@ export default function ProfilePage() {
         }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleUpdateProfile = async () => {
+    const handleSave = async () => {
         setSaving(true);
         try {
-            const user = await getCurrentUser();
-            console.log('Current user:', user?.id);
-            console.log('Patient data:', patient);
-            console.log('Form data to update:', formData);
-
-            if (!user) {
-                toast.error('Please login again');
-                return router.push('/login');
-            }
-
-            // Only update fields that exist in the database
-            const updatePayload = {
+            // Sanitize payload to prevent 400 errors (e.g. empty strings for numbers/dates)
+            const updates = {
                 name: formData.name,
-                phone: formData.phone,
-                address: formData.address
+                phone: formData.phone || null,
+                dob: formData.dob || null,
+                gender: formData.gender || null,
+                blood_group: formData.bloodGroup || null,
+                address: formData.address || null,
+                height: formData.height ? parseFloat(formData.height) : null,
+                weight: formData.weight ? parseFloat(formData.weight) : null,
+                emergency_contact: formData.emergencyContact || null,
+                allergies: formData.allergies || null,
             };
 
-            console.log('Update payload:', updatePayload);
-            console.log('Updating for user_id:', user.id);
+            console.log('Saving profile updates:', updates);
 
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('patients')
-                .update(updatePayload)
-                .eq('user_id', user.id)
-                .select()
-                .single();
+                .update(updates)
+                .eq('id', patient.id);
 
-            console.log('Update result - data:', data);
-            console.log('Update result - error:', error);
-
-            if (error) {
-                console.error('Supabase error details:', JSON.stringify(error, null, 2));
-                throw new Error(error.message || error.hint || 'Failed to update profile');
-            }
-
-            if (!data) {
-                throw new Error('No data returned from update');
-            }
-
-            setPatient(data);
-            setFormData(data);
-            setIsEditing(false);
-            toast.success('Profile updated successfully');
+            if (error) throw error;
+            toast.success('Profile updated successfully!');
+            router.refresh();
         } catch (error) {
-            console.error('Error updating profile:', error);
-            toast.error(error.message || 'Failed to update profile');
+            console.error('Error saving profile:', error);
+            // Show specific error message if available
+            toast.error(`Failed to update: ${error.message || 'Check your inputs'}`);
         } finally {
             setSaving(false);
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await supabase.auth.signOut();
-            toast.success('Signed out successfully');
-            router.push('/login');
-        } catch (error) {
-            toast.error('Error signing out');
-        }
-    };
-
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-surface">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-plum-600"></div>
+        <div className="min-h-screen bg-surface flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-plum-800 border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-surface font-sans text-slate-900 pb-20">
+        <div className="min-h-screen bg-surface pb-20">
             {/* Header */}
-            <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-100">
-                <div className="container mx-auto px-6 py-4">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.push('/patient/dashboard')}
-                            className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-600"
-                        >
-                            <ArrowLeft className="w-6 h-6" />
-                        </button>
-                        <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-                    </div>
+            <div className="bg-[#4a2b3d] pt-8 pb-20 px-6 rounded-b-[2.5rem] relative mb-16 shadow-xl">
+                <div className="max-w-4xl mx-auto flex items-center justify-between text-white mb-6">
+                    <button onClick={() => router.back()} className="flex items-center gap-2 p-2 pr-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all group">
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-sm font-bold opacity-90">Back</span>
+                    </button>
+                    <h1 className="text-lg font-black uppercase tracking-widest">My Profile</h1>
+                    <div className="w-10" />
                 </div>
-            </header>
 
-            <div className="container mx-auto px-6 py-8 md:py-12">
-                <div className="max-w-4xl mx-auto">
-
-                    {/* Main Profile Card */}
-                    <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-8 border border-gray-100">
-                        <div className="h-48 bg-gradient-to-r from-plum-700 to-plum-900 relative">
-                            <div className="absolute -bottom-16 left-8 p-1 bg-white rounded-full">
-                                <div className="w-32 h-32 rounded-full bg-plum-100 flex items-center justify-center text-4xl font-bold text-plum-700 border-4 border-white shadow-md">
-                                    {patient?.name?.[0] || 'U'}
-                                </div>
-                            </div>
+                {/* Profile Avatar Card */}
+                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl bg-white rounded-[2rem] shadow-xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6">
+                    <div className="relative group">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-plum-600 to-plum-800 flex items-center justify-center text-white text-4xl font-black">
+                            {patient?.name?.[0] || 'U'}
                         </div>
+                        <button className="absolute bottom-0 right-0 p-2 bg-teal-600 text-white rounded-full shadow-lg hover:bg-teal-700 transition-all md:hidden">
+                            <Camera size={16} />
+                        </button>
+                    </div>
 
-                        <div className="pt-20 px-8 pb-8">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                                <div>
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={formData.name || ''}
-                                            onChange={handleInputChange}
-                                            className="text-3xl font-bold text-gray-900 mb-1 border-b-2 border-gray-200 focus:border-plum-600 outline-none w-full"
-                                        />
-                                    ) : (
-                                        <h2 className="text-3xl font-bold text-gray-900 mb-1">{patient?.name || 'User'}</h2>
-                                    )}
-                                    <div className="flex items-center gap-2 text-gray-500">
-                                        <Shield className="w-4 h-4 text-teal-600" />
-                                        <span className="text-sm font-medium">Verified Patient Account</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    {isEditing ? (
-                                        <>
-                                            <button
-                                                onClick={() => { setIsEditing(false); setFormData(patient); }}
-                                                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                onClick={handleUpdateProfile}
-                                                disabled={saving}
-                                                className="px-5 py-2.5 bg-plum-700 hover:bg-plum-800 text-white rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
-                                            >
-                                                {saving ? 'Saving...' : 'Save Changes'}
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
-                                        >
-                                            <Edit2 size={16} /> Edit Profile
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-
-                                {/* Contact Info */}
-                                <div className="space-y-6">
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">Contact Information</h3>
-
-                                    <div className="flex items-center gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <Mail size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-400 font-medium">Email Address</p>
-                                            <p className="font-semibold text-gray-900">{patient?.email}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <Phone size={20} />
-                                        </div>
-                                        <div className="w-full">
-                                            <p className="text-xs text-gray-400 font-medium">Phone Number</p>
-                                            {isEditing ? (
-                                                <input
-                                                    type="tel"
-                                                    name="phone"
-                                                    value={formData.phone || ''}
-                                                    onChange={handleInputChange}
-                                                    className="font-semibold text-gray-900 w-full border-b border-gray-200 focus:border-plum-600 outline-none pb-1"
-                                                    placeholder="Enter phone number"
-                                                />
-                                            ) : (
-                                                <p className="font-semibold text-gray-900">{patient?.phone || 'Not provided'}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 group">
-                                        <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <MapPin size={20} />
-                                        </div>
-                                        <div className="w-full">
-                                            <p className="text-xs text-gray-400 font-medium">Address</p>
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    name="address"
-                                                    value={formData.address || ''}
-                                                    onChange={handleInputChange}
-                                                    className="font-semibold text-gray-900 w-full border-b border-gray-200 focus:border-plum-600 outline-none pb-1"
-                                                    placeholder="Enter address"
-                                                />
-                                            ) : (
-                                                <p className="font-semibold text-gray-900">{patient?.address || 'Not provided'}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
+                    <div className="text-center md:text-left flex-1">
+                        <h2 className="text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">{formData.name}</h2>
+                        <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Patient ID: #{patient?.id?.slice(0, 8)}</p>
+                        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                            <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-green-100">
+                                Active Account
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1">
+                                <Shield size={12} /> Insurance Verified
+                            </span>
                         </div>
                     </div>
 
                     <button
-                        onClick={handleLogout}
-                        className="w-full bg-white border border-rose-100 text-rose-600 py-4 rounded-2xl font-bold shadow-sm hover:bg-rose-50 transition-all flex items-center justify-center gap-2"
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="hidden md:flex items-center gap-2 px-6 py-3 bg-[#4a2b3d] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#3a2230] transition-all disabled:opacity-50 shadow-lg shadow-plum-900/20"
                     >
-                        <LogOut size={20} /> Sign Out of HealthOn
+                        {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+                        Save Changes
                     </button>
-
                 </div>
             </div>
+
+            <div className="max-w-4xl mx-auto px-6 space-y-8">
+
+                {/* Personal Information */}
+                <section className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 bg-plum-50 rounded-xl flex items-center justify-center text-plum-700">
+                            <User size={20} />
+                        </div>
+                        <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Edit Personal Details</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputGroup label="Full Name" icon={<User size={16} />} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                        <InputGroup label="Date of Birth" icon={<Calendar size={16} />} type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
+                        <InputGroup label="Gender" icon={<User size={16} />} type="select" options={['Male', 'Female', 'Other']} value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} />
+                        <InputGroup label="Blood Type" icon={<Heart size={16} />} type="select" options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} value={formData.bloodGroup} onChange={e => setFormData({ ...formData, bloodGroup: e.target.value })} />
+                    </div>
+                </section>
+
+                {/* Contact Information */}
+                <section className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-700">
+                            <Phone size={20} />
+                        </div>
+                        <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Contact Information</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputGroup label="Email" icon={<Mail size={16} />} value={formData.email} disabled />
+                        <InputGroup label="Phone Number" icon={<Phone size={16} />} value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                        <InputGroup label="Address" icon={<MapPin size={16} />} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                        <InputGroup label="Emergency Contact" icon={<Shield size={16} />} placeholder="Name & Phone" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} />
+                    </div>
+                </section>
+
+
+                {/* Physical Stats (Optional) */}
+                <section className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+                    <div className="flex items-center gap-3 mb-8 relative z-10">
+                        <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-700">
+                            <Activity size={20} />
+                        </div>
+                        <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Physical Stats (Optional)</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <InputGroup label="Height (cm)" icon={<Activity size={16} />} value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} />
+                        <InputGroup label="Weight (kg)" icon={<Activity size={16} />} value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} />
+                        <div className="md:col-span-2">
+                            <TextAreaGroup label="Allergies / Conditions" placeholder="List any known allergies or chronic conditions..." value={formData.allergies} onChange={e => setFormData({ ...formData, allergies: e.target.value })} />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Mobile Save Button */}
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full md:hidden py-4 bg-[#4a2b3d] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#3a2230] transition-all disabled:opacity-50 shadow-xl shadow-plum-900/20 flex items-center justify-center gap-2"
+                >
+                    {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+                    Save Changes
+                </button>
+
+            </div>
+        </div>
+    );
+}
+
+function InputGroup({ label, icon, type = "text", value, onChange, disabled, options }) {
+    return (
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{label}</label>
+            <div className={`relative flex items-center bg-gray-50 border border-gray-100 rounded-xl px-4 transition-all focus-within:ring-2 focus-within:ring-plum-500/10 focus-within:border-plum-500/20 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                <span className="text-gray-400 mr-3">{icon}</span>
+                {type === 'select' ? (
+                    <select
+                        value={value}
+                        onChange={onChange}
+                        disabled={disabled}
+                        className="w-full py-3 bg-transparent text-sm font-bold text-gray-700 outline-none placeholder:font-medium"
+                    >
+                        <option value="">Select {label}</option>
+                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                ) : (
+                    <input
+                        type={type}
+                        value={value}
+                        onChange={onChange}
+                        disabled={disabled}
+                        className="w-full py-3 bg-transparent text-sm font-bold text-gray-700 outline-none placeholder:font-medium"
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
+
+function TextAreaGroup({ label, placeholder, value, onChange }) {
+    return (
+        <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{label}</label>
+            <textarea
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                rows={3}
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-plum-500/10 focus:border-plum-500/20 resize-none transition-all"
+            />
         </div>
     );
 }
