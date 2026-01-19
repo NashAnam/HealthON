@@ -34,9 +34,20 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-[32px] shadow-2xl shadow-plum-200/50 border border-white/50 p-10 relative z-10 text-center">
 
-        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-plum-200/20 p-3">
-          <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-plum-200/30 p-4 border border-white"
+        >
+          <motion.img
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            src="/logo.png"
+            alt="HealthON Logo"
+            className="w-full h-full object-contain"
+          />
+        </motion.div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-3 block">Welcome Back</h1>
         <p className="text-gray-500 mb-10 text-lg">Sign in to access your health dashboard</p>

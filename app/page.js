@@ -66,9 +66,12 @@ export default function LandingPage() {
             <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 px-6 py-4 md:px-12 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-100 py-3 shadow-sm' : 'bg-transparent'}`}>
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3 group cursor-pointer" onClick={() => router.push('/')}>
-                        <div className="w-12 h-12 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm">
+                        <motion.div
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            className="w-12 h-12 flex items-center justify-center bg-white rounded-xl p-1.5 shadow-xl shadow-slate-200/50 border border-slate-100"
+                        >
                             <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
-                        </div>
+                        </motion.div>
                         <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">Health<span className="text-[#648C81]">on</span></span>
                     </div>
 
@@ -264,7 +267,7 @@ export default function LandingPage() {
                     <div className="grid md:grid-cols-4 gap-16 mb-24">
                         <div className="col-span-1 md:col-span-2">
                             <div className="flex items-center gap-3 mb-8">
-                                <div className="w-12 h-12 flex items-center justify-center bg-white rounded-xl p-1 shadow-sm">
+                                <div className="w-12 h-12 flex items-center justify-center bg-white rounded-xl p-2 shadow-lg">
                                     <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
                                 </div>
                                 <span className="text-xl font-black tracking-tighter uppercase text-white">Health<span className="text-[#648C81]">on</span></span>
