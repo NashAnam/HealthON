@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { signInWithGoogle } from '@/lib/supabase';
 import { ArrowLeft, ShieldCheck, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const router = useRouter();
