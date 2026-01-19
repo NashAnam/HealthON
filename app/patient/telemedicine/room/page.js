@@ -240,7 +240,9 @@ function TelemedicineRoomContent() {
                 <div className="flex items-center gap-6">
                     <div className="hidden md:flex flex-col text-right">
                         <p className="text-slate-400 text-[8px] font-black uppercase tracking-widest mb-1">Your Consultant</p>
-                        <p className="text-slate-900 font-black leading-none text-sm">Dr. {appointment.doctors?.name}</p>
+                        <p className="text-slate-900 font-black leading-none text-sm">
+                            {(appointment.doctors?.name?.toLowerCase().startsWith('dr') ? appointment.doctors.name : `Dr. ${appointment.doctors?.name}`)}
+                        </p>
                     </div>
                     <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
                         <Settings size={18} />
@@ -267,7 +269,9 @@ function TelemedicineRoomContent() {
                                 <div className="w-20 h-20 bg-plum-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-plum-100/50">
                                     <Video size={32} className="text-plum-600" />
                                 </div>
-                                <h2 className="text-3xl font-black mb-3 text-slate-900 tracking-tight leading-tight">Join Dr. {appointment.doctors?.name?.split(' ').pop()}</h2>
+                                <h2 className="text-3xl font-black mb-3 text-slate-900 tracking-tight leading-tight">
+                                    Join {(appointment.doctors?.name?.toLowerCase().startsWith('dr') ? appointment.doctors.name : `Dr. ${appointment.doctors?.name?.split(' ').pop()}`)}
+                                </h2>
                                 <p className="text-slate-500 font-medium mb-8 leading-relaxed text-sm">A private, secure medical line is ready for your consultation.</p>
 
                                 <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8 flex flex-col gap-4">
@@ -310,7 +314,9 @@ function TelemedicineRoomContent() {
                                     <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center text-slate-600 mx-auto mb-6 shadow-xl border border-slate-700 animate-pulse">
                                         <User size={48} />
                                     </div>
-                                    <p className="text-teal-400 font-black uppercase tracking-widest text-[10px]">Calling Dr. {appointment.doctors?.name}...</p>
+                                    <p className="text-teal-400 font-black uppercase tracking-widest text-[10px]">
+                                        Calling {(appointment.doctors?.name?.toLowerCase().startsWith('dr') ? appointment.doctors.name : `Dr. ${appointment.doctors?.name}`)}...
+                                    </p>
                                 </div>
                             ) : (
                                 <>

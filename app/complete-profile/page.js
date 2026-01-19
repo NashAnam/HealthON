@@ -94,7 +94,7 @@ export default function CompleteProfilePage() {
           user_id: user.id, name: formData.name, qualification: formData.qualification,
           specialty: formData.specialty, fee: formData.fee, address: formData.address,
           experience: formData.experience, available_days: formData.available_days.split(',').map(d => d.trim()),
-          timings: formData.timings, verified: true
+          timings: formData.timings, verified: false
         });
         if (result.error) throw result.error;
         toast.success('Doctor Profile Created!');
@@ -105,7 +105,7 @@ export default function CompleteProfilePage() {
         const result = await createLab({
           user_id: user.id, name: formData.name, address: formData.address,
           license_number: formData.license_number, tests_list: formData.tests_list,
-          report_delivery_method: formData.report_delivery_method, verified: true
+          report_delivery_method: formData.report_delivery_method, verified: false
         });
         if (result.error) throw result.error;
         toast.success('Lab Profile Created!');

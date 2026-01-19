@@ -878,7 +878,9 @@ export default function HealthTrackerPage() {
                                                 <div>
                                                     <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Purpose</p>
                                                     <p className="text-lg font-black text-slate-800">{nextAppointment.consultation_type || 'Consultation'}</p>
-                                                    <p className="text-xs font-bold text-teal-600 mt-1">Dr. {nextAppointment.doctors?.name}</p>
+                                                    <p className="text-xs font-bold text-teal-600 mt-1">
+                                                        {nextAppointment.doctors?.name?.toLowerCase().startsWith('dr') ? nextAppointment.doctors.name : `Dr. ${nextAppointment.doctors?.name}`}
+                                                    </p>
                                                 </div>
                                             </div>
                                         ) : (

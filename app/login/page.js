@@ -34,8 +34,8 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-[32px] shadow-2xl shadow-plum-200/50 border border-white/50 p-10 relative z-10 text-center">
 
-        <div className="w-16 h-16 bg-gradient-to-br from-plum-600 to-plum-800 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg shadow-plum-600/20">
-          <Activity className="w-8 h-8 text-white" />
+        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-plum-200/20 p-3">
+          <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-3 block">Welcome Back</h1>

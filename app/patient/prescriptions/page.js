@@ -93,7 +93,9 @@ export default function PrescriptionsPage() {
                                     </div>
                                     <div>
                                         <h4 className="text-xl font-bold text-gray-900 mb-1">{prescription.diagnosis || 'Prescription'}</h4>
-                                        <p className="text-sm text-gray-600">Prescribed by {prescription.doctors?.name || 'Doctor'}</p>
+                                        <p className="text-sm text-gray-600">
+                                            Prescribed by {prescription.doctors?.name?.toLowerCase().startsWith('dr') ? prescription.doctors.name : `Dr. ${prescription.doctors?.name || 'Doctor'}`}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="bg-[#5a8a7a] text-white px-4 py-1 rounded-full text-sm font-semibold">

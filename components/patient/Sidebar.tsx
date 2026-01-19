@@ -44,8 +44,8 @@ export default function Sidebar() {
 
                 {/* Logo Area */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                    <Link href="/patient/dashboard" className="flex items-center gap-2">
-                        <div className="w-6 h-6 flex items-center justify-center">
+                    <Link href="/patient/dashboard" className="flex items-center gap-3">
+                        <div className="w-10 h-10 flex items-center justify-center bg-white rounded-xl p-1.5 shadow-sm">
                             <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-xl font-bold tracking-tight text-white uppercase">

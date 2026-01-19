@@ -55,7 +55,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'HealthOn'
+    title: 'HealthOn',
+    startupImage: '/logo.png'
   },
   icons: {
     icon: '/logo.png',

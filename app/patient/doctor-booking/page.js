@@ -270,7 +270,9 @@ export default function DoctorBookingPage() {
                     {doctor.name?.charAt(0) || 'D'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-[#4a2b3d] transition-colors">Dr. {doctor.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-[#4a2b3d] transition-colors">
+                      {doctor.name?.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor.name}`}
+                    </h3>
                     <p className="text-[#5a8a7a] font-medium text-sm mb-1">{doctor.specialty || doctor.qualification || 'General Physician'}</p>
                     {doctor.verified && (
                       <div className="flex items-center gap-1.5">
@@ -321,7 +323,7 @@ export default function DoctorBookingPage() {
             <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                 <h2 className="text-xl font-bold text-gray-900">Book Appointment</h2>
-                <p className="text-sm text-gray-500">Dr. {selectedDoctor.name} • {selectedDoctor.specialty}</p>
+                <p className="text-sm text-gray-500">{selectedDoctor.name?.toLowerCase().startsWith('dr') ? selectedDoctor.name : `Dr. ${selectedDoctor.name}`} • {selectedDoctor.specialty}</p>
               </div>
 
               <div className="p-6 space-y-5">

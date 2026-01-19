@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, Stethoscope, FlaskConical } from 'lucide-react';
+import { RefreshCw, Stethoscope, FlaskConical, CheckCircle2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -158,8 +158,7 @@ export default function AdminDashboard() {
     */
 
     const handleVerifyDoctor = async (doctorId, doctorName) => {
-        if (!confirm(`Verify ${doctorName} as a doctor?`)) return;
-
+        // Removed confirm() to avoid silent blocking in some browsers
         setProcessingId(doctorId);
         try {
             const { error } = await supabase
@@ -171,15 +170,15 @@ export default function AdminDashboard() {
             toast.success('Doctor verified successfully!');
             fetchData();
         } catch (error) {
-            toast.error('Error verifying doctor');
+            console.error('Doctor verification error:', error);
+            toast.error('Error verifying doctor: ' + (error.message || 'Unknown error'));
         } finally {
             setProcessingId(null);
         }
     };
 
     const handleVerifyLab = async (labId, labName) => {
-        if (!confirm(`Verify ${labName} as a lab?`)) return;
-
+        // Removed confirm() to avoid silent blocking in some browsers
         setProcessingId(labId);
         try {
             const { error } = await supabase
@@ -191,15 +190,14 @@ export default function AdminDashboard() {
             toast.success('Lab verified successfully!');
             fetchData();
         } catch (error) {
-            toast.error('Error verifying lab');
+            console.error('Lab verification error:', error);
+            toast.error('Error verifying lab: ' + (error.message || 'Unknown error'));
         } finally {
             setProcessingId(null);
         }
     };
 
     const handleReject = async (id, type) => {
-        if (!confirm(`Are you sure you want to reject this ${type}?`)) return;
-
         setProcessingId(id);
         try {
             // if (type === 'payment') {
@@ -448,21 +446,27 @@ function DoctorsTable({ doctors, loading, processingId, onVerify, onReject }) {
                         <tr key={doctor.id} className="border-b hover:bg-slate-50">
                             <td className="p-6 font-bold text-slate-900">{doctor.name}</td>
                             <td className="p-6 text-sm text-slate-700">{doctor.qualification}</td>
-                            <td className="p-6 text-sm text-slate-700">{doctor.experience} years</td>
+                            <td className="p-6 text-sm text-slate-700">{doctor.experience?.toString().toLowerCase().includes('year') ? doctor.experience : `${doctor.experience} years`}</td>
                             <td className="p-6 text-right">
                                 <div className="flex gap-2 justify-end">
                                     <button
                                         onClick={() => onVerify(doctor.id, doctor.name)}
                                         disabled={processingId === doctor.id}
-                                        className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
                                     >
+                                        {processingId === doctor.id ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        )}
                                         Verify
                                     </button>
                                     <button
                                         onClick={() => onReject(doctor.id)}
                                         disabled={processingId === doctor.id}
-                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
                                     >
+                                        <XCircle className="w-4 h-4" />
                                         Reject
                                     </button>
                                 </div>
@@ -511,15 +515,21 @@ function LabsTable({ labs, loading, processingId, onVerify, onReject }) {
                                     <button
                                         onClick={() => onVerify(lab.id, lab.name)}
                                         disabled={processingId === lab.id}
-                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
                                     >
+                                        {processingId === lab.id ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        )}
                                         Verify
                                     </button>
                                     <button
                                         onClick={() => onReject(lab.id)}
                                         disabled={processingId === lab.id}
-                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
                                     >
+                                        <XCircle className="w-4 h-4" />
                                         Reject
                                     </button>
                                 </div>

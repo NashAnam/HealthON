@@ -182,7 +182,9 @@ export default function AppointmentsPage() {
                                                 <div className="flex items-center gap-2 text-gray-500">
                                                     <User className="w-4 h-4" />
                                                     <p className="text-sm font-bold">
-                                                        {appointment.type === 'doctor' ? `Dr. ${appointment.doctors?.name || 'Ganesh Johnson'}` : (appointment.doctors?.name || 'Lab')} • {appointment.doctors?.specialty || 'Primary Care'}
+                                                        {appointment.type === 'doctor'
+                                                            ? (appointment.doctors?.name?.toLowerCase().startsWith('dr') ? appointment.doctors.name : `Dr. ${appointment.doctors?.name || 'Ganesh Johnson'}`)
+                                                            : (appointment.doctors?.name || 'Lab')} • {appointment.doctors?.specialty || 'Primary Care'}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-gray-500">
@@ -269,7 +271,9 @@ export default function AppointmentsPage() {
                                         <div className="space-y-1">
                                             <h4 className="text-lg font-black text-[#4a2b3d] tracking-tight">{appointment.appointment_type || 'Follow-up Visit'}</h4>
                                             <p className="text-xs font-bold text-gray-400">
-                                                {appointment.type === 'doctor' ? `Dr. ${appointment.doctors?.name || 'Sarah Johnson'}` : (appointment.doctors?.name || 'Lab')} • {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Date N/A'} at {appointment.appointment_time || 'Time N/A'}
+                                                {appointment.type === 'doctor'
+                                                    ? (appointment.doctors?.name?.toLowerCase().startsWith('dr') ? appointment.doctors.name : `Dr. ${appointment.doctors?.name || 'Sarah Johnson'}`)
+                                                    : (appointment.doctors?.name || 'Lab')} • {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Date N/A'} at {appointment.appointment_time || 'Time N/A'}
                                             </p>
                                         </div>
                                     </div>
@@ -343,7 +347,9 @@ export default function AppointmentsPage() {
                                         </div>
                                         <div>
                                             <p className="text-lg font-black text-slate-900 leading-tight">
-                                                {selectedAppointment.type === 'doctor' ? `Dr. ${selectedAppointment.doctors?.name}` : selectedAppointment.doctors?.name}
+                                                {selectedAppointment.type === 'doctor'
+                                                    ? (selectedAppointment.doctors?.name?.toLowerCase().startsWith('dr') ? selectedAppointment.doctors.name : `Dr. ${selectedAppointment.doctors?.name}`)
+                                                    : selectedAppointment.doctors?.name}
                                             </p>
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
                                                 {selectedAppointment.doctors?.specialty || 'Medical Specialist'}

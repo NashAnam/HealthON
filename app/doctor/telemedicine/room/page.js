@@ -406,7 +406,7 @@ function DoctorRoomContent() {
                             <TelemedicineChat
                                 appointmentId={id}
                                 userRole="doctor"
-                                userName={doctor?.name || "Dr. Unnamed"}
+                                userName={doctor?.name?.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor?.name || "MD"}`}
                                 avatarUrl={doctor?.avatar_url}
                             />
                         </div>
