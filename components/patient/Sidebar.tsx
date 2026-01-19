@@ -46,13 +46,12 @@ export default function Sidebar() {
                 {/* Logo Area */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center">
                     <Link href="/patient/dashboard" className="flex items-center gap-3 group">
-                        <motion.div
-                            animate={{ scale: [1, 1.03, 1] }}
-                            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                            className="w-32 h-16 flex items-center justify-center bg-white rounded-xl shadow-lg shadow-black/20 overflow-hidden"
-                        >
-                            <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain p-2" />
-                        </motion.div>
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg shadow-black/20 overflow-hidden">
+                            <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <span className="text-xl font-black tracking-tighter text-white uppercase">
+                            Health<span className="text-[#5a8a7a]">On</span>
+                        </span>
                     </Link>
                     <button onClick={close} className="p-2 text-white/70 hover:bg-white/10 rounded-full lg:hidden">
                         <X size={20} />

@@ -27,13 +27,10 @@ export default function Header({ userName, userImage }: HeaderProps) {
                 {/* Mobile Menu Trigger & Logo (Mobile Only) */}
                 <div className="flex items-center gap-3 lg:hidden">
                     <Link href="/patient/dashboard" className="flex items-center gap-3 group">
-                        <motion.div
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                            className="w-24 h-12 flex items-center justify-center bg-white rounded-lg overflow-hidden"
-                        >
-                            <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
-                        </motion.div>
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center p-2 shadow-lg shadow-indigo-200/50 transition-transform group-hover:scale-110">
+                            <Activity className="w-full h-full text-white" />
+                        </div>
+                        <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">Health<span className="text-indigo-600">on</span></span>
                     </Link>
                 </div>
 
