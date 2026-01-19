@@ -28,13 +28,12 @@ export default function Header({ userName, userImage }: HeaderProps) {
                 <div className="flex items-center gap-3 lg:hidden">
                     <Link href="/patient/dashboard" className="flex items-center gap-3 group">
                         <motion.div
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            className="w-10 h-10 flex items-center justify-center bg-white rounded-xl p-1.5 border border-gray-100 shadow-sm"
+                            animate={{ scale: [1, 1.05, 1] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="w-24 h-12 flex items-center justify-center bg-white rounded-lg overflow-hidden"
                         >
                             <img src="/logo.png" alt="HealthON Logo" className="w-full h-full object-contain" />
                         </motion.div>
-                        <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">Health<span className="text-[#648C81]">on</span></span>
                     </Link>
                 </div>
 

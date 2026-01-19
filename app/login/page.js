@@ -39,11 +39,11 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-plum-200/30 p-4 border border-white"
+          className="w-48 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-plum-200/30 p-4 border border-white overflow-hidden"
         >
           <motion.img
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             src="/logo.png"
             alt="HealthON Logo"
             className="w-full h-full object-contain"
