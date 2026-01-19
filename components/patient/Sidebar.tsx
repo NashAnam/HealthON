@@ -1,5 +1,6 @@
 'use client';
 import { Home, User, FileText, Calendar, Activity, Pill, LogOut, X, AlertCircle, Stethoscope, Bell } from 'lucide-react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
