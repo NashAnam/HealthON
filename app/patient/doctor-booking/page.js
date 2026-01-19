@@ -22,6 +22,7 @@ export default function DoctorBookingPage() {
     appointment_date: '',
     appointment_time: '',
     consultation_type: 'in-person',
+    appointment_type: 'Consultation',
     reason: ''
   });
   const [recommendations, setRecommendations] = useState([]);
@@ -143,7 +144,7 @@ export default function DoctorBookingPage() {
       toast.success('Appointment booked successfully!');
       setShowBookingForm(false);
       setSelectedDoctor(null);
-      setBookingData({ appointment_date: '', appointment_time: '', consultation_type: 'in-person', reason: '' });
+      setBookingData({ appointment_date: '', appointment_time: '', consultation_type: 'in-person', appointment_type: 'Consultation', reason: '' });
       router.push('/patient/appointments');
     } catch (error) {
       console.error('Error booking appointment:', error);
@@ -349,23 +350,39 @@ export default function DoctorBookingPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Consultation Type</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setBookingData({ ...bookingData, consultation_type: 'in-person' })}
-                      className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all ${bookingData.consultation_type === 'in-person' ? 'border-[#4a2b3d] bg-[#4a2b3d]/5 text-[#4a2b3d]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Visit Type</label>
+                    <select
+                      value={bookingData.appointment_type}
+                      onChange={(e) => setBookingData({ ...bookingData, appointment_type: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] outline-none text-sm font-medium bg-white"
                     >
-                      In-Person
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBookingData({ ...bookingData, consultation_type: 'telemedicine' })}
-                      className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all ${bookingData.consultation_type === 'telemedicine' ? 'border-[#5a8a7a] bg-[#5a8a7a]/5 text-[#5a8a7a]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
-                    >
-                      Video Call
-                    </button>
+                      <option value="Consultation">Consultation</option>
+                      <option value="Regular Checkup">Regular Checkup</option>
+                      <option value="Follow-up">Follow-up</option>
+                      <option value="Second Opinion">Second Opinion</option>
+                      <option value="Emergency">Emergency</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Consultation Mode</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBookingData({ ...bookingData, consultation_type: 'in-person' })}
+                        className={`px-2 py-3 rounded-xl border-2 font-bold text-[10px] uppercase transition-all ${bookingData.consultation_type === 'in-person' ? 'border-[#4a2b3d] bg-[#4a2b3d]/5 text-[#4a2b3d]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
+                      >
+                        In-Person
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBookingData({ ...bookingData, consultation_type: 'telemedicine' })}
+                        className={`px-2 py-3 rounded-xl border-2 font-bold text-[10px] uppercase transition-all ${bookingData.consultation_type === 'telemedicine' ? 'border-[#5a8a7a] bg-[#5a8a7a]/5 text-[#5a8a7a]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}
+                      >
+                        Video Call
+                      </button>
+                    </div>
                   </div>
                 </div>
 

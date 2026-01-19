@@ -78,6 +78,26 @@ export default function AppointmentsPage() {
         });
     };
 
+    const handleCancelAppointment = async (appointmentId) => {
+        if (!confirm('Are you sure you want to cancel this appointment?')) return;
+
+        const tid = toast.loading('Cancelling appointment...');
+        try {
+            const { error } = await supabase
+                .from('appointments')
+                .update({ status: 'cancelled' })
+                .eq('id', appointmentId);
+
+            if (error) throw error;
+
+            toast.success('Appointment cancelled', { id: tid });
+            loadData();
+        } catch (error) {
+            toast.error('Failed to cancel appointment', { id: tid });
+            console.error(error);
+        }
+    };
+
     const confirmReschedule = async () => {
         if (!selectedAppointment) return;
 
@@ -176,7 +196,7 @@ export default function AppointmentsPage() {
                                             {appointment.type === 'doctor' ? <Calendar className="w-8 h-8" /> : <FileText className="w-8 h-8" />}
                                         </div>
                                         <div className="space-y-3">
-                                            <h4 className="text-xl md:text-2xl font-black text-[#4a2b3d] tracking-tight">{appointment.appointment_type || 'Annual Checkup'}</h4>
+                                            <h4 className="text-xl md:text-2xl font-black text-[#4a2b3d] tracking-tight">{appointment.appointment_type || 'Consultation'}</h4>
 
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center gap-2 text-gray-500">
@@ -235,6 +255,10 @@ export default function AppointmentsPage() {
                                             Reschedule
                                         </button>
                                         <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCancelAppointment(appointment.id);
+                                            }}
                                             className="w-full py-4 bg-white border-2 border-rose-100 text-rose-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-rose-50 active:scale-95"
                                         >
                                             Cancel
