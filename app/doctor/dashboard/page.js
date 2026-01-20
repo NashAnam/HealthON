@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function DoctorDashboard() {
   const router = useRouter();
-  const { toggle } = useSidebar();
+  const { toggle, isOpen } = useSidebar();
   const [doctor, setDoctor] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [newRequests, setNewRequests] = useState([]);
@@ -175,17 +175,41 @@ export default function DoctorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] pb-12 lg:pl-72 overflow-x-hidden transition-all duration-300 w-full max-w-[100vw]">
-      {/* Dynamic Background Glows */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
-        <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
+    <div className={`min-h-screen bg-[#FDFDFD] pb-12 transition-all duration-300 w-full max-w-[100vw] ${isOpen ? 'lg:pl-72' : 'lg:pl-0'}`}>
+      {/* Decorative Ellipses (Blobs) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 30, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-plum-100/40 rounded-full blur-[120px]"
+        />
+        <motion.div
+          animate={{
+            x: [0, -40, 0],
+            y: [0, 60, 0],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] bg-teal-50/50 rounded-full blur-[100px]"
+        />
+        <motion.div
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -40, 0]
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-10%] left-[20%] w-[30%] h-[40%] bg-plum-50/30 rounded-full blur-[110px]"
+        />
       </div>
 
       <div className="relative z-10">
         <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <button onClick={toggle} className="p-2 -ml-2 text-gray-400 hover:text-plum-800 lg:hidden transition-colors">
+            <button onClick={toggle} className="p-2 -ml-2 text-gray-400 hover:text-plum-800 transition-colors">
               <MoreHorizontal size={24} />
             </button>
             <div className="w-9 h-9 flex items-center justify-center p-1">

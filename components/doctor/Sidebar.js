@@ -44,7 +44,7 @@ export default function DoctorSidebar() {
             {/* Sidebar Content */}
             <aside className={`
                 fixed top-0 left-0 h-screen w-72 bg-white flex flex-col border-r border-gray-100 z-[9999] transition-transform duration-300 ease-in-out shadow-2xl
-                ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                ${isOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
 
                 {/* Logo Area */}
@@ -58,7 +58,7 @@ export default function DoctorSidebar() {
                             <p className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase">Doctor Portal</p>
                         </div>
                     </div>
-                    <button onClick={close} className="p-2 text-gray-400 hover:bg-gray-50 rounded-full lg:hidden">
+                    <button onClick={close} className="p-2 text-gray-400 hover:bg-gray-50 rounded-full">
                         <X size={20} />
                     </button>
                 </div>
