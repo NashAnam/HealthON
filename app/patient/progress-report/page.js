@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import toast from 'react-hot-toast';
 import { Gift, Zap, Ticket, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProgressReportPage() {
     const router = useRouter();
@@ -22,6 +23,7 @@ export default function ProgressReportPage() {
     const [points, setPoints] = useState({ total: 0, breakDown: [] });
     const [dietCount, setDietCount] = useState(0);
     const [vitalsCount, setVitalsCount] = useState(0);
+    const [recommendations, setRecommendations] = useState([]);
     const { toggle } = useSidebar();
 
     useEffect(() => {
@@ -115,6 +117,58 @@ export default function ProgressReportPage() {
                 ]
             });
 
+            // Dynamic Recommendations
+            const dynamicRecs = [];
+            const validSys = last7DaysData.filter(d => d.sys);
+            const avgSys = validSys.length > 0 ? validSys.reduce((sum, d) => sum + d.sys, 0) / validSys.length : 0;
+            const validSugar = last7DaysData.filter(d => d.sugar);
+            const avgSugar = validSugar.length > 0 ? validSugar.reduce((sum, d) => sum + d.sugar, 0) / validSugar.length : 0;
+
+            if (avgSys > 135) {
+                dynamicRecs.push({
+                    title: 'Reduce Sodium Intake',
+                    text: 'Your BP is slightly elevated. Avoid pickles and excess salt.',
+                    icon: <Activity size={20} />,
+                    color: 'bg-indigo-100 text-indigo-600'
+                });
+            } else if (avgSys > 0) {
+                dynamicRecs.push({
+                    title: 'Vascular Stability',
+                    text: 'Your blood pressure has been consistent this week.',
+                    icon: <Activity size={20} />,
+                    color: 'bg-indigo-100 text-indigo-600'
+                });
+            }
+
+            if (avgSugar > 110) {
+                dynamicRecs.push({
+                    title: 'Low Glycemic Focus',
+                    text: 'Incorporate more fiber to help stabilize glucose levels.',
+                    icon: <Droplet size={20} />,
+                    color: 'bg-emerald-100 text-emerald-600'
+                });
+            }
+
+            if (dietLogsCount < 3) {
+                dynamicRecs.push({
+                    title: 'Log More Meals',
+                    text: 'Consistent diet logging provides better health insights.',
+                    icon: <TrendingUp size={20} />,
+                    color: 'bg-orange-100 text-orange-600'
+                });
+            }
+
+            if (dynamicRecs.length < 2) {
+                dynamicRecs.push({
+                    title: 'Routine Follow-up',
+                    text: 'Keep up with your scheduled consultations.',
+                    icon: <Calendar size={20} />,
+                    color: 'bg-rose-100 text-rose-600'
+                });
+            }
+
+            setRecommendations(dynamicRecs.slice(0, 3));
+
             setLoading(false);
         } catch (error) {
             console.error('Error loading progress report:', error);
@@ -125,7 +179,29 @@ export default function ProgressReportPage() {
     if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#4a2b3d] border-t-transparent rounded-full animate-spin"></div></div>;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] pb-20">
+        <div className="min-h-screen bg-[#F8FAFB] pb-20 relative overflow-hidden">
+            {/* Decorative Ellipses (Blobs) */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <motion.div
+                    animate={{
+                        x: [0, 50, 0],
+                        y: [0, -30, 0],
+                        scale: [1, 1.1, 1]
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] bg-[#648C81]/10 rounded-full blur-[120px]"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -40, 0],
+                        y: [0, 60, 0],
+                        scale: [1, 1.2, 1]
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-[10%] -right-[5%] w-[40%] h-[60%] bg-[#4a2b3d]/10 rounded-full blur-[100px]"
+                />
+            </div>
+
             {/* Header */}
             <header className="bg-white sticky top-0 z-30 border-b border-gray-100 px-6 py-6 shadow-sm">
                 <div className="flex items-center justify-between max-w-xl mx-auto">
@@ -360,27 +436,20 @@ export default function ProgressReportPage() {
                 </div>
 
                 {/* Recommendations */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative z-10">
                     <h3 className="text-base font-black text-slate-900 uppercase tracking-tight mb-6">Recommendations</h3>
                     <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
-                                <Activity size={20} />
+                        {recommendations.map((rec, idx) => (
+                            <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <div className={`w-10 h-10 ${rec.color} rounded-xl flex items-center justify-center`}>
+                                    {rec.icon}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-bold text-slate-800">{rec.title}</p>
+                                    <p className="text-xs font-medium text-slate-500">{rec.text}</p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-slate-800">Maintain current activity levels</p>
-                                <p className="text-xs font-medium text-slate-500">Your BP has been stable for 5 days.</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600">
-                                <Calendar size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-slate-800">Next follow-up in 2 weeks</p>
-                                <p className="text-xs font-medium text-slate-500">Schedule a checkup for routine review.</p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
 

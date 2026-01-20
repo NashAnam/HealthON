@@ -115,7 +115,6 @@ export default function DoctorBookingPage() {
         appointment_date: bookingData.appointment_date,
         appointment_time: bookingData.appointment_time,
         consultation_type: bookingData.consultation_type,
-        appointment_type: bookingData.appointment_type,
         reason: bookingData.reason,
         status: 'pending'
       });
@@ -134,7 +133,7 @@ export default function DoctorBookingPage() {
       toast.success('Appointment booked successfully!');
       setShowBookingForm(false);
       setSelectedDoctor(null);
-      setBookingData({ appointment_date: '', appointment_time: '', consultation_type: 'in-person', appointment_type: 'Consultation', reason: '' });
+      setBookingData({ appointment_date: '', appointment_time: '', consultation_type: 'in-person', reason: '' });
       router.push('/patient/appointments');
     } catch (error) {
       console.error('Error booking appointment:', error);

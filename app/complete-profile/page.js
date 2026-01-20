@@ -141,7 +141,7 @@ export default function CompleteProfilePage() {
             </div>
           </div>
           <div className="absolute top-0 right-0 w-80 h-80 bg-plum-100 rounded-full blur-3xl -mr-20 -mt-20 opacity-50"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-teal-100 rounded-full blur-3xl -ml-20 -mb-20 opacity-50"></div>
+          <div className="absolute bottom-0 right-0 w-80 h-80 bg-teal-100 rounded-full blur-3xl -mr-20 -mb-20 opacity-50"></div>
         </div>
 
         <div className="md:col-span-3 p-10 md:p-14 bg-white max-h-[90vh] overflow-y-auto">

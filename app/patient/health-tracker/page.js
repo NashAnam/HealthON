@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
     Mic, Camera, Save, Calendar, Clock, Activity, FileText,
     ChevronRight, X, Heart, Thermometer, User, Utensils, Upload, AlertCircle, Droplets, Pill,
