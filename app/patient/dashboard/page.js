@@ -57,7 +57,20 @@ export default function PatientDashboard() {
             ]);
 
             setVitals(vitalsRes.data);
-            setAppointments((apptsRes.data || []).slice(0, 3));
+
+            // Filter and sort for genuinely UPCOMING appointments
+            const todayStr = new Date().toISOString().split('T')[0];
+            const upcomingAppts = (apptsRes.data || [])
+                .filter(a => a.appointment_date >= todayStr)
+                .sort((a, b) => {
+                    // Sort by date then time
+                    if (a.appointment_date !== b.appointment_date) {
+                        return a.appointment_date.localeCompare(b.appointment_date);
+                    }
+                    return (a.appointment_time || '').localeCompare(b.appointment_time || '');
+                });
+
+            setAppointments(upcomingAppts.slice(0, 3));
             setReminders(remindersRes.data || []);
 
 
@@ -460,19 +473,54 @@ export default function PatientDashboard() {
                             {reminders.length === 0 ? (
                                 <div className="text-center py-8 text-gray-400 text-sm font-bold">No active reminders.</div>
                             ) : (
-                                reminders.filter(r => r.is_active).slice(0, 3).map((rem, i) => (
-                                    <div key={i} className={`p-4 rounded-2xl border-l-4 flex justify-between items-center group hover:opacity-100 transition-colors ${rem.reminder_type === 'medication' ? 'bg-rose-50/50 border-rose-500 hover:bg-rose-50' : 'bg-blue-50/50 border-blue-500 hover:bg-blue-50'}`}>
-                                        <div>
-                                            <h4 className="font-bold text-slate-800">{rem.title}</h4>
-                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
-                                                {rem.frequency}
-                                            </p>
+                                reminders.filter(r => {
+                                    if (!r.is_active) return false;
+
+                                    // If it has a full date (ISO), check if it's in the past
+                                    if (r.reminder_time && r.reminder_time.includes('T')) {
+                                        const remDate = new Date(r.reminder_time);
+                                        const now = new Date();
+                                        // If it's more than 24 hours old and not recurring, hide it
+                                        if (remDate < now && (!r.frequency || r.frequency === 'once' || r.frequency === 'Daily')) {
+                                            // Special case: "Daily" reminders should probably reset, but if it has a hard date, it might be stale
+                                            if (r.frequency === 'once' && remDate < now) return false;
+                                        }
+                                    }
+                                    return true;
+                                }).slice(0, 3).map((rem, i) => {
+                                    const formatReminderTime = (timeStr) => {
+                                        if (!timeStr) return 'N/A';
+                                        if (timeStr.includes('T')) {
+                                            const d = new Date(timeStr);
+                                            return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                                        }
+                                        // Handle HH:mm:ss or HH:mm
+                                        const cleanTime = timeStr.split(':');
+                                        if (cleanTime.length >= 2) {
+                                            const hour = parseInt(cleanTime[0]);
+                                            const ampm = hour >= 12 ? 'PM' : 'AM';
+                                            const h12 = hour % 12 || 12;
+                                            return `${h12}:${cleanTime[1]} ${ampm}`;
+                                        }
+                                        return timeStr;
+                                    };
+
+                                    return (
+                                        <div key={i} className={`p-4 rounded-2xl border-l-4 flex justify-between items-center group hover:opacity-100 transition-colors ${rem.reminder_type === 'medication' ? 'bg-rose-50/50 border-rose-500 hover:bg-rose-50' : 'bg-blue-50/50 border-blue-500 hover:bg-blue-50'}`}>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{rem.title}</h4>
+                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
+                                                    {rem.frequency}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className={`font-black text-sm ${rem.reminder_type === 'medication' ? 'text-rose-600' : 'text-blue-600'}`}>
+                                                    {formatReminderTime(rem.reminder_time)}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className={`font-black text-sm ${rem.reminder_type === 'medication' ? 'text-rose-600' : 'text-blue-600'}`}>{rem.reminder_time}</span>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                         <button

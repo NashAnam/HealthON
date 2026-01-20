@@ -3,13 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Mic, Camera, Save, Calendar, Clock, Activity, FileText,
-    ChevronRight, X, Heart, Thermometer, User, Utensils, Upload, AlertCircle, Droplets, Pill, Watch,
+    ChevronRight, X, Heart, Thermometer, User, Utensils, Upload, AlertCircle, Droplets, Pill,
     ClipboardList, CheckCircle, AlertTriangle, Info, Bell, Check
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
-import Link from 'next/link';
 import { Menu, MoreVertical } from 'lucide-react';
 import { useSidebar } from '@/lib/SidebarContext';
 import { scheduleMedicationReminder, requestNotificationPermission } from '@/lib/notifications';
@@ -32,6 +31,7 @@ export default function HealthTrackerPage() {
     const [delayedAppointments, setDelayedAppointments] = useState([]);
     const [prescribedMeds, setPrescribedMeds] = useState([]);
     const [latestAssessment, setLatestAssessment] = useState(null);
+    const [labResults, setLabResults] = useState([]);
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -186,16 +186,15 @@ export default function HealthTrackerPage() {
                 setPrescribedMeds([]);
             }
 
-            // Fetch Latest Health Assessment
-            const { data: assessment } = await supabase
-                .from('health_assessments')
+            setLatestAssessment(assessment);
+
+            // Fetch Lab Reports
+            const { data: labs } = await supabase
+                .from('lab_bookings')
                 .select('*')
                 .eq('patient_id', pt.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            setLatestAssessment(assessment);
+                .order('test_date', { ascending: false });
+            setLabResults(labs || []);
 
             setLoading(false);
         } catch (error) {
@@ -573,121 +572,14 @@ export default function HealthTrackerPage() {
         };
     };
 
-    // Watch Sync State
-    const [showDeviceModal, setShowDeviceModal] = useState(false);
-    const [scannedDevices, setScannedDevices] = useState([]);
-    const [isScanning, setIsScanning] = useState(false);
     const [activeSymptom, setActiveSymptom] = useState(null);
 
-    const startScan = () => {
-        setShowDeviceModal(true);
-        setIsScanning(true);
-        setScannedDevices([]);
-
-        // Simulate Scanning
-        setTimeout(() => {
-            setScannedDevices([
-                { name: 'Apple Watch Series 8', id: 'aw8', signal: 'Strong', battery: '85%' },
-                { name: 'Galaxy Watch 5', id: 'gw5', signal: 'Good', battery: '60%' },
-                { name: 'Fitbit Charge 5', id: 'fb5', signal: 'Weak', battery: '40%' },
-            ]);
-            setIsScanning(false);
-        }, 2000);
-    };
-
-    const connectAndSync = async (deviceName) => {
-        setShowDeviceModal(false);
-        const tid = toast.loading(`Connecting to ${deviceName}...`);
-
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate connection
-            toast.loading('Syncing health data...', { id: tid });
-
-            // Generate realistic mock data
-            const mockData = [
-                { type: 'vitals', unit: 'bpm', val: Math.floor(65 + Math.random() * 20), notes: `Synced from ${deviceName} (Resting)` },
-                { type: 'vitals', unit: 'mg/dL', val: Math.floor(95 + Math.random() * 15), notes: `Synced from ${deviceName}` },
-                { type: 'vitals', unit: 'mmHg', val: `${Math.floor(115 + Math.random() * 10)}/${Math.floor(75 + Math.random() * 5)}`, notes: `Synced from ${deviceName}` },
-                { type: 'sleep', unit: 'hours', val: (6 + Math.random() * 2).toFixed(1), notes: `Synced from ${deviceName}` },
-                { type: 'activity', unit: 'steps', val: Math.floor(2000 + Math.random() * 5000), notes: `Synced from ${deviceName}` }
-            ];
-
-            const entries = mockData.map(d => ({
-                patient_id: patient.id,
-                log_type: d.type,
-                value: d.val.toString(),
-                notes: `Unit: ${d.unit} | ${d.notes}`,
-                created_at: new Date().toISOString()
-            }));
-
-            const { error } = await supabase.from('tracker_logs').insert(entries);
-            if (error) throw error;
-
-            toast.success(`Successfully synced with ${deviceName}!`, { id: tid });
-            loadData(); // Refresh UI
-
-        } catch (error) {
-            console.error(error);
-            toast.error('Sync failed: Connection lost', { id: tid });
-        }
-    };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-teal-800 border-t-transparent rounded-full animate-spin"></div></div>;
 
     return (
         <div className="min-h-screen bg-surface pb-20 relative">
 
-            {/* Device Selection Modal */}
-            {showDeviceModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-6">
-                    <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-300">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-black text-[#4a2b3d] uppercase tracking-widest flex items-center gap-2">
-                                <Watch size={24} className="text-teal-600" /> Nearby Devices
-                            </h3>
-                            <button onClick={() => setShowDeviceModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-red-500 transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {isScanning ? (
-                            <div className="flex flex-col items-center justify-center py-12 gap-4">
-                                <div className="relative">
-                                    <div className="w-16 h-16 border-4 border-teal-100 border-t-teal-500 rounded-full animate-spin" />
-                                    <Watch className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-teal-600 animate-pulse" size={24} />
-                                </div>
-                                <p className="text-sm font-bold text-slate-500 animate-pulse uppercase tracking-widest">Scanning for watches...</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {scannedDevices.map(device => (
-                                    <button
-                                        key={device.id}
-                                        onClick={() => connectAndSync(device.name)}
-                                        className="w-full p-4 bg-slate-50 hover:bg-teal-50 border border-slate-100 hover:border-teal-200 rounded-2xl flex items-center gap-4 transition-all group"
-                                    >
-                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400 group-hover:text-teal-600 group-hover:scale-110 transition-all">
-                                            <Watch size={24} />
-                                        </div>
-                                        <div className="flex-1 text-left">
-                                            <h4 className="text-sm font-black text-slate-800">{device.name}</h4>
-                                            <p className="text-xs font-bold text-slate-400">Battery: {device.battery} • Signal: {device.signal}</p>
-                                        </div>
-                                        <ChevronRight className="text-slate-300 group-hover:text-teal-600" size={20} />
-                                    </button>
-                                ))}
-                                {scannedDevices.length === 0 && (
-                                    <div className="text-center py-8 text-slate-400 text-sm font-bold">No devices found.</div>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-                            <p className="text-xs text-slate-400 font-medium">Make sure your device is bluetooth visible.</p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Header */}
             <div className="bg-white sticky top-0 z-30 border-b border-gray-200 shadow-sm px-6 py-4">
@@ -704,14 +596,7 @@ export default function HealthTrackerPage() {
                         </button>
                     </div>
                     <h1 className="text-xl font-black text-slate-900 uppercase tracking-widest">{trackerTitle}</h1>
-                    <button
-                        onClick={startScan}
-                        className="p-2 bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-700 rounded-full transition-all group relative"
-                        title="Sync with Watch"
-                    >
-                        <Watch size={20} className="group-hover:rotate-12 transition-transform" />
-                        <span className="absolute top-0 right-0 w-2 h-2 bg-teal-500 rounded-full animate-ping opacity-0 group-hover:opacity-100" />
-                    </button>
+                    <div className="w-10" />
                 </div>
             </div>
 
@@ -1123,30 +1008,60 @@ export default function HealthTrackerPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {logs.filter(l => ['vitals', 'blood_sugar', 'cholesterol', 'test'].includes(l.log_type) || (l.notes && l.notes.toLowerCase().includes('pressure'))).length > 0 ? (
-                                                        logs.filter(l => ['vitals', 'blood_sugar', 'cholesterol', 'test'].includes(l.log_type) || (l.notes && l.notes.toLowerCase().includes('pressure'))).slice(0, 10).map((test, idx) => (
+                                                    {/* Merge Lab Bookings and Manual Test Logs */}
+                                                    {(() => {
+                                                        const labLogs = labResults.map(lab => ({
+                                                            id: lab.id,
+                                                            name: lab.test_type,
+                                                            result: lab.report_url ? 'Report Available' : 'Pending',
+                                                            status: lab.status,
+                                                            date: lab.test_date,
+                                                            isLab: true,
+                                                            url: lab.report_url
+                                                        }));
+
+                                                        const manualTestLogs = logs.filter(l => l.log_type === 'test' || l.log_type === 'reports').map(l => ({
+                                                            id: l.id,
+                                                            name: (l.notes?.split('|')[0]?.replace('[Image Captured]', 'Medical Report') || 'Health Record').trim(),
+                                                            result: l.value || 'See Notes',
+                                                            status: 'Reported',
+                                                            date: l.created_at,
+                                                            isLab: false
+                                                        }));
+
+                                                        const allTests = [...labLogs, ...manualTestLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                                                        if (allTests.length === 0) {
+                                                            return (
+                                                                <tr>
+                                                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-400 font-bold text-xs uppercase tracking-widest bg-[#FDFDFD]">
+                                                                        No recent test results available
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        }
+
+                                                        return allTests.slice(0, 10).map((test, idx) => (
                                                             <tr key={idx} className="hover:bg-slate-50/50 transition-colors bg-white">
-                                                                <td className="px-6 py-4 font-black text-slate-800 capitalize">
-                                                                    {test.log_type === 'vitals' ? 'Blood Pressure' : test.log_type.replace('_', ' ')}
+                                                                <td className="px-6 py-4">
+                                                                    <p className="font-black text-slate-800 capitalize leading-none mb-1">{test.name}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{test.isLab ? 'Clinical Lab' : 'Patient Log'}</p>
                                                                 </td>
                                                                 <td className="px-6 py-4 font-medium text-slate-600">
-                                                                    {test.value} <span className="text-slate-400 text-xs ml-1">{test.log_type === 'vitals' ? 'mmHg' : ''}</span>
+                                                                    {test.result}
                                                                 </td>
                                                                 <td className="px-6 py-4">
-                                                                    <span className="bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Normal</span>
+                                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${test.status === 'completed' || test.status === 'Reported' ? 'bg-teal-50 text-teal-700' : 'bg-amber-50 text-amber-700'
+                                                                        }`}>
+                                                                        {test.status}
+                                                                    </span>
                                                                 </td>
                                                                 <td className="px-6 py-4 font-medium text-slate-400">
-                                                                    {test.created_at ? new Date(test.created_at).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                                                                    {test.date ? new Date(test.date).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                                                                 </td>
                                                             </tr>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan="4" className="px-6 py-8 text-center text-slate-400 font-bold text-xs uppercase tracking-widest bg-[#FDFDFD]">
-                                                                No recent test results available
-                                                            </td>
-                                                        </tr>
-                                                    )}
+                                                        ));
+                                                    })()}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1188,266 +1103,118 @@ export default function HealthTrackerPage() {
                                         </button>
                                     </div>
                                 </div>
-                            ) : (() => {
-                                // Check if this is an auto-sync tracker (PR, Glucose, BP, Sleep, Steps)
-                                const autoSyncTrackers = ['pr', 'glucose', 'bp', 'sleep', 'steps'];
-                                const currentTab = searchParams.get('tab');
-                                const isAutoSync = autoSyncTrackers.includes(currentTab);
-
-                                if (isAutoSync) {
-                                    // AUTO-SYNC TRACKER UI (No Manual Entry)
-                                    const trackerConfig = {
-                                        pr: { icon: Heart, color: 'orange', unit: 'bpm', label: 'Heart Rate', filterUnit: 'bpm' },
-                                        glucose: { icon: Droplets, color: 'blue', unit: 'mg/dL', label: 'Blood Glucose', filterUnit: 'mg/dL' },
-                                        bp: { icon: Activity, color: 'teal', unit: 'mmHg', label: 'Blood Pressure', filterUnit: 'mmHg' },
-                                        sleep: { icon: Clock, color: 'indigo', unit: 'hours', label: 'Sleep Duration', filterUnit: 'hours' },
-                                        steps: { icon: Activity, color: 'amber', unit: 'steps', label: 'Daily Steps', filterUnit: 'steps' }
-                                    };
-
-                                    const config = trackerConfig[currentTab];
-                                    const Icon = config.icon;
-
-                                    // Filter logs for this specific tracker
-                                    const trackerLogs = logs.filter(l => {
-                                        if (currentTab === 'pr' || currentTab === 'glucose' || currentTab === 'bp') {
-                                            return l.log_type === 'vitals' && l.notes?.includes(config.filterUnit);
-                                        }
-                                        return l.log_type === (currentTab === 'steps' ? 'activity' : currentTab);
-                                    }).slice(0, 10);
-
-                                    return (
-                                        <div className="space-y-6">
-                                            {/* Sync Prompt */}
-                                            <div className={`bg-gradient-to-r from-${config.color}-50 to-${config.color}-100 rounded-2xl p-6 border border-${config.color}-200`}>
-                                                <div className="flex items-center gap-4 mb-4">
-                                                    <div className={`p-3 bg-white rounded-xl text-${config.color}-600 shadow-sm`}>
-                                                        <Icon size={24} />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <h3 className="text-lg font-black text-slate-800">{config.label} Tracker</h3>
-                                                        <p className="text-xs text-slate-600 font-medium">Synced from watch or log manually</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-col gap-3">
-                                                    <div className="flex gap-2">
-                                                        <input
-                                                            type="text"
-                                                            placeholder={`Enter ${config.unit}...`}
-                                                            value={formData.value}
-                                                            onChange={e => setFormData({ ...formData, value: e.target.value })}
-                                                            className="flex-1 p-4 rounded-xl border-2 border-white focus:border-slate-300 outline-none font-black text-slate-800 shadow-sm bg-white/50 focus:bg-white transition-all"
-                                                        />
-                                                        <button
-                                                            onClick={handleSave}
-                                                            className={`px-6 bg-${config.color}-600 text-white rounded-xl font-bold uppercase tracking-wider hover:bg-${config.color}-700 transition-all shadow-md active:scale-95`}
-                                                        >
-                                                            Log
-                                                        </button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 py-1">
-                                                        <div className="flex-1 h-px bg-slate-200" />
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">or</span>
-                                                        <div className="flex-1 h-px bg-slate-200" />
-                                                    </div>
-                                                    <button
-                                                        onClick={startScan}
-                                                        className={`w-full py-4 bg-white border-2 border-${config.color}-200 text-${config.color}-600 hover:bg-${config.color}-50 rounded-xl font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95`}
-                                                    >
-                                                        <Watch size={20} /> Sync from Watch
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Weekly Progress View */}
-                                            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                                <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
-                                                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Weekly Progress</h4>
-                                                </div>
-                                                <div className="p-6">
-                                                    {trackerLogs.length > 0 ? (
-                                                        <>
-                                                            {/* Weekly Chart - Simple Bar Visualization */}
-                                                            <div className="space-y-3 mb-6">
-                                                                {(() => {
-                                                                    // Get last 7 days of data
-                                                                    const last7Days = [];
-                                                                    const today = new Date();
-                                                                    for (let i = 6; i >= 0; i--) {
-                                                                        const date = new Date(today);
-                                                                        date.setDate(date.getDate() - i);
-                                                                        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                                                                        const dayLog = trackerLogs.find(l => {
-                                                                            const logDate = new Date(l.created_at);
-                                                                            return logDate.toDateString() === date.toDateString();
-                                                                        });
-                                                                        last7Days.push({ date: dateStr, value: dayLog?.value || null, fullDate: date });
-                                                                    }
-
-                                                                    const maxValue = Math.max(...trackerLogs.map(l => parseFloat(l.value) || 0));
-
-                                                                    return last7Days.map((day, idx) => (
-                                                                        <div key={idx} className="flex items-center gap-3">
-                                                                            <span className="text-xs font-bold text-slate-500 w-16">{day.date}</span>
-                                                                            <div className="flex-1 bg-slate-100 rounded-full h-8 overflow-hidden relative">
-                                                                                {day.value && (
-                                                                                    <div
-                                                                                        className={`h-full bg-gradient-to-r from-${config.color}-400 to-${config.color}-600 rounded-full flex items-center justify-end pr-3 transition-all`}
-                                                                                        style={{ width: `${(parseFloat(day.value) / maxValue) * 100}%` }}
-                                                                                    >
-                                                                                        <span className="text-xs font-black text-white">{day.value}</span>
-                                                                                    </div>
-                                                                                )}
-                                                                                {!day.value && (
-                                                                                    <div className="h-full flex items-center justify-center">
-                                                                                        <span className="text-xs text-slate-300 font-medium">No data</span>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ));
-                                                                })()}
-                                                            </div>
-
-                                                            {/* Latest Reading */}
-                                                            <div className={`bg-gradient-to-r from-${config.color}-50 to-${config.color}-100 rounded-xl p-4 border border-${config.color}-200`}>
-                                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Latest Reading</p>
-                                                                <p className="text-3xl font-black text-slate-800">
-                                                                    {trackerLogs[0].value} <span className="text-lg text-slate-500 font-medium">{config.unit}</span>
-                                                                </p>
-                                                                <p className="text-xs text-slate-500 font-medium mt-1">
-                                                                    {trackerLogs?.[0]?.created_at ? new Date(trackerLogs[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
-                                                                </p>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <div className="px-6 py-12 text-center">
-                                                            <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-${config.color}-50 flex items-center justify-center text-${config.color}-300`}>
-                                                                <Icon size={32} />
-                                                            </div>
-                                                            <p className="text-sm font-bold text-slate-400 mb-2">No readings yet</p>
-                                                            <p className="text-xs text-slate-400">Sync your smartwatch to see your weekly {config.label.toLowerCase()} progress</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                }
-
-                                // STANDARD/GENERIC TRACKER UI (Manual Entry for other trackers)
-                                return (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-6 mb-8">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Date</label>
-                                                <div className="relative">
-                                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                                                    <input
-                                                        type="date"
-                                                        value={formData.date}
-                                                        onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                                        className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Time</label>
-                                                <div className="relative">
-                                                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                                                    <input
-                                                        type="time"
-                                                        value={formData.time}
-                                                        onChange={e => setFormData({ ...formData, time: e.target.value })}
-                                                        className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6 mb-8">
-                                            <div className="relative group">
-                                                <input
-                                                    type="text"
-                                                    placeholder={trackerPlaceholder}
-                                                    value={formData.value}
-                                                    onChange={e => setFormData({ ...formData, value: e.target.value })}
-                                                    className="w-full text-4xl font-black text-slate-900 placeholder:text-slate-400 border-b-4 border-slate-200 focus:border-teal-600 py-6 bg-transparent outline-none transition-all"
-                                                />
-                                                {formData.unit && <span className="absolute right-0 bottom-6 text-sm font-black text-slate-500 uppercase tracking-widest">{formData.unit}</span>}
-                                            </div>
-
+                            ) : (
+                                /* STANDARD/GENERIC TRACKER UI (Manual Entry for other trackers) */
+                                <>
+                                    <div className="grid grid-cols-2 gap-6 mb-8">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Date</label>
                                             <div className="relative">
-                                                {isListening ? (
-                                                    <div className="w-full bg-teal-50 border-2 border-teal-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center h-40 animate-pulse transition-all">
-                                                        <p className="text-teal-800 font-bold text-lg mb-2">Listening...</p>
-                                                        <p className="text-teal-600 font-medium italic text-xl">"{transcript || 'Speak now'}"</p>
-                                                    </div>
-                                                ) : (
-                                                    <textarea
-                                                        placeholder="Add notes or speak..."
-                                                        value={formData.notes}
-                                                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                                        className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-900 placeholder:text-slate-500 focus:border-teal-600 focus:ring-0 outline-none resize-none h-40 shadow-sm transition-all"
-                                                    />
-                                                )}
-                                                <button
-                                                    onClick={toggleVoiceInput}
-                                                    title={isListening ? "Stop Listening" : "Start Voice Input"}
-                                                    className={`absolute right-4 bottom-4 p-3 rounded-xl transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/50 shadow-lg scale-110' : 'bg-slate-100 text-teal-700 border border-teal-200 hover:bg-teal-50'}`}
-                                                >
-                                                    {isListening ? <Activity className="animate-bounce" size={24} /> : <Mic size={24} />}
-                                                </button>
+                                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                                <input
+                                                    type="date"
+                                                    value={formData.date}
+                                                    onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                                    className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
+                                                />
                                             </div>
                                         </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Time</label>
+                                            <div className="relative">
+                                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                                <input
+                                                    type="time"
+                                                    value={formData.time}
+                                                    onChange={e => setFormData({ ...formData, time: e.target.value })}
+                                                    className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                        {/* Camera Section */}
-                                        <div className="mb-8">
-                                            {capturedImage ? (
-                                                <div className="relative rounded-2xl overflow-hidden aspect-video border-4 border-teal-100">
-                                                    <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
-                                                    <button onClick={() => setCapturedImage(null)} className="absolute top-2 right-2 bg-black/70 text-white p-2 rounded-full hover:bg-black"><X size={20} /></button>
-                                                </div>
-                                            ) : showCamera ? (
-                                                <div className="relative rounded-2xl overflow-hidden aspect-video bg-black border-4 border-teal-600">
-                                                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                                                    <button onClick={capturePhoto} className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white rounded-full p-4 shadow-xl border-4 border-teal-600 hover:scale-105 transition-transform"><div className="w-4 h-4 bg-teal-600 rounded-full" /></button>
-                                                    <button onClick={() => setShowCamera(false)} className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black"><X size={24} /></button>
+                                    <div className="space-y-6 mb-8">
+                                        <div className="relative group">
+                                            <input
+                                                type="text"
+                                                placeholder={trackerPlaceholder}
+                                                value={formData.value}
+                                                onChange={e => setFormData({ ...formData, value: e.target.value })}
+                                                className="w-full text-4xl font-black text-slate-900 placeholder:text-slate-400 border-b-4 border-slate-200 focus:border-teal-600 py-6 bg-transparent outline-none transition-all"
+                                            />
+                                            {formData.unit && <span className="absolute right-0 bottom-6 text-sm font-black text-slate-500 uppercase tracking-widest">{formData.unit}</span>}
+                                        </div>
+
+                                        <div className="relative">
+                                            {isListening ? (
+                                                <div className="w-full bg-teal-50 border-2 border-teal-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center h-40 animate-pulse transition-all">
+                                                    <p className="text-teal-800 font-bold text-lg mb-2">Listening...</p>
+                                                    <p className="text-teal-600 font-medium italic text-xl">"{transcript || 'Speak now'}"</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex gap-4">
-                                                    <button
-                                                        onClick={startCamera}
-                                                        className="flex-1 py-6 border-4 border-dashed border-slate-300 rounded-2xl text-slate-600 font-bold text-sm uppercase tracking-widest hover:border-teal-500 hover:text-teal-800 hover:bg-teal-50 transition-all flex flex-col items-center justify-center gap-2 bg-slate-50"
-                                                    >
-                                                        <Camera size={24} /> Take Photo
-                                                    </button>
-                                                    <button
-                                                        onClick={() => fileInputRef.current?.click()}
-                                                        className="flex-1 py-6 border-4 border-dashed border-slate-300 rounded-2xl text-slate-600 font-bold text-sm uppercase tracking-widest hover:border-teal-500 hover:text-teal-800 hover:bg-teal-50 transition-all flex flex-col items-center justify-center gap-2 bg-slate-50"
-                                                    >
-                                                        <Upload size={24} /> Upload Photo
-                                                    </button>
-                                                    <input
-                                                        type="file"
-                                                        ref={fileInputRef}
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        onChange={handleFileUpload}
-                                                    />
-                                                </div>
+                                                <textarea
+                                                    placeholder="Add notes or speak..."
+                                                    value={formData.notes}
+                                                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                                    className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-900 placeholder:text-slate-500 focus:border-teal-600 focus:ring-0 outline-none resize-none h-40 shadow-sm transition-all"
+                                                />
                                             )}
+                                            <button
+                                                onClick={toggleVoiceInput}
+                                                title={isListening ? "Stop Listening" : "Start Voice Input"}
+                                                className={`absolute right-4 bottom-4 p-3 rounded-xl transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/50 shadow-lg scale-110' : 'bg-slate-100 text-teal-700 border border-teal-200 hover:bg-teal-50'}`}
+                                            >
+                                                {isListening ? <Activity className="animate-bounce" size={24} /> : <Mic size={24} />}
+                                            </button>
                                         </div>
+                                    </div>
 
-                                        <button
-                                            onClick={handleSave}
-                                            className="w-full bg-teal-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-teal-600/20 hover:bg-teal-700 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Save size={20} /> Save Log Entry
-                                        </button>
-                                    </>
-                                );
-                            })()}
+                                    {/* Camera Section */}
+                                    <div className="mb-8">
+                                        {capturedImage ? (
+                                            <div className="relative rounded-2xl overflow-hidden aspect-video border-4 border-teal-100">
+                                                <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
+                                                <button onClick={() => setCapturedImage(null)} className="absolute top-2 right-2 bg-black/70 text-white p-2 rounded-full hover:bg-black"><X size={20} /></button>
+                                            </div>
+                                        ) : showCamera ? (
+                                            <div className="relative rounded-2xl overflow-hidden aspect-video bg-black border-4 border-teal-600">
+                                                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                                                <button onClick={capturePhoto} className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white rounded-full p-4 shadow-xl border-4 border-teal-600 hover:scale-105 transition-transform"><div className="w-4 h-4 bg-teal-600 rounded-full" /></button>
+                                                <button onClick={() => setShowCamera(false)} className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black"><X size={24} /></button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-4">
+                                                <button
+                                                    onClick={startCamera}
+                                                    className="flex-1 py-6 border-4 border-dashed border-slate-300 rounded-2xl text-slate-600 font-bold text-sm uppercase tracking-widest hover:border-teal-500 hover:text-teal-800 hover:bg-teal-50 transition-all flex flex-col items-center justify-center gap-2 bg-slate-50"
+                                                >
+                                                    <Camera size={24} /> Take Photo
+                                                </button>
+                                                <button
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="flex-1 py-6 border-4 border-dashed border-slate-300 rounded-2xl text-slate-600 font-bold text-sm uppercase tracking-widest hover:border-teal-500 hover:text-teal-800 hover:bg-teal-50 transition-all flex flex-col items-center justify-center gap-2 bg-slate-50"
+                                                >
+                                                    <Upload size={24} /> Upload Photo
+                                                </button>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleFileUpload}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={handleSave}
+                                        className="w-full bg-teal-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-teal-600/20 hover:bg-teal-700 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Save size={20} /> Save Log Entry
+                                    </button>
+                                </>
+                            )}
                         </>
                     )}
                 </div>

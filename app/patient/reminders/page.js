@@ -119,29 +119,47 @@ export default function RemindersPage() {
           </div>
 
           {reminders.length > 0 ? (
-            reminders.map((rem) => (
-              <div key={rem.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 flex items-center justify-between group hover:border-[#4a2b3d]/20 transition-all">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-12 bg-slate-50 text-[#4a2b3d]">
-                    <Bell size={28} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-[#4a2b3d] mb-0.5">{rem.title || 'Untitled Reminder'}</h3>
-                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                      <span className="flex items-center gap-1.5"><Clock size={12} /> {rem.reminder_time || 'N/A'}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
-                      <span>{rem.reminder_type || 'General'}</span>
+            reminders.map((rem) => {
+              const formatReminderTime = (timeStr) => {
+                if (!timeStr) return 'N/A';
+                if (timeStr.includes('T')) {
+                  const d = new Date(timeStr);
+                  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+                const cleanTime = timeStr.split(':');
+                if (cleanTime.length >= 2) {
+                  const hour = parseInt(cleanTime[0]);
+                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                  const h12 = hour % 12 || 12;
+                  return `${h12}:${cleanTime[1]} ${ampm}`;
+                }
+                return timeStr;
+              };
+
+              return (
+                <div key={rem.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 flex items-center justify-between group hover:border-[#4a2b3d]/20 transition-all">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-12 bg-slate-50 text-[#4a2b3d]">
+                      <Bell size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#4a2b3d] mb-0.5">{rem.title || 'Untitled Reminder'}</h3>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><Clock size={12} /> {formatReminderTime(rem.reminder_time)}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-200" />
+                        <span>{rem.reminder_type || 'General'}</span>
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={() => markComplete(rem.id)}
+                    className="p-3 bg-slate-50 text-slate-400 hover:text-[#4a2b3d] hover:bg-[#4a2b3d]/5 rounded-2xl transition-all active:scale-90"
+                  >
+                    <CheckCircle size={24} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => markComplete(rem.id)}
-                  className="p-3 bg-slate-50 text-slate-400 hover:text-[#4a2b3d] hover:bg-[#4a2b3d]/5 rounded-2xl transition-all active:scale-90"
-                >
-                  <CheckCircle size={24} />
-                </button>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="bg-white p-16 rounded-[40px] border border-dashed border-slate-200 text-center">
               <AlertCircle className="w-12 h-12 text-slate-100 mx-auto mb-4" />
