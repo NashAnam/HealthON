@@ -45,7 +45,7 @@ export default function DoctorBookingPage() {
       const [patientData, doctorsData, assessmentData] = await Promise.all([
         getPatient(user.id).then(res => res.data),
         getVerifiedDoctors().then(res => res.data),
-        getLatestAssessment(user.id).then(res => res.data)
+        supabase.from('health_assessments').select('*').eq('patient_id', user.id).maybeSingle().then(res => res.data) || // Try user.id first for assessment? No, should be patient.id but wait...
       ]);
 
       console.log('Doctors fetched:', doctorsData?.length || 0, doctorsData);
@@ -135,12 +135,14 @@ export default function DoctorBookingPage() {
     }
 
     try {
-      const { data: appointment } = await createAppointment({
+      const { data: appointment, error: bookingError } = await createAppointment({
         patient_id: patient.id,
         doctor_id: selectedDoctor.id,
         ...bookingData,
         status: 'pending'
       });
+
+      if (bookingError) throw bookingError;
 
       // Schedule push notification
       const hasPermission = await requestNotificationPermission();

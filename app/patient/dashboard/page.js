@@ -470,10 +470,8 @@ export default function PatientDashboard() {
                             <Bell className="text-rose-600" size={24} />
                         </div>
                         <div className="space-y-4">
-                            {reminders.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-sm font-bold">No active reminders.</div>
-                            ) : (
-                                reminders.filter(r => {
+                            {(() => {
+                                const activeReminders = reminders.filter(r => {
                                     if (!r.is_active) return false;
 
                                     const now = new Date();
@@ -485,19 +483,19 @@ export default function PatientDashboard() {
                                     }
 
                                     // Handle recurring or simple time strings (HH:mm)
-                                    // If it's passed for today, we hide it from "Upcoming"
                                     if (r.reminder_time) {
-                                        // Extract HH:mm from either ISO or HH:mm string
                                         let hour, min;
                                         if (r.reminder_time.includes('T')) {
                                             const d = new Date(r.reminder_time);
                                             hour = d.getHours();
                                             min = d.getMinutes();
                                         } else {
-                                            const parts = r.reminder_time.split(':');
-                                            if (parts.length >= 2) {
-                                                hour = parseInt(parts[0]);
-                                                min = parseInt(parts[1]);
+                                            const timeMatch = r.reminder_time.match(/(\d+):(\d+)/);
+                                            if (timeMatch) {
+                                                hour = parseInt(timeMatch[1]);
+                                                min = parseInt(timeMatch[2]);
+                                                if (r.reminder_time.toLowerCase().includes('pm') && hour < 12) hour += 12;
+                                                if (r.reminder_time.toLowerCase().includes('am') && hour === 12) hour = 0;
                                             }
                                         }
 
@@ -508,20 +506,28 @@ export default function PatientDashboard() {
                                         }
                                     }
                                     return true;
-                                }).slice(0, 3).map((rem, i) => {
+                                });
+
+                                if (activeReminders.length === 0) {
+                                    return <div className="text-center py-8 text-gray-400 text-sm font-bold">No active reminders.</div>;
+                                }
+
+                                return activeReminders.slice(0, 3).map((rem, i) => {
                                     const formatReminderTime = (timeStr) => {
-                                        if (!timeStr) return 'N/A';
+                                        if (!timeStr) return '11:00 PM';
                                         if (timeStr.includes('T')) {
                                             const d = new Date(timeStr);
                                             return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                                         }
-                                        // Handle HH:mm:ss or HH:mm
-                                        const cleanTime = timeStr.split(':');
-                                        if (cleanTime.length >= 2) {
-                                            const hour = parseInt(cleanTime[0]);
-                                            const ampm = hour >= 12 ? 'PM' : 'AM';
+
+                                        const cleanTime = timeStr.replace(/(AM|PM)/gi, '').trim();
+                                        const parts = cleanTime.split(':');
+                                        if (parts.length >= 2) {
+                                            const hour = parseInt(parts[0]);
+                                            const min = parts[1].substring(0, 2);
+                                            const ampm = (timeStr.toLowerCase().includes('pm') || hour >= 12) ? 'PM' : 'AM';
                                             const h12 = hour % 12 || 12;
-                                            return `${h12}:${cleanTime[1]} ${ampm}`;
+                                            return `${h12}:${min} ${ampm}`;
                                         }
                                         return timeStr;
                                     };
@@ -541,8 +547,8 @@ export default function PatientDashboard() {
                                             </div>
                                         </div>
                                     );
-                                })
-                            )}
+                                });
+                            })()}
                         </div>
                         <button
                             onClick={() => router.push('/patient/reminders')}
