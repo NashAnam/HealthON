@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 
 export default function TermsPage() {
     const router = useRouter();
-    const date = new Date().toLocaleDateString();
+    const date = new Date().toLocaleDateString('en-US');
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans p-6 md:p-12">

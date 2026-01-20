@@ -151,10 +151,10 @@ export function AssessmentResultPage() {
                             Return Home
                         </button>
                         <button
-                            onClick={() => router.push('/patient/assessment')}
+                            onClick={() => router.push('/patient/assessment?retake=true')}
                             className="bg-teal-50 border-2 border-teal-100 text-teal-700 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all hover:bg-teal-100 flex items-center gap-2"
                         >
-                            <RefreshCw className="w-3 h-3" /> Update Responses
+                            <RefreshCw className="w-3 h-3" /> Re-take Assessment
                         </button>
                         <button
                             onClick={() => router.push('/patient/doctor-booking')}

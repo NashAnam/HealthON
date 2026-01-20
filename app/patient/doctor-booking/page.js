@@ -6,6 +6,7 @@ import { Stethoscope, Search, Calendar, Clock, Star, MapPin, ArrowLeft, Check, S
 import toast from 'react-hot-toast';
 import { useSidebar } from '@/lib/SidebarContext';
 import { MoreVertical } from 'lucide-react';
+import { scheduleAppointmentReminder, requestNotificationPermission } from '@/lib/notifications';
 
 export default function DoctorBookingPage() {
   const router = useRouter();
@@ -134,12 +135,21 @@ export default function DoctorBookingPage() {
     }
 
     try {
-      await createAppointment({
+      const { data: appointment } = await createAppointment({
         patient_id: patient.id,
         doctor_id: selectedDoctor.id,
         ...bookingData,
         status: 'pending'
       });
+
+      // Schedule push notification
+      const hasPermission = await requestNotificationPermission();
+      if (hasPermission && appointment) {
+        await scheduleAppointmentReminder({
+          ...appointment,
+          doctors: selectedDoctor
+        });
+      }
 
       toast.success('Appointment booked successfully!');
       setShowBookingForm(false);

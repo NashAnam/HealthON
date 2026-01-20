@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getCurrentUser, getPatient, saveAssessment, getLatestAssessment } from '@/lib/supabase';
 import { calculateAllRisks } from '@/lib/whoStepsRiskCalculator';
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
@@ -202,6 +202,8 @@ const QUESTIONS = [
 
 export default function AssessmentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const retake = searchParams.get('retake');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [patient, setPatient] = useState(null);
@@ -217,7 +219,7 @@ export default function AssessmentPage() {
     const { data } = await getPatient(user.id);
     setPatient(data);
 
-    if (data) {
+    if (data && !retake) {
       const { data: assessmentData } = await getLatestAssessment(data.id);
       if (assessmentData) {
         toast.success('Loading your latest health assessment results...');

@@ -9,15 +9,19 @@ import {
 import { useSidebar } from '@/lib/SidebarContext';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, AreaChart, Area
+    ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell
 } from 'recharts';
 import toast from 'react-hot-toast';
+import { Gift, Zap, Ticket, Award } from 'lucide-react';
 
 export default function ProgressReportPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [patient, setPatient] = useState(null);
     const [vitalsData, setVitalsData] = useState([]);
+    const [points, setPoints] = useState({ total: 0, breakDown: [] });
+    const [dietCount, setDietCount] = useState(0);
+    const [vitalsCount, setVitalsCount] = useState(0);
     const { toggle } = useSidebar();
 
     useEffect(() => {
@@ -46,37 +50,72 @@ export default function ProgressReportPage() {
             if (logs && logs.length > 0) {
                 // Group logs by date and type
                 const logsByDate = {};
+                let dietLogsCount = 0;
+                let vitalsLogsCount = 0;
 
                 logs.forEach(log => {
                     let date;
                     try {
                         date = log.created_at ? new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short' }) : 'N/A';
                     } catch (e) {
-                        console.error('Date parsing error in progress report:', e);
-                        date = 'N/A'; // Fallback in case of parsing error
+                        date = 'N/A';
                     }
 
                     if (!logsByDate[date]) {
                         logsByDate[date] = { date, hr: null, sys: null, dia: null, sugar: null };
                     }
 
-                    // Extract values based on log type and notes
+                    if (log.log_type === 'diet') dietLogsCount++;
                     if (log.log_type === 'vitals') {
+                        vitalsLogsCount++;
                         if (log.notes?.includes('bpm')) {
-                            logsByDate[date].hr = parseFloat(log.value);
+                            logsByDate[date].hr = parseFloat(log.value) || null;
                         } else if (log.notes?.includes('mg/dL')) {
-                            logsByDate[date].sugar = parseFloat(log.value);
-                        } else if (log.notes?.includes('mmHg')) {
-                            const [sys, dia] = log.value.split('/').map(v => parseFloat(v));
-                            logsByDate[date].sys = sys;
-                            logsByDate[date].dia = dia;
+                            logsByDate[date].sugar = parseFloat(log.value) || null;
+                        } else if (log.notes?.includes('mmHg') && log.value) {
+                            try {
+                                const parts = log.value.split('/');
+                                if (parts.length === 2) {
+                                    const sys = parseFloat(parts[0]);
+                                    const dia = parseFloat(parts[1]);
+                                    logsByDate[date].sys = isNaN(sys) ? null : sys;
+                                    logsByDate[date].dia = isNaN(dia) ? null : dia;
+                                }
+                            } catch (e) {
+                                console.error('Error parsing BP value:', log.value);
+                            }
                         }
                     }
                 });
 
                 setVitalsData(Object.values(logsByDate));
+                setDietCount(dietLogsCount);
+                setVitalsCount(vitalsLogsCount);
+
+                // Calculate Points
+                const dietPoints = dietLogsCount * 10;
+                const vitalsPoints = vitalsLogsCount * 5;
+
+                // Check if assessment completed this week
+                const { data: assessments } = await supabase
+                    .from('health_assessments')
+                    .select('*')
+                    .eq('patient_id', pt.id)
+                    .gte('created_at', sevenDaysAgo.toISOString());
+
+                const assessmentPoints = (assessments?.length || 0) * 50;
+
+                setPoints({
+                    total: dietPoints + vitalsPoints + assessmentPoints,
+                    breakDown: [
+                        { name: 'Diet Logs', value: dietPoints, color: '#648C81' },
+                        { name: 'Vitals Sync', value: vitalsPoints, color: '#4a2b3d' },
+                        { name: 'Assessments', value: assessmentPoints, color: '#d97706' }
+                    ]
+                });
             } else {
                 setVitalsData([]);
+                setPoints({ total: 0, breakDown: [] });
             }
 
             setLoading(false);
@@ -115,46 +154,74 @@ export default function ProgressReportPage() {
 
             <main className="max-w-xl mx-auto px-6 py-8 space-y-8">
 
-                {/* Summary Card */}
+                {/* Summary & Rewards Header */}
                 <div className="bg-gradient-to-br from-[#4a2b3d] to-[#6a3a55] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
                     <div className="relative z-10">
-                        {vitalsData.length > 0 ? (
-                            <>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <TrendingUp className="w-5 h-5 text-emerald-400" />
-                                    <span className="text-xs font-black uppercase tracking-widest text-emerald-100">Overall Health Score</span>
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <Award className="w-5 h-5 text-amber-400" />
+                                    <span className="text-xs font-black uppercase tracking-widest text-amber-100">CareOn Rewards</span>
                                 </div>
-                                <div className="flex items-end gap-2 mb-2">
-                                    <span className="text-6xl font-black leading-none">
-                                        {Math.round((vitalsData.filter(d => d.hr || d.sys || d.sugar).length / 7) * 100)}
-                                    </span>
-                                    <span className="text-xl font-bold opacity-60">/ 100</span>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-6xl font-black leading-none">{points.total}</span>
+                                    <span className="text-xl font-bold opacity-60">PTS</span>
                                 </div>
-                                <p className="text-sm text-white/70 font-medium">Your health is improving! You've stayed consistent with your vitals logging this week.</p>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <Watch className="w-5 h-5 text-amber-400" />
-                                    <span className="text-xs font-black uppercase tracking-widest text-amber-100">No Data Available</span>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/10 text-center">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1">Health Score</p>
+                                <p className="text-2xl font-black">{vitalsData.length > 0 ? Math.round((vitalsData.filter(d => d.hr || d.sys || d.sugar).length / 7) * 100) : '--'}%</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 p-4 bg-white/10 rounded-2xl border border-white/5">
+                                <Zap className="w-5 h-5 text-amber-400" />
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-widest text-amber-100">Top Achievement</p>
+                                    <p className="text-sm font-bold">{dietCount > 5 ? 'Nutrition Ninja' : 'Health Hero in Training'}</p>
                                 </div>
-                                <div className="mb-4">
-                                    <span className="text-4xl font-black leading-none">Sync Your Watch</span>
-                                </div>
-                                <p className="text-sm text-white/70 font-medium mb-4">
-                                    Go to Health Tracker and click the watch icon to sync your smartwatch data. Your progress report will appear here once you have synced data.
-                                </p>
-                                <button
-                                    onClick={() => router.push('/patient/health-tracker')}
-                                    className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-bold text-sm uppercase tracking-wider transition-all"
-                                >
-                                    Go to Health Tracker
-                                </button>
-                            </>
-                        )}
+                            </div>
+                            <p className="text-sm text-white/70 font-medium">Keep logging your health data to earn points and unlock premium healthcare discounts!</p>
+                        </div>
                     </div>
                     <div className="absolute right-[-20px] bottom-[-20px] opacity-10">
                         <Activity className="w-48 h-48" />
+                    </div>
+                </div>
+
+                {/* Available Discounts/Rewards */}
+                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-teal-50 rounded-2xl text-[#648C81]">
+                                <Ticket size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Available For You</h3>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Points Exchange</p>
+                            </div>
+                        </div>
+                        <Gift className="text-teal-200 group-hover:scale-110 transition-transform" size={32} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative opacity-90">
+                            <p className="text-lg font-black text-slate-800">15% OFF</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Diagnostic Labs</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black p-1 bg-amber-100 text-amber-700 rounded-md">250 PTS</span>
+                                <button className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${points.total >= 250 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>Claim</button>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative opacity-90">
+                            <p className="text-lg font-black text-slate-800">FREE</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Video Consultation</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black p-1 bg-amber-100 text-amber-700 rounded-md">500 PTS</span>
+                                <button className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${points.total >= 500 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>Claim</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

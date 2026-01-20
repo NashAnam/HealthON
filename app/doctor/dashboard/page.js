@@ -26,7 +26,10 @@ export default function DoctorDashboard() {
   const [consultingAptId, setConsultingAptId] = useState(null);
   const [isTelemedicine, setIsTelemedicine] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     loadData();
   }, []);
 
@@ -230,7 +233,7 @@ export default function DoctorDashboard() {
             className="mb-8 md:mb-10"
           >
             <h2 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight text-center md:text-left">
-              {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}, {' '}
+              {!mounted ? 'Hello' : (new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening')}, {' '}
               <span className="text-plum-800">
                 {doctor?.name?.toLowerCase().startsWith('dr')
                   ? doctor.name.split(' ').slice(1).join(' ')
@@ -259,7 +262,7 @@ export default function DoctorDashboard() {
                     <span className="w-1.5 h-6 bg-plum-800 rounded-full"></span> Today's Appointments
                   </h3>
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4 mt-1">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {mounted ? new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Loading Date...'}
                   </p>
                 </div>
                 <button onClick={() => router.push('/doctor/opd')} className="text-[10px] font-black text-plum-600 uppercase tracking-widest hover:bg-plum-100 transition-colors px-4 py-2 bg-plum-50 rounded-xl">Full Schedule</button>
@@ -678,7 +681,7 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment</span>
                   <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest">Paid</span>
                 </div>
-                <PatientSummaryItem icon={<Calendar size={14} />} label="Date" value={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} />
+                <PatientSummaryItem icon={<Calendar size={14} />} label="Date" value={mounted ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Loading Date...'} />
                 <PatientSummaryItem icon={<Video size={14} />} label="Type" value={isTelemedicine ? "Telemedicine" : "In-Person"} />
               </div>
 

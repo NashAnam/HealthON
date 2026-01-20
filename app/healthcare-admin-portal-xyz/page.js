@@ -374,7 +374,7 @@ export default function AdminDashboard() {
                     payments.map((payment) => (
                         <tr key={payment.id} className="border-b hover:bg-slate-50">
                             <td className="p-6 text-sm text-slate-700">
-                                {new Date(payment.created_at).toLocaleDateString()}
+                                {new Date(payment.created_at).toLocaleDateString('en-US')}
                             </td>
                             <td className="p-6">
                                 <div className="font-bold text-slate-900">{payment.patients?.name}</div>

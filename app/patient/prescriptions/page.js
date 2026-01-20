@@ -103,7 +103,7 @@ export default function PrescriptionsPage() {
                                 </div>
                             </div>
 
-                            {prescription.medications && prescription.medications.length > 0 && (
+                            {prescription.medications && prescription.medications.length > 0 ? (
                                 <div className="space-y-3 mb-4">
                                     {prescription.medications.map((med, index) => (
                                         <div key={index} className="bg-gray-50 p-4 rounded-xl">
@@ -130,6 +130,27 @@ export default function PrescriptionsPage() {
                                         </div>
                                     ))}
                                 </div>
+                            ) : prescription.medication_name && (
+                                <div className="space-y-3 mb-4">
+                                    <div className="bg-gray-50 p-4 rounded-xl">
+                                        <h5 className="font-bold text-gray-900 mb-2">{prescription.medication_name}</h5>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div>
+                                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Dosage</p>
+                                                <p className="text-sm font-bold text-gray-900">{prescription.dosage}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Frequency</p>
+                                                <p className="text-sm font-bold text-gray-900">{prescription.frequency}</p>
+                                            </div>
+                                        </div>
+                                        {prescription.instructions && (
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                <span className="font-semibold">Instructions:</span> {prescription.instructions}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
                             )}
 
                             {prescription.notes && (
@@ -142,7 +163,7 @@ export default function PrescriptionsPage() {
                             {prescription.follow_up_date && (
                                 <div className="flex items-center gap-2 mt-4 text-sm text-gray-600">
                                     <Calendar className="w-4 h-4" />
-                                    <span>Follow-up: {prescription.follow_up_date ? new Date(prescription.follow_up_date).toLocaleDateString() : 'N/A'}</span>
+                                    <span>Follow-up: {prescription.follow_up_date ? new Date(prescription.follow_up_date).toLocaleDateString('en-US') : 'N/A'}</span>
                                 </div>
                             )}
                         </div>

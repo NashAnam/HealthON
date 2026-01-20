@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 export default function ConsentPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const date = new Date().toLocaleDateString();
+    const date = new Date().toLocaleDateString('en-US');
 
     const handleAccept = async () => {
         setLoading(true);

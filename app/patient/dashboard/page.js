@@ -389,7 +389,7 @@ export default function PatientDashboard() {
                                 onClick={() => router.push('/patient/doctor-booking')}
                                 className="flex-1 bg-[#5a8a7a] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:shadow-lg active:scale-95 transition-all"
                             >
-                                Doctor Visit
+                                Doctor
                             </button>
                             <button
                                 onClick={() => router.push('/patient/lab-booking')}
@@ -432,7 +432,7 @@ export default function PatientDashboard() {
                                         <div>
                                             <h4 className="font-bold text-slate-800">{appt.doctors?.name || 'Doctor Visit'}</h4>
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
-                                                {appt.appointment_date ? new Date(appt.appointment_date).toLocaleDateString() : 'N/A'}
+                                                {appt.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-US') : 'N/A'}
                                             </p>
                                         </div>
                                         <div className="text-right">

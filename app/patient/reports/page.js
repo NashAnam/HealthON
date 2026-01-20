@@ -93,7 +93,7 @@ export default function ReportsPage() {
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <Calendar className="w-4 h-4 text-slate-500" />
                                                         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                                            {report.test_date ? new Date(report.test_date).toLocaleDateString() : 'Date N/A'}
+                                                            {report.test_date ? new Date(report.test_date).toLocaleDateString('en-US') : 'Date N/A'}
                                                         </span>
                                                     </div>
                                                 </div>

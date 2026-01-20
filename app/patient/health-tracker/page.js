@@ -10,8 +10,8 @@ import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
 import Link from 'next/link';
-import { useSidebar } from '@/lib/SidebarContext';
 import { Menu, MoreVertical } from 'lucide-react';
+import { scheduleMedicationReminder, requestNotificationPermission } from '@/lib/notifications';
 
 export default function HealthTrackerPage() {
     const router = useRouter();
@@ -27,6 +27,8 @@ export default function HealthTrackerPage() {
     // Data State
     const [appointments, setAppointments] = useState([]);
     const [nextAppointment, setNextAppointment] = useState(null);
+    const [missedAppointments, setMissedAppointments] = useState([]);
+    const [delayedAppointments, setDelayedAppointments] = useState([]);
     const [prescribedMeds, setPrescribedMeds] = useState([]);
     const [latestAssessment, setLatestAssessment] = useState(null);
 
@@ -117,18 +119,22 @@ export default function HealthTrackerPage() {
 
             setLogs(trackerLogs || []);
 
-            // Fetch Appointments for Follow-up (Confirmed or Pending)
-            const { data: appts } = await supabase
+            // Fetch Appointments for Follow-up (Missed, Delayed, and Next)
+            const { data: allAppts } = await supabase
                 .from('appointments')
                 .select('*, doctors(name)')
                 .eq('patient_id', pt.id)
-                .gte('appointment_date', new Date().toISOString().split('T')[0])
-                .in('status', ['confirmed', 'pending']) // Include pending so rescheduled appts show up
-                .order('appointment_date', { ascending: true })
-                .limit(1);
+                .order('appointment_date', { ascending: false });
 
-            setAppointments(appts || []);
-            setNextAppointment(appts && appts.length > 0 ? appts[0] : null);
+            const todayStr = new Date().toISOString().split('T')[0];
+            const upcoming = allAppts?.filter(a => a.appointment_date >= todayStr && (a.status === 'confirmed' || a.status === 'pending')).sort((a, b) => a.appointment_date.localeCompare(b.appointment_date)) || [];
+            const missed = allAppts?.filter(a => a.appointment_date < todayStr && (a.status === 'confirmed' || a.status === 'pending')) || [];
+            const delayed = allAppts?.filter(a => a.status === 'rescheduled') || [];
+
+            setAppointments(allAppts || []);
+            setNextAppointment(upcoming.length > 0 ? upcoming[0] : null);
+            setMissedAppointments(missed);
+            setDelayedAppointments(delayed);
 
             // Fetch Latest Prescription
             const { data: rx } = await supabase
@@ -141,6 +147,28 @@ export default function HealthTrackerPage() {
 
             if (rx && rx.medications && Array.isArray(rx.medications)) {
                 setPrescribedMeds(rx.medications);
+
+                // Schedule reminders for medications
+                const hasPermission = await requestNotificationPermission();
+                if (hasPermission) {
+                    for (const med of rx.medications) {
+                        // Extract time from instructions or frequency
+                        // e.g., "1-0-1", "08:00 AM", "Morning"
+                        const times = [];
+                        const instr = (med.instructions || '').toLowerCase();
+                        if (instr.includes('morning') || instr.includes('am')) times.push('08:00');
+                        if (instr.includes('afternoon')) times.push('14:00');
+                        if (instr.includes('evening') || instr.includes('pm')) times.push('19:00');
+                        if (instr.includes('night')) times.push('22:00');
+
+                        // Fallback if no specific time found
+                        if (times.length === 0) times.push('09:00');
+
+                        for (const time of times) {
+                            await scheduleMedicationReminder(med, time);
+                        }
+                    }
+                }
             } else {
                 setPrescribedMeds([]);
             }
@@ -891,6 +919,46 @@ export default function HealthTrackerPage() {
                                         )}
                                     </div>
 
+                                    {/* Missed Appointments */}
+                                    {missedAppointments.length > 0 && (
+                                        <div className="bg-rose-50 rounded-2xl p-6 border border-rose-100 shadow-sm">
+                                            <h4 className="text-rose-700 font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <AlertTriangle size={18} /> Missed Appointments
+                                            </h4>
+                                            <div className="space-y-4">
+                                                {missedAppointments.map((appt, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-rose-100">
+                                                        <div>
+                                                            <p className="text-sm font-black text-slate-800">{appt.doctors?.name || 'Doctor visit'}</p>
+                                                            <p className="text-xs text-rose-500 font-bold">{new Date(appt.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {appt.appointment_time}</p>
+                                                        </div>
+                                                        <button onClick={() => router.push('/patient/doctor-booking')} className="text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white px-3 py-2 rounded-lg hover:bg-rose-700 transition-all">Reschedule</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Delayed/Rescheduled Appointments */}
+                                    {delayedAppointments.length > 0 && (
+                                        <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100 shadow-sm">
+                                            <h4 className="text-amber-700 font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                <Clock size={18} /> Delayed Appointments
+                                            </h4>
+                                            <div className="space-y-4">
+                                                {delayedAppointments.map((appt, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-amber-100">
+                                                        <div>
+                                                            <p className="text-sm font-black text-slate-800">{appt.doctors?.name || 'Doctor visit'}</p>
+                                                            <p className="text-xs text-amber-500 font-bold">Rescheduled to {new Date(appt.appointment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 border border-amber-200 px-2 py-1 rounded-md">Rescheduled</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Care Instructions List */}
                                     <div>
                                         <h4 className="text-[#4a2b3d] font-black uppercase tracking-widest mb-4">Care Instructions</h4>
@@ -1087,87 +1155,25 @@ export default function HealthTrackerPage() {
                                     {/* Medical Disclaimer */}
                                     <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl">
                                         <p className="text-amber-800 text-xs font-bold flex items-center gap-2">
-                                            <Info size={16} /> Always discuss diet changes with your doctor or nutritionist.
+                                            <Info size={16} /> Track your daily nutrition and get AI-powered insights in the dedicated Diet Tracker.
                                         </p>
                                     </div>
 
-                                    {(() => {
-                                        const dietPlan = getDietPlan(latestAssessment);
-                                        return (
-                                            <>
-                                                {/* Plan Header */}
-                                                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <h3 className="text-lg font-black text-[#4a2b3d] mb-2">{dietPlan.name}</h3>
-                                                            <p className="text-sm text-slate-600 font-medium">{dietPlan.description}</p>
-                                                        </div>
-                                                        {dietPlan.riskLevel && (
-                                                            <span className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider ${dietPlan.riskLevel === 'High' ? 'bg-rose-100 text-rose-700' :
-                                                                dietPlan.riskLevel === 'Moderate' ? 'bg-amber-100 text-amber-700' :
-                                                                    'bg-slate-100 text-slate-600'
-                                                                }`}>
-                                                                {dietPlan.riskLevel} Risk
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* 7-Day Action Plan Table */}
-                                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-left text-sm">
-                                                            <thead className="bg-[#F8FAFC] text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
-                                                                <tr>
-                                                                    <th className="px-6 py-4 w-24">Day</th>
-                                                                    <th className="px-6 py-4">Daily Focus</th>
-                                                                    <th className="px-6 py-4">Meals</th>
-                                                                    <th className="px-6 py-4">Action Notes</th>
-                                                                    <th className="px-6 py-4 w-48">Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-100">
-                                                                {dietPlan.days.map((dayPlan, idx) => (
-                                                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors bg-white">
-                                                                        <td className="px-6 py-4">
-                                                                            <span className="font-black text-[#4a2b3d] text-base">{dayPlan.day}</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4">
-                                                                            <span className="font-bold text-teal-700 text-sm">{dayPlan.focus}</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4">
-                                                                            <div className="space-y-1 text-xs">
-                                                                                <div><span className="font-bold text-slate-500">B:</span> <span className="text-slate-700">{dayPlan.breakfast}</span></div>
-                                                                                <div><span className="font-bold text-slate-500">L:</span> <span className="text-slate-700">{dayPlan.lunch}</span></div>
-                                                                                <div><span className="font-bold text-slate-500">D:</span> <span className="text-slate-700">{dayPlan.dinner}</span></div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="px-6 py-4 font-medium text-slate-600 text-xs">{dayPlan.notes}</td>
-                                                                        <td className="px-6 py-4">
-                                                                            <div className="flex flex-col gap-2">
-                                                                                <button
-                                                                                    onClick={() => handleAddDietReminder(dayPlan)}
-                                                                                    className="px-3 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 border border-teal-200"
-                                                                                >
-                                                                                    <Bell size={12} /> Add Reminder
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleMarkDietComplete(dayPlan)}
-                                                                                    className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 border border-emerald-200"
-                                                                                >
-                                                                                    <Check size={12} /> Mark Complete
-                                                                                </button>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        );
-                                    })()}
+                                    <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+                                        <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <Utensils size={40} />
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-800 mb-2">Smart Diet Tracker</h3>
+                                        <p className="text-slate-500 font-medium max-w-sm mx-auto mb-8">
+                                            Log your meals, search for nutritional data, and track calories, proteins, and vitamins in real-time.
+                                        </p>
+                                        <button
+                                            onClick={() => router.push('/patient/diet')}
+                                            className="px-8 py-4 bg-teal-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-teal-600/20 hover:bg-teal-700 transition-all active:scale-95"
+                                        >
+                                            Go to Diet Tracker
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (() => {
                                 // Check if this is an auto-sync tracker (PR, Glucose, BP, Sleep, Steps)
@@ -1206,15 +1212,38 @@ export default function HealthTrackerPage() {
                                                     </div>
                                                     <div className="flex-1">
                                                         <h3 className="text-lg font-black text-slate-800">{config.label} Tracker</h3>
-                                                        <p className="text-xs text-slate-600 font-medium">Automatically synced from your smartwatch</p>
+                                                        <p className="text-xs text-slate-600 font-medium">Synced from watch or log manually</p>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={startScan}
-                                                    className={`w-full py-4 bg-${config.color}-600 hover:bg-${config.color}-700 text-white rounded-xl font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95`}
-                                                >
-                                                    <Watch size={20} /> Sync from Watch
-                                                </button>
+
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder={`Enter ${config.unit}...`}
+                                                            value={formData.value}
+                                                            onChange={e => setFormData({ ...formData, value: e.target.value })}
+                                                            className="flex-1 p-4 rounded-xl border-2 border-white focus:border-slate-300 outline-none font-black text-slate-800 shadow-sm bg-white/50 focus:bg-white transition-all"
+                                                        />
+                                                        <button
+                                                            onClick={handleSave}
+                                                            className={`px-6 bg-${config.color}-600 text-white rounded-xl font-bold uppercase tracking-wider hover:bg-${config.color}-700 transition-all shadow-md active:scale-95`}
+                                                        >
+                                                            Log
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 py-1">
+                                                        <div className="flex-1 h-px bg-slate-200" />
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">or</span>
+                                                        <div className="flex-1 h-px bg-slate-200" />
+                                                    </div>
+                                                    <button
+                                                        onClick={startScan}
+                                                        className={`w-full py-4 bg-white border-2 border-${config.color}-200 text-${config.color}-600 hover:bg-${config.color}-50 rounded-xl font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95`}
+                                                    >
+                                                        <Watch size={20} /> Sync from Watch
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Weekly Progress View */}
@@ -1437,7 +1466,7 @@ export default function HealthTrackerPage() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between mb-1">
                                             <span className="text-xs font-black text-slate-800 uppercase tracking-widest">{log.log_type}</span>
-                                            <span className="text-xs font-bold text-slate-500">{log?.created_at ? new Date(log.created_at).toLocaleDateString() : 'N/A'}</span>
+                                            <span className="text-xs font-bold text-slate-500">{log?.created_at ? new Date(log.created_at).toLocaleDateString('en-US') : 'N/A'}</span>
                                         </div>
                                         <p className="text-base font-bold text-slate-700 truncate">
                                             {log.value ? <span className="text-slate-900 mr-2">{log.value} {log.unit}</span> : null}

@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, supabase } from '@/lib/supabase';
-import { Camera, Save, Utensils, Calendar, TrendingUp } from 'lucide-react';
+import { Camera, Save, Utensils, Calendar, TrendingUp, Search, Info, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { searchFood } from '@/lib/nutritionData';
 
 export default function DietTrackerPage() {
     const router = useRouter();
@@ -21,8 +22,16 @@ export default function DietTrackerPage() {
         protein: '',
         carbs: '',
         fats: '',
+        fiber: '',
+        gi: '',
+        vitamins: '',
+        minerals: '',
         notes: ''
     });
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -85,35 +94,36 @@ export default function DietTrackerPage() {
         }
     };
 
-    const analyzeFood = async (imageData) => {
-        setIsAnalyzing(true);
-        toast.loading('Analyzing food...');
+    const handleSearchChange = (query) => {
+        setSearchQuery(query);
+        if (query.trim()) {
+            const results = searchFood(query);
+            setSuggestions(results);
+            setShowSuggestions(true);
+        } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+        }
+        setFormData(prev => ({ ...prev, food_name: query }));
+    };
 
-        // Simulate AI analysis (in production, call Google Cloud Vision or similar API)
-        setTimeout(() => {
-            // Mock data - replace with actual AI API call
-            const mockFoods = [
-                { name: 'Chicken Salad', calories: 350, protein: 30, carbs: 15, fats: 18 },
-                { name: 'Rice Bowl', calories: 450, protein: 12, carbs: 75, fats: 8 },
-                { name: 'Fruit Smoothie', calories: 200, protein: 5, carbs: 45, fats: 2 },
-                { name: 'Sandwich', calories: 400, protein: 20, carbs: 50, fats: 12 }
-            ];
-
-            const randomFood = mockFoods[Math.floor(Math.random() * mockFoods.length)];
-
-            setFormData(prev => ({
-                ...prev,
-                food_name: randomFood.name,
-                calories: randomFood.calories.toString(),
-                protein: randomFood.protein.toString(),
-                carbs: randomFood.carbs.toString(),
-                fats: randomFood.fats.toString()
-            }));
-
-            setIsAnalyzing(false);
-            toast.dismiss();
-            toast.success(`Detected: ${randomFood.name}!`);
-        }, 2000);
+    const selectSuggestion = (food) => {
+        setFormData({
+            ...formData,
+            food_name: food.name,
+            calories: food.calories.toString(),
+            protein: food.protein.toString(),
+            carbs: food.carbs.toString(),
+            fats: food.fats.toString(),
+            fiber: food.fiber.toString(),
+            gi: food.gi.toString(),
+            vitamins: food.vitamins,
+            minerals: food.minerals
+        });
+        setSearchQuery(food.name);
+        setSuggestions([]);
+        setShowSuggestions(false);
+        toast.success(`Selected: ${food.name}`);
     };
 
     const handleSave = async () => {
@@ -132,6 +142,10 @@ export default function DietTrackerPage() {
                 protein: parseFloat(formData.protein) || null,
                 carbs: parseFloat(formData.carbs) || null,
                 fats: parseFloat(formData.fats) || null,
+                fiber: parseFloat(formData.fiber) || null,
+                gi: parseInt(formData.gi) || null,
+                vitamins: formData.vitamins,
+                minerals: formData.minerals,
                 image_url: capturedImage || null,
                 ai_recognized: !!capturedImage,
                 notes: formData.notes
@@ -154,8 +168,13 @@ export default function DietTrackerPage() {
                 protein: '',
                 carbs: '',
                 fats: '',
+                fiber: '',
+                gi: '',
+                vitamins: '',
+                minerals: '',
                 notes: ''
             });
+            setSearchQuery('');
             setCapturedImage(null);
 
             loadData();
@@ -177,8 +196,12 @@ export default function DietTrackerPage() {
             calories: acc.calories + (log.calories || 0),
             protein: acc.protein + (log.protein || 0),
             carbs: acc.carbs + (log.carbs || 0),
-            fats: acc.fats + (log.fats || 0)
-        }), { calories: 0, protein: 0, carbs: 0, fats: 0 });
+            fats: acc.fats + (log.fats || 0),
+            fiber: acc.fiber + (log.fiber || 0),
+            avgGi: acc.giCount > 0 ? (acc.totalGi + (log.gi || 0)) / (acc.giCount + (log.gi ? 1 : 0)) : (log.gi || 0),
+            totalGi: acc.totalGi + (log.gi || 0),
+            giCount: acc.giCount + (log.gi ? 1 : 0)
+        }), { calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0, totalGi: 0, giCount: 0, avgGi: 0 });
 
     return (
         <div className="min-h-screen bg-white p-4 md:p-8">
@@ -209,22 +232,67 @@ export default function DietTrackerPage() {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Date</label>
+                        <div className="relative mb-8">
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Search Food (Google-like)</label>
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#648C81] transition-all" size={20} />
                                 <input
-                                    type="date"
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                    className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
+                                    placeholder="Search for apples, chicken, rice..."
+                                    className="w-full bg-slate-50 border-2 border-slate-100 focus:border-[#648C81] focus:bg-white rounded-2xl py-5 pl-12 pr-4 text-lg font-bold text-slate-900 outline-none transition-all shadow-sm"
+                                    onFocus={() => searchQuery && setShowSuggestions(true)}
                                 />
                             </div>
+
+                            {/* Suggestions Dropdown */}
+                            {showSuggestions && suggestions.length > 0 && (
+                                <div className="absolute z-10 w-full mt-2 bg-white border-2 border-slate-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {suggestions.map((food, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => selectSuggestion(food)}
+                                            className="px-6 py-4 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-none flex items-center justify-between group transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-[#648C81]/10 text-[#648C81] rounded-xl flex items-center justify-center font-bold">
+                                                    {food.name[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-slate-800 group-hover:text-[#648C81] transition-all">{food.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{food.category}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-slate-600">{food.calories} <span className="text-[10px] text-slate-400 uppercase">kcal</span></p>
+                                                <Plus size={16} className="text-slate-300 group-hover:text-[#648C81] ml-auto mt-1" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Meal Type</label>
+                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Date</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <input
+                                        type="date"
+                                        value={formData.date}
+                                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                        className="w-full bg-slate-50 border-2 border-slate-100 focus:border-[#648C81] focus:bg-white p-4 pl-12 rounded-xl font-bold text-slate-800 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Meal Type</label>
                                 <select
                                     value={formData.meal_type}
                                     onChange={(e) => setFormData({ ...formData, meal_type: e.target.value })}
-                                    className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                    className="w-full bg-slate-50 border-2 border-slate-100 focus:border-[#648C81] focus:bg-white p-4 rounded-xl font-bold text-slate-800 outline-none transition-all appearance-none cursor-pointer"
                                 >
                                     <option value="breakfast">Breakfast</option>
                                     <option value="lunch">Lunch</option>
@@ -235,55 +303,78 @@ export default function DietTrackerPage() {
                         </div>
 
                         <div className="mb-6">
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Food Name</label>
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Confirmed Food Name</label>
                             <input
                                 type="text"
                                 value={formData.food_name}
                                 onChange={(e) => setFormData({ ...formData, food_name: e.target.value })}
-                                placeholder="e.g., Chicken Salad"
-                                className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                placeholder="Food not found? Type here..."
+                                className="w-full bg-slate-50 border-2 border-slate-100 focus:border-[#648C81] focus:bg-white p-4 rounded-xl font-bold text-slate-800 outline-none transition-all"
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Calories</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Calories</label>
                                 <input
                                     type="number"
                                     value={formData.calories}
                                     onChange={(e) => setFormData({ ...formData, calories: e.target.value })}
                                     placeholder="350"
-                                    className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                    className="w-full bg-white border-2 border-slate-100 focus:border-[#648C81] p-3 rounded-xl font-black text-slate-800 outline-none transition-all"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Protein (g)</label>
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Protein (g)</label>
                                 <input
                                     type="number"
                                     value={formData.protein}
                                     onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
                                     placeholder="30"
-                                    className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                    className="w-full bg-white border-2 border-slate-100 focus:border-[#648C81] p-3 rounded-xl font-black text-slate-800 outline-none transition-all"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Carbs (g)</label>
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Fiber (g)</label>
                                 <input
                                     type="number"
-                                    value={formData.carbs}
-                                    onChange={(e) => setFormData({ ...formData, carbs: e.target.value })}
-                                    placeholder="45"
-                                    className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                    value={formData.fiber}
+                                    onChange={(e) => setFormData({ ...formData, fiber: e.target.value })}
+                                    placeholder="5"
+                                    className="w-full bg-white border-2 border-slate-100 focus:border-[#648C81] p-3 rounded-xl font-black text-slate-800 outline-none transition-all"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Fats (g)</label>
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">GI Index</label>
                                 <input
                                     type="number"
-                                    value={formData.fats}
-                                    onChange={(e) => setFormData({ ...formData, fats: e.target.value })}
-                                    placeholder="12"
-                                    className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#648C81] focus:outline-none"
+                                    value={formData.gi}
+                                    onChange={(e) => setFormData({ ...formData, gi: e.target.value })}
+                                    placeholder="35"
+                                    className="w-full bg-white border-2 border-slate-100 focus:border-[#648C81] p-3 rounded-xl font-black text-slate-800 outline-none transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Vitamins</label>
+                                <input
+                                    type="text"
+                                    value={formData.vitamins}
+                                    onChange={(e) => setFormData({ ...formData, vitamins: e.target.value })}
+                                    placeholder="eg. Vit C, Vit D"
+                                    className="w-full bg-white border-2 border-slate-100 focus:border-[#648C81] p-3 rounded-xl font-bold text-slate-800 outline-none transition-all"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Minerals</label>
+                                <input
+                                    type="text"
+                                    value={formData.minerals}
+                                    onChange={(e) => setFormData({ ...formData, minerals: e.target.value })}
+                                    placeholder="eg. Iron, Magnesium"
+                                    className="w-full bg-white border-2 border-slate-100 focus:border-[#648C81] p-3 rounded-xl font-bold text-slate-800 outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -319,8 +410,24 @@ export default function DietTrackerPage() {
                                     <span className="text-lg font-black text-[#648C81]">{totalToday.carbs.toFixed(0)}g</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm font-bold text-slate-600">Fats</span>
-                                    <span className="text-lg font-black text-[#648C81]">{totalToday.fats.toFixed(0)}g</span>
+                                    <span className="text-sm font-bold text-slate-600">Fiber</span>
+                                    <span className="text-lg font-black text-[#648C81]">{totalToday.fiber.toFixed(1)}g</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-bold text-slate-600">Avg GI Index</span>
+                                    <span className="text-lg font-black text-[#648C81]">{totalToday.avgGi.toFixed(0)}</span>
+                                </div>
+                            </div>
+                            <div className="mt-6 p-4 bg-white/50 rounded-2xl border border-[#648C81]/10">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nutrient Density</p>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-[#648C81] transition-all duration-500"
+                                            style={{ width: `${Math.min(100, (totalToday.protein + totalToday.fiber) * 2)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-xs font-black text-[#648C81]">Good</span>
                                 </div>
                             </div>
                         </div>

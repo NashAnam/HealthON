@@ -297,7 +297,7 @@ export default function AppointmentsPage() {
                                             <p className="text-xs font-bold text-gray-400">
                                                 {appointment.type === 'doctor'
                                                     ? (appointment.doctors?.name?.toLowerCase().startsWith('dr') ? appointment.doctors.name : `Dr. ${appointment.doctors?.name || 'Sarah Johnson'}`)
-                                                    : (appointment.doctors?.name || 'Lab')} • {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Date N/A'} at {appointment.appointment_time || 'Time N/A'}
+                                                    : (appointment.doctors?.name || 'Lab')} • {appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Date N/A'} at {appointment.appointment_time || 'Time N/A'}
                                             </p>
                                         </div>
                                     </div>
