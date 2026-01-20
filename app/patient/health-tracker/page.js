@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 
 import Link from 'next/link';
 import { Menu, MoreVertical } from 'lucide-react';
+import { useSidebar } from '@/lib/SidebarContext';
 import { scheduleMedicationReminder, requestNotificationPermission } from '@/lib/notifications';
 
 export default function HealthTrackerPage() {
@@ -94,9 +95,17 @@ export default function HealthTrackerPage() {
         value: '',
         unit: 'bpm',
         notes: '',
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+        date: '',
+        time: ''
     });
+
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+        }));
+    }, []);
 
     useEffect(() => {
         loadData();
@@ -108,6 +117,10 @@ export default function HealthTrackerPage() {
             if (!session) return router.push('/login');
 
             const { data: pt } = await supabase.from('patients').select('*').eq('user_id', session.user.id).single();
+            if (!pt) {
+                router.push('/complete-profile');
+                return;
+            }
             setPatient(pt);
 
             const { data: trackerLogs } = await supabase
