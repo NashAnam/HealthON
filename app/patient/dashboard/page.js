@@ -58,10 +58,10 @@ export default function PatientDashboard() {
 
             setVitals(vitalsRes.data);
 
-            // Filter and sort for genuinely UPCOMING appointments
+            // Filter and sort for genuinely UPCOMING appointments (confirmed or pending)
             const todayStr = new Date().toISOString().split('T')[0];
             const upcomingAppts = (apptsRes.data || [])
-                .filter(a => a.appointment_date >= todayStr)
+                .filter(a => a.appointment_date >= todayStr && (a.status === 'confirmed' || a.status === 'pending'))
                 .sort((a, b) => {
                     // Sort by date then time
                     if (a.appointment_date !== b.appointment_date) {
@@ -476,14 +476,35 @@ export default function PatientDashboard() {
                                 reminders.filter(r => {
                                     if (!r.is_active) return false;
 
-                                    // If it has a full date (ISO), check if it's in the past
+                                    const now = new Date();
+                                    // Handle ISO date-time strings
                                     if (r.reminder_time && r.reminder_time.includes('T')) {
                                         const remDate = new Date(r.reminder_time);
-                                        const now = new Date();
-                                        // If it's more than 24 hours old and not recurring, hide it
-                                        if (remDate < now && (!r.frequency || r.frequency === 'once' || r.frequency === 'Daily')) {
-                                            // Special case: "Daily" reminders should probably reset, but if it has a hard date, it might be stale
-                                            if (r.frequency === 'once' && remDate < now) return false;
+                                        // If it's a one-time reminder in the past, hide it
+                                        if (remDate < now && (!r.frequency || r.frequency === 'once')) return false;
+                                    }
+
+                                    // Handle recurring or simple time strings (HH:mm)
+                                    // If it's passed for today, we hide it from "Upcoming"
+                                    if (r.reminder_time) {
+                                        // Extract HH:mm from either ISO or HH:mm string
+                                        let hour, min;
+                                        if (r.reminder_time.includes('T')) {
+                                            const d = new Date(r.reminder_time);
+                                            hour = d.getHours();
+                                            min = d.getMinutes();
+                                        } else {
+                                            const parts = r.reminder_time.split(':');
+                                            if (parts.length >= 2) {
+                                                hour = parseInt(parts[0]);
+                                                min = parseInt(parts[1]);
+                                            }
+                                        }
+
+                                        if (hour !== undefined && min !== undefined) {
+                                            const remTotalMin = hour * 60 + min;
+                                            const nowTotalMin = now.getHours() * 60 + now.getMinutes();
+                                            if (remTotalMin < nowTotalMin) return false;
                                         }
                                     }
                                     return true;

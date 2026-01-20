@@ -44,8 +44,20 @@ export default function RemindersPage() {
   };
 
   const markComplete = async (id) => {
-    toast.success('Reminder completed!');
-    setReminders(reminders.filter(r => r.id !== id));
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({ is_active: false }) // Or handle differently if you have a completion table
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Reminder completed / stopped');
+      setReminders(reminders.filter(r => r.id !== id));
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to update reminder');
+    }
   };
 
   const testNotification = async () => {

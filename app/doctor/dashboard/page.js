@@ -58,14 +58,15 @@ export default function DoctorDashboard() {
       const { data: aptData } = await supabase
         .from('appointments')
         .select(`*, patients (*)`)
-        .eq('doctor_id', doctorData.id)
-        .order('appointment_time', { ascending: true });
+        .eq('doctor_id', doctorData.id); // Remove ordering here to handle filtering first
 
+      // confirmed for EXACTLY today
       const todayApts = aptData?.filter(a => a.appointment_date === today && a.status === 'confirmed') || [];
+      // all pending regardless of date (so doctor sees them immediately)
       const requests = aptData?.filter(a => a.status === 'pending') || [];
 
-      setAppointments(todayApts);
-      setNewRequests(requests);
+      setAppointments(todayApts.sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || '')));
+      setNewRequests(requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
 
       // Fetch Total Unique Patients
       const { count: patientCount } = await supabase
@@ -120,8 +121,8 @@ export default function DoctorDashboard() {
       <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center p-6 lg:pl-64 relative overflow-hidden">
         {/* Dynamic Background Glows */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
-          <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
+          <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
+          <div className="absolute top-[20%] -left-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
         </div>
 
         <div className="max-w-xl w-full text-center relative z-10 space-y-8 animate-in fade-in zoom-in duration-700">
@@ -180,21 +181,21 @@ export default function DoctorDashboard() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <motion.div
           animate={{
-            x: [0, 50, 0],
+            x: [0, -50, 0],
             y: [0, 30, 0],
             scale: [1, 1.1, 1]
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-plum-100/40 rounded-full blur-[120px]"
+          className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] bg-plum-100/40 rounded-full blur-[120px]"
         />
         <motion.div
           animate={{
-            x: [0, -40, 0],
+            x: [0, 40, 0],
             y: [0, 60, 0],
             scale: [1, 1.2, 1]
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] -right-[10%] w-[40%] h-[60%] bg-teal-50/50 rounded-full blur-[100px]"
+          className="absolute top-[20%] -left-[10%] w-[40%] h-[60%] bg-teal-50/50 rounded-full blur-[100px]"
         />
         <motion.div
           animate={{
