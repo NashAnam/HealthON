@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPatient, getVerifiedDoctors, createAppointment, getLatestAssessment } from '@/lib/supabase';
+import { supabase, getCurrentUser, getPatient, getVerifiedDoctors, createAppointment, getLatestAssessment } from '@/lib/supabase';
 import { Stethoscope, Search, Calendar, Clock, Star, MapPin, ArrowLeft, Check, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSidebar } from '@/lib/SidebarContext';
@@ -42,61 +42,30 @@ export default function DoctorBookingPage() {
       const user = await getCurrentUser();
       if (!user) return router.push('/login');
 
-      const [patientData, doctorsData, assessmentData] = await Promise.all([
+      const [patientData, doctorsData] = await Promise.all([
         getPatient(user.id).then(res => res.data),
-        getVerifiedDoctors().then(res => res.data),
-        supabase.from('health_assessments').select('*').eq('patient_id', user.id).maybeSingle().then(res => res.data)
+        getVerifiedDoctors().then(res => res.data)
       ]);
 
-      console.log('Doctors fetched:', doctorsData?.length || 0, doctorsData);
+      if (patientData) {
+        setPatient(patientData);
+        const { data: assessmentData } = await getLatestAssessment(patientData.id);
+        if (assessmentData && assessmentData.scores) {
+          const reccs = [];
+          const s = assessmentData.scores;
+          if (s.diabetes > 30) reccs.push('Diabetologist', 'Endocrinologist');
+          if (s.hypertension > 4) reccs.push('Cardiologist');
+          if (s.cvd > 5) reccs.push('Cardiologist');
+          if (s.dyslipidemia > 5) reccs.push('Endocrinologist', 'Cardiologist');
+          if (s.thyroid > 5) reccs.push('Endocrinologist');
 
-      setPatient(patientData);
-
-      let finalDoctors = doctorsData || [];
-      if (finalDoctors.length === 0) {
-        // Provide demo doctors if database is empty for testing/demo purposes
-        finalDoctors = [
-          {
-            id: 'demo-1',
-            name: 'Sarah Rahman',
-            specialty: 'Cardiologist',
-            qualification: 'MD, FACC',
-            experience: '12',
-            address: 'City Heart Center, Tower A',
-            verified: true
-          },
-          {
-            id: 'demo-2',
-            name: 'Imran Ahmed',
-            specialty: 'Endocrinologist',
-            qualification: 'MD, DM',
-            experience: '8',
-            address: 'Diabetes Care Clinic, North Wing',
-            verified: true
-          }
-        ];
+          setRecommendations([...new Set(reccs)]);
+        }
       }
 
-      setDoctors(finalDoctors);
-      setFilteredDoctors(finalDoctors);
+      setDoctors(doctorsData || []);
+      setFilteredDoctors(doctorsData || []);
 
-      if (assessmentData && assessmentData.scores) {
-        const recs = [];
-        const s = assessmentData.scores;
-        if (s.diabetes > 30) recs.push('Diabetologist', 'Endocrinologist');
-        if (s.hypertension > 4) recs.push('Cardiologist');
-        if (s.cvd > 5) recs.push('Cardiologist');
-        if (s.dyslipidemia > 5) recs.push('Endocrinologist', 'Cardiologist');
-        if (s.thyroid > 5) recs.push('Endocrinologist');
-
-        const uniqueRecs = [...new Set(recs)];
-        setRecommendations(uniqueRecs);
-
-        // Don't auto-select specialty to show all doctors initially
-        // if (uniqueRecs.length > 0) {
-        //   setSelectedSpecialty(uniqueRecs[0]);
-        // }
-      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load doctors');
@@ -134,11 +103,20 @@ export default function DoctorBookingPage() {
       return;
     }
 
+    if (!patient) {
+      toast.error('Patient profile not found. Please complete your profile first.');
+      return;
+    }
+
     try {
       const { data: appointment, error: bookingError } = await createAppointment({
         patient_id: patient.id,
         doctor_id: selectedDoctor.id,
-        ...bookingData,
+        appointment_date: bookingData.appointment_date,
+        appointment_time: bookingData.appointment_time,
+        consultation_type: bookingData.consultation_type,
+        appointment_type: bookingData.appointment_type,
+        reason: bookingData.reason,
         status: 'pending'
       });
 

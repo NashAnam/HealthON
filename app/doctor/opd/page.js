@@ -62,8 +62,8 @@ function OpdContent() {
 
     if (searchTerm) {
       filtered = filtered.filter(apt =>
-        apt.patients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.patients?.phone?.includes(searchTerm)
+        (apt.patients?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (apt.patients?.phone || '').includes(searchTerm)
       );
     }
 
@@ -190,87 +190,9 @@ function OpdContent() {
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Add Appointment
-              </button>
             </div>
           </div>
         </div>
-
-        {/* Add Appointment Form */}
-        {showAddForm && (
-          <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Schedule New Appointment</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Patient Name"
-                value={newAppointment.patient_name}
-                onChange={(e) => setNewAppointment({ ...newAppointment, patient_name: e.target.value })}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              />
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                value={newAppointment.patient_phone}
-                onChange={(e) => setNewAppointment({ ...newAppointment, patient_phone: e.target.value })}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              />
-              <input
-                type="email"
-                placeholder="Email (optional)"
-                value={newAppointment.patient_email}
-                onChange={(e) => setNewAppointment({ ...newAppointment, patient_email: e.target.value })}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              />
-              <input
-                type="date"
-                value={newAppointment.appointment_date}
-                onChange={(e) => setNewAppointment({ ...newAppointment, appointment_date: e.target.value })}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              />
-              <input
-                type="time"
-                value={newAppointment.appointment_time}
-                onChange={(e) => setNewAppointment({ ...newAppointment, appointment_time: e.target.value })}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              />
-              <select
-                value={newAppointment.consultation_type}
-                onChange={(e) => setNewAppointment({ ...newAppointment, consultation_type: e.target.value })}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="in-person">In-Person</option>
-                <option value="telemedicine">Telemedicine</option>
-              </select>
-              <textarea
-                placeholder="Reason for visit"
-                value={newAppointment.reason}
-                onChange={(e) => setNewAppointment({ ...newAppointment, reason: e.target.value })}
-                className="md:col-span-2 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                rows="3"
-              />
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={handleAddAppointment}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                Schedule Appointment
-              </button>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Appointments List */}
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
