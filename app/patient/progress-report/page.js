@@ -47,12 +47,11 @@ export default function ProgressReportPage() {
                 .gte('created_at', sevenDaysAgo.toISOString())
                 .order('created_at', { ascending: true });
 
-            if (logs && logs.length > 0) {
-                // Group logs by date and type
-                const logsByDate = {};
-                let dietLogsCount = 0;
-                let vitalsLogsCount = 0;
+            const logsByDate = {};
+            let dietLogsCount = 0;
+            let vitalsLogsCount = 0;
 
+            if (logs && logs.length > 0) {
                 logs.forEach(log => {
                     let date;
                     try {
@@ -68,55 +67,53 @@ export default function ProgressReportPage() {
                     if (log.log_type === 'diet') dietLogsCount++;
                     if (log.log_type === 'vitals') {
                         vitalsLogsCount++;
-                        if (log.notes?.includes('bpm')) {
-                            logsByDate[date].hr = parseFloat(log.value) || null;
-                        } else if (log.notes?.includes('mg/dL')) {
-                            logsByDate[date].sugar = parseFloat(log.value) || null;
-                        } else if (log.notes?.includes('mmHg') && log.value) {
-                            try {
-                                const parts = log.value.split('/');
-                                if (parts.length === 2) {
-                                    const sys = parseFloat(parts[0]);
-                                    const dia = parseFloat(parts[1]);
-                                    logsByDate[date].sys = isNaN(sys) ? null : sys;
-                                    logsByDate[date].dia = isNaN(dia) ? null : dia;
-                                }
-                            } catch (e) {
-                                console.error('Error parsing BP value:', log.value);
+                        const unit = log.notes?.includes('Unit:') ? log.notes.split('|')[0].replace('Unit:', '').trim() : '';
+                        if (unit === 'bpm' || log.notes?.toLowerCase().includes('bpm')) {
+                            logsByDate[date].hr = parseFloat(log.value) || logsByDate[date].hr;
+                        } else if (unit === 'mg/dL' || log.notes?.toLowerCase().includes('mg/dL')) {
+                            logsByDate[date].sugar = parseFloat(log.value) || logsByDate[date].sugar;
+                        } else if (unit === 'mmHg' || log.notes?.toLowerCase().includes('mmhg')) {
+                            const parts = (log.value || '').split('/');
+                            if (parts.length === 2) {
+                                logsByDate[date].sys = parseFloat(parts[0]) || logsByDate[date].sys;
+                                logsByDate[date].dia = parseFloat(parts[1]) || logsByDate[date].dia;
                             }
                         }
                     }
                 });
-
-                setVitalsData(Object.values(logsByDate));
-                setDietCount(dietLogsCount);
-                setVitalsCount(vitalsLogsCount);
-
-                // Calculate Points
-                const dietPoints = dietLogsCount * 10;
-                const vitalsPoints = vitalsLogsCount * 5;
-
-                // Check if assessment completed this week
-                const { data: assessments } = await supabase
-                    .from('health_assessments')
-                    .select('*')
-                    .eq('patient_id', pt.id)
-                    .gte('created_at', sevenDaysAgo.toISOString());
-
-                const assessmentPoints = (assessments?.length || 0) * 50;
-
-                setPoints({
-                    total: dietPoints + vitalsPoints + assessmentPoints,
-                    breakDown: [
-                        { name: 'Diet Logs', value: dietPoints, color: '#648C81' },
-                        { name: 'Vitals Sync', value: vitalsPoints, color: '#4a2b3d' },
-                        { name: 'Assessments', value: assessmentPoints, color: '#d97706' }
-                    ]
-                });
-            } else {
-                setVitalsData([]);
-                setPoints({ total: 0, breakDown: [] });
             }
+
+            const last7DaysData = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dayKey = d.toLocaleDateString('en-US', { weekday: 'short' });
+                last7DaysData.push(logsByDate[dayKey] || { date: dayKey, hr: null, sys: null, dia: null, sugar: null });
+            }
+
+            setVitalsData(last7DaysData);
+            setDietCount(dietLogsCount);
+            setVitalsCount(vitalsLogsCount);
+
+            const dietPoints = dietLogsCount * 10;
+            const vitalsPoints = vitalsLogsCount * 5;
+
+            const { data: assessments } = await supabase
+                .from('health_assessments')
+                .select('*')
+                .eq('patient_id', pt.id)
+                .gte('created_at', sevenDaysAgo.toISOString());
+
+            const assessmentPoints = (assessments?.length || 0) * 50;
+
+            setPoints({
+                total: dietPoints + vitalsPoints + assessmentPoints,
+                breakDown: [
+                    { name: 'Diet Logs', value: dietPoints, color: '#648C81' },
+                    { name: 'Vitals Sync', value: vitalsPoints, color: '#4a2b3d' },
+                    { name: 'Assessments', value: assessmentPoints, color: '#d97706' }
+                ]
+            });
 
             setLoading(false);
         } catch (error) {

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heart, Activity, Thermometer, Droplets, Scale, AlertCircle, Calendar, Bell, ChevronRight, FileText, Pill, Stethoscope, Utensils, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getCurrentUser, getPatient, getLatestVitals, supabase, getAppointments, getReminders } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -332,6 +333,28 @@ export default function PatientDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Decorative Ellipses (Blobs) */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <motion.div
+                    animate={{
+                        x: [0, 50, 0],
+                        y: [0, -30, 0],
+                        scale: [1, 1.1, 1]
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] bg-[#5a8a7a]/10 rounded-full blur-[120px]"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -40, 0],
+                        y: [0, 60, 0],
+                        scale: [1, 1.2, 1]
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-[10%] -right-[5%] w-[40%] h-[60%] bg-[#4a2b3d]/10 rounded-full blur-[100px]"
+                />
+            </div>
 
             {/* Sketch Header */}
             <header className="bg-white px-6 md:px-12 py-5 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">

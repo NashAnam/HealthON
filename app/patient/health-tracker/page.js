@@ -186,6 +186,15 @@ export default function HealthTrackerPage() {
                 setPrescribedMeds([]);
             }
 
+            // Fetch Latest Assessment
+            const { data: assessment } = await supabase
+                .from('health_assessments')
+                .select('*')
+                .eq('patient_id', pt.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
             setLatestAssessment(assessment);
 
             // Fetch Lab Reports
