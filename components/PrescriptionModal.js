@@ -9,13 +9,42 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, patien
     const [activeTab, setActiveTab] = useState('prescription');
     const [diagnosis, setDiagnosis] = useState('');
     const [medications, setMedications] = useState([
-        { name: '', dosage: '500mg', frequency: 'OD (Once daily)', duration: '7 days', instructions: 'After food' }
+        { name: '', dosage_val: '500', dosage_unit: 'mg', frequency: 'OD (Once daily)', duration_val: '7', duration_unit: 'days', instructions: 'After food' }
     ]);
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    const DOSAGE_UNITS = ['mg', 'ml', 'tab', 'cap', 'units', 'tsp', 'tbsp', 'puffs'];
+    const FREQUENCIES = [
+        'OD (Once daily)',
+        'BD (Twice daily)',
+        'TDS (Three times daily)',
+        'QID (Four times daily)',
+        'HS (At bedtime)',
+        'SOS (As needed)',
+        'AC (Before food)',
+        'PC (After food)'
+    ];
+    const DURATION_UNITS = ['days', 'weeks', 'months'];
+    const INSTRUCTIONS_PRESETS = [
+        'After food',
+        'Before food',
+        'Empty stomach',
+        'With water',
+        'Avoid milk',
+        'Dissolve in water'
+    ];
+
     const addMedication = () => {
-        setMedications([...medications, { name: '', dosage: '', frequency: 'OD (Once daily)', duration: '', instructions: 'After food' }]);
+        setMedications([...medications, {
+            name: '',
+            dosage_val: '',
+            dosage_unit: 'mg',
+            frequency: 'OD (Once daily)',
+            duration_val: '',
+            duration_unit: 'days',
+            instructions: 'After food'
+        }]);
     };
 
     const removeMedication = (index) => {
@@ -42,7 +71,13 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, patien
                 doctor_id: doctor?.id,
                 appointment_id: appointment?.id,
                 diagnosis: diagnosis || 'General Consultation',
-                medications: medications,
+                medications: medications.map(m => ({
+                    name: m.name,
+                    dosage: `${m.dosage_val}${m.dosage_unit}`,
+                    frequency: m.frequency,
+                    duration: `${m.duration_val} ${m.duration_unit}`,
+                    instructions: m.instructions
+                })),
                 notes: notes,
                 created_at: new Date().toISOString()
             };
@@ -188,35 +223,51 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, patien
                                                         </div>
                                                         <div className="md:col-span-2">
                                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Dosage</label>
-                                                            <input
-                                                                type="text"
-                                                                placeholder="500mg"
-                                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
-                                                                value={med.dosage}
-                                                                onChange={(e) => updateMedication(idx, 'dosage', e.target.value)}
-                                                            />
+                                                            <div className="flex gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="500"
+                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-2 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
+                                                                    value={med.dosage_val}
+                                                                    onChange={(e) => updateMedication(idx, 'dosage_val', e.target.value)}
+                                                                />
+                                                                <select
+                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-1 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
+                                                                    value={med.dosage_unit}
+                                                                    onChange={(e) => updateMedication(idx, 'dosage_unit', e.target.value)}
+                                                                >
+                                                                    {DOSAGE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                                                </select>
+                                                            </div>
                                                         </div>
                                                         <div className="md:col-span-3">
                                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Frequency</label>
                                                             <select
-                                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
+                                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
                                                                 value={med.frequency}
                                                                 onChange={(e) => updateMedication(idx, 'frequency', e.target.value)}
                                                             >
-                                                                <option>OD (Once daily)</option>
-                                                                <option>BD (Twice daily)</option>
-                                                                <option>TDS (Three times daily)</option>
+                                                                {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
                                                             </select>
                                                         </div>
                                                         <div className="md:col-span-2">
                                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Duration</label>
-                                                            <input
-                                                                type="text"
-                                                                placeholder="7 days"
-                                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
-                                                                value={med.duration}
-                                                                onChange={(e) => updateMedication(idx, 'duration', e.target.value)}
-                                                            />
+                                                            <div className="flex gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="7"
+                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-2 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
+                                                                    value={med.duration_val}
+                                                                    onChange={(e) => updateMedication(idx, 'duration_val', e.target.value)}
+                                                                />
+                                                                <select
+                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-1 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
+                                                                    value={med.duration_unit}
+                                                                    onChange={(e) => updateMedication(idx, 'duration_unit', e.target.value)}
+                                                                >
+                                                                    {DURATION_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                                                </select>
+                                                            </div>
                                                         </div>
                                                         <div className="md:col-span-1 hidden md:flex items-center justify-center pb-3">
                                                             {medications.length > 1 && (
@@ -226,14 +277,23 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, patien
                                                             )}
                                                         </div>
                                                         <div className="md:col-span-12">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Timing / Instructions</label>
-                                                            <input
-                                                                type="text"
-                                                                placeholder="e.g. After food"
-                                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
-                                                                value={med.instructions}
-                                                                onChange={(e) => updateMedication(idx, 'instructions', e.target.value)}
-                                                            />
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Instructions</label>
+                                                            <div className="flex gap-2">
+                                                                <select
+                                                                    className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
+                                                                    value={med.instructions}
+                                                                    onChange={(e) => updateMedication(idx, 'instructions', e.target.value)}
+                                                                >
+                                                                    {INSTRUCTIONS_PRESETS.map(p => <option key={p} value={p}>{p}</option>)}
+                                                                </select>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Or type custom instructions..."
+                                                                    className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
+                                                                    value={med.instructions}
+                                                                    onChange={(e) => updateMedication(idx, 'instructions', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 ))}

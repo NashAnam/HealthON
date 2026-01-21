@@ -351,6 +351,42 @@ export default function HealthTrackerPage() {
             return;
         }
 
+        // 24-hour refresh check for vitals, activity, and sleep
+        if (formData.log_type === 'vitals' || formData.log_type === 'activity' || formData.log_type === 'sleep') {
+            const twentyFourHoursAgo = new Date();
+            twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+            const { data: recentLogs, error: checkError } = await supabase
+                .from('tracker_logs')
+                .select('*')
+                .eq('patient_id', patient.id)
+                .eq('log_type', formData.log_type)
+                .gte('created_at', twentyFourHoursAgo.toISOString());
+
+            if (checkError) {
+                console.error('Error checking recent logs:', checkError);
+            } else if (recentLogs && recentLogs.length > 0) {
+                // Check if same unit type (for vitals)
+                if (formData.log_type === 'vitals' && formData.unit) {
+                    const sameUnitLog = recentLogs.find(log =>
+                        log.notes && log.notes.includes(`Unit: ${formData.unit}`)
+                    );
+                    if (sameUnitLog) {
+                        const lastLogTime = new Date(sameUnitLog.created_at);
+                        const hoursAgo = Math.floor((new Date() - lastLogTime) / (1000 * 60 * 60));
+                        toast.error(`You logged this vital ${hoursAgo} hour(s) ago. Please wait 24 hours between logs.`);
+                        return;
+                    }
+                } else {
+                    // For activity and sleep
+                    const lastLogTime = new Date(recentLogs[0].created_at);
+                    const hoursAgo = Math.floor((new Date() - lastLogTime) / (1000 * 60 * 60));
+                    toast.error(`You logged this ${hoursAgo} hour(s) ago. Please wait 24 hours between logs.`);
+                    return;
+                }
+            }
+        }
+
         const tid = toast.loading('Saving log...');
         try {
             let finalNotes = formData.notes || '';
@@ -1116,113 +1152,152 @@ export default function HealthTrackerPage() {
                             ) : (
                                 /* STANDARD/GENERIC TRACKER UI (Manual Entry for other trackers) */
                                 <>
-                                    <div className="grid grid-cols-2 gap-6 mb-8">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Date</label>
-                                            <div className="relative">
-                                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                                                <input
-                                                    type="date"
-                                                    value={formData.date}
-                                                    onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                                    className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Time</label>
-                                            <div className="relative">
-                                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                                                <input
-                                                    type="time"
-                                                    value={formData.time}
-                                                    onChange={e => setFormData({ ...formData, time: e.target.value })}
-                                                    className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6 mb-8">
-                                        <div className="relative group">
-                                            <input
-                                                type="text"
-                                                placeholder={trackerPlaceholder}
-                                                value={formData.value}
-                                                onChange={e => setFormData({ ...formData, value: e.target.value })}
-                                                className="w-full text-4xl font-black text-slate-900 placeholder:text-slate-400 border-b-4 border-slate-200 focus:border-teal-600 py-6 bg-transparent outline-none transition-all"
-                                            />
-                                            {formData.unit && <span className="absolute right-0 bottom-6 text-sm font-black text-slate-500 uppercase tracking-widest">{formData.unit}</span>}
-                                        </div>
-
-                                        <div className="relative">
-                                            {isListening ? (
-                                                <div className="w-full bg-teal-50 border-2 border-teal-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center h-40 animate-pulse transition-all">
-                                                    <p className="text-teal-800 font-bold text-lg mb-2">Listening...</p>
-                                                    <p className="text-teal-600 font-medium italic text-xl">"{transcript || 'Speak now'}"</p>
+                                    {/* Simplified UI for Vitals Trackers (PR, Glucose, BP, Steps, Sleep) */}
+                                    {(formData.log_type === 'vitals' || formData.log_type === 'activity' || formData.log_type === 'sleep') ? (
+                                        <div className="space-y-8">
+                                            {/* Date Input */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">DATE</label>
+                                                <div className="relative">
+                                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                                                    <input
+                                                        type="date"
+                                                        value={formData.date}
+                                                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                                        className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-2xl py-5 pl-14 pr-4 text-lg font-bold text-slate-900 outline-none transition-all shadow-sm"
+                                                    />
                                                 </div>
-                                            ) : (
-                                                <textarea
-                                                    placeholder="Add notes or speak..."
-                                                    value={formData.notes}
-                                                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                                    className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 text-base font-medium text-slate-900 placeholder:text-slate-500 focus:border-teal-600 focus:ring-0 outline-none resize-none h-40 shadow-sm transition-all"
-                                                />
-                                            )}
+                                            </div>
+
+                                            {/* Value Input */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">VALUE</label>
+                                                <div className="relative group">
+                                                    <input
+                                                        type="text"
+                                                        placeholder={trackerPlaceholder}
+                                                        value={formData.value}
+                                                        onChange={e => setFormData({ ...formData, value: e.target.value })}
+                                                        className="w-full text-5xl font-black text-slate-900 placeholder:text-slate-300 border-b-4 border-slate-200 focus:border-teal-600 py-8 bg-transparent outline-none transition-all"
+                                                    />
+                                                    {formData.unit && <span className="absolute right-0 bottom-8 text-2xl font-black text-slate-500 uppercase tracking-widest">{formData.unit}</span>}
+                                                </div>
+                                            </div>
+
+                                            {/* Save Button */}
                                             <button
-                                                onClick={toggleVoiceInput}
-                                                title={isListening ? "Stop Listening" : "Start Voice Input"}
-                                                className={`absolute right-4 bottom-4 p-3 rounded-xl transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse shadow-rose-500/50 shadow-lg scale-110' : 'bg-slate-100 text-teal-700 border border-teal-200 hover:bg-teal-50'}`}
+                                                onClick={handleSave}
+                                                className="w-full bg-teal-600 text-white py-6 rounded-2xl font-black text-base uppercase tracking-widest shadow-xl shadow-teal-600/20 hover:bg-teal-700 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3"
                                             >
-                                                {isListening ? <Activity className="animate-bounce" size={24} /> : <Mic size={24} />}
+                                                <Save size={24} /> SAVE LOG
                                             </button>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        /* Full-Featured UI for Other Trackers (with notes, voice, etc.) */
+                                        <>
+                                            <div className="grid grid-cols-1 gap-6 mb-8">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Date</label>
+                                                    <div className="relative">
+                                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                                        <input
+                                                            type="date"
+                                                            value={formData.date}
+                                                            onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                                            className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Time</label>
+                                                    <div className="relative">
+                                                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                                        <input
+                                                            type="time"
+                                                            value={formData.time}
+                                                            onChange={e => setFormData({ ...formData, time: e.target.value })}
+                                                            className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl py-4 pl-12 pr-4 text-base font-bold text-slate-900 outline-none transition-all shadow-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                    {/* Camera Section */}
-                                    <div className="mb-8">
-                                        {capturedImage ? (
-                                            <div className="relative rounded-2xl overflow-hidden aspect-video border-4 border-teal-100">
-                                                <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
-                                                <button onClick={() => setCapturedImage(null)} className="absolute top-2 right-2 bg-black/70 text-white p-2 rounded-full hover:bg-black"><X size={20} /></button>
+                                            <div className="space-y-6 mb-8">
+                                                <div className="relative group">
+                                                    <input
+                                                        type="text"
+                                                        placeholder={trackerPlaceholder}
+                                                        value={formData.value}
+                                                        onChange={e => setFormData({ ...formData, value: e.target.value })}
+                                                        className="w-full text-4xl font-black text-slate-900 placeholder:text-slate-400 border-b-4 border-slate-200 focus:border-teal-600 py-6 bg-transparent outline-none transition-all"
+                                                    />
+                                                    {formData.unit && <span className="absolute right-0 bottom-6 text-sm font-black text-slate-500 uppercase tracking-widest">{formData.unit}</span>}
+                                                </div>
                                             </div>
-                                        ) : showCamera ? (
-                                            <div className="relative rounded-2xl overflow-hidden aspect-video bg-black border-4 border-teal-600">
-                                                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                                                <button onClick={capturePhoto} className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white rounded-full p-4 shadow-xl border-4 border-teal-600 hover:scale-105 transition-transform"><div className="w-4 h-4 bg-teal-600 rounded-full" /></button>
-                                                <button onClick={() => setShowCamera(false)} className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black"><X size={24} /></button>
+
+                                            {/* Notes with Voice Input */}
+                                            <div className="space-y-2 mb-8">
+                                                <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Notes (Optional)</label>
+                                                <div className="relative">
+                                                    <textarea
+                                                        placeholder="Add notes or speak..."
+                                                        value={formData.notes}
+                                                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                                        className="w-full bg-white border-2 border-slate-200 focus:border-teal-600 rounded-xl p-4 text-base font-medium text-slate-900 outline-none transition-all shadow-sm resize-none h-32"
+                                                    />
+                                                    <button
+                                                        onClick={toggleVoiceInput}
+                                                        className={`absolute bottom-4 right-4 p-3 rounded-full transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-100 text-slate-600 hover:bg-teal-50 hover:text-teal-600'}`}
+                                                    >
+                                                        <Mic size={20} />
+                                                    </button>
+                                                </div>
+                                                {transcript && <p className="text-sm text-teal-600 font-medium italic ml-1">Listening: "{transcript}"</p>}
                                             </div>
-                                        ) : (
-                                            <div className="flex gap-4">
+
+                                            {/* Photo Upload Options */}
+                                            <div className="grid grid-cols-2 gap-4 mb-8">
                                                 <button
                                                     onClick={startCamera}
-                                                    className="flex-1 py-6 border-4 border-dashed border-slate-300 rounded-2xl text-slate-600 font-bold text-sm uppercase tracking-widest hover:border-teal-500 hover:text-teal-800 hover:bg-teal-50 transition-all flex flex-col items-center justify-center gap-2 bg-slate-50"
+                                                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all border-2 border-dashed border-slate-300"
                                                 >
-                                                    <Camera size={24} /> Take Photo
+                                                    <Camera size={20} /> Take Photo
                                                 </button>
                                                 <button
                                                     onClick={() => fileInputRef.current?.click()}
-                                                    className="flex-1 py-6 border-4 border-dashed border-slate-300 rounded-2xl text-slate-600 font-bold text-sm uppercase tracking-widest hover:border-teal-500 hover:text-teal-800 hover:bg-teal-50 transition-all flex flex-col items-center justify-center gap-2 bg-slate-50"
+                                                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all border-2 border-dashed border-slate-300"
                                                 >
-                                                    <Upload size={24} /> Upload Photo
+                                                    <Upload size={20} /> Upload Photo
                                                 </button>
                                                 <input
-                                                    type="file"
                                                     ref={fileInputRef}
-                                                    className="hidden"
+                                                    type="file"
                                                     accept="image/*"
                                                     onChange={handleFileUpload}
+                                                    className="hidden"
                                                 />
                                             </div>
-                                        )}
-                                    </div>
 
-                                    <button
-                                        onClick={handleSave}
-                                        className="w-full bg-teal-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-teal-600/20 hover:bg-teal-700 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Save size={20} /> Save Log Entry
-                                    </button>
+                                            {capturedImage && (
+                                                <div className="mb-8 relative">
+                                                    <img src={capturedImage} alt="Captured" className="w-full rounded-xl border-2 border-slate-200" />
+                                                    <button
+                                                        onClick={() => setCapturedImage(null)}
+                                                        className="absolute top-2 right-2 bg-rose-500 text-white p-2 rounded-full hover:bg-rose-600 transition-all"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={handleSave}
+                                                className="w-full bg-teal-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-teal-600/20 hover:bg-teal-700 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Save size={20} /> Save Log Entry
+                                            </button>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </>

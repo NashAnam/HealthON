@@ -122,7 +122,7 @@ export default function DoctorDashboard() {
         {/* Dynamic Background Glows */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-plum-100/30 rounded-full blur-[120px]" />
-          <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
+          <div className="absolute top-[20%] -left-[10%] w-[30%] h-[50%] bg-teal-50/40 rounded-full blur-[100px]" />
         </div>
 
         <div className="max-w-xl w-full text-center relative z-10 space-y-8 animate-in fade-in zoom-in duration-700">

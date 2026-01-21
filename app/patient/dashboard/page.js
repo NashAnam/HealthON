@@ -108,6 +108,45 @@ export default function PatientDashboard() {
 
             setActivity(activities.sort((a, b) => b.date - a.date).slice(0, 3));
 
+            // Schedule push notifications for appointments and medications
+            try {
+                const { requestNotificationPermission, scheduleAppointmentReminder, scheduleMedicationReminder } = await import('@/lib/notifications');
+
+                const hasPermission = await requestNotificationPermission();
+                if (hasPermission) {
+                    // Schedule appointment reminders
+                    for (const appt of upcomingAppts) {
+                        await scheduleAppointmentReminder(appt);
+                    }
+
+                    // Schedule medication reminders from latest prescription
+                    if (prescriptionsRes.data && prescriptionsRes.data.length > 0) {
+                        const latestPrescription = prescriptionsRes.data[0];
+                        if (latestPrescription.medications && Array.isArray(latestPrescription.medications)) {
+                            for (const med of latestPrescription.medications) {
+                                // Extract time from instructions or frequency
+                                const times = [];
+                                const instr = (med.instructions || '').toLowerCase();
+                                if (instr.includes('morning') || instr.includes('am')) times.push('08:00');
+                                if (instr.includes('afternoon')) times.push('14:00');
+                                if (instr.includes('evening') || instr.includes('pm')) times.push('19:00');
+                                if (instr.includes('night')) times.push('22:00');
+
+                                // Fallback if no specific time found
+                                if (times.length === 0) times.push('09:00');
+
+                                for (const time of times) {
+                                    await scheduleMedicationReminder(med, time);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (notifError) {
+                console.error('Notification scheduling error:', notifError);
+                // Don't show error to user, notifications are optional
+            }
+
         } catch (error) {
             console.error('Dashboard load error:', error);
             toast.error('Failed to load dashboard data');
@@ -334,7 +373,7 @@ export default function PatientDashboard() {
                 </div>
             )}
 
-            {/* Decorative Ellipses (Blobs) */}
+            {/* Decorative Ellipses (Blobs) - Right Side */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <motion.div
                     animate={{
@@ -347,12 +386,12 @@ export default function PatientDashboard() {
                 />
                 <motion.div
                     animate={{
-                        x: [0, -40, 0],
+                        x: [0, 40, 0],
                         y: [0, 60, 0],
                         scale: [1, 1.2, 1]
                     }}
                     transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute bottom-[10%] -right-[5%] w-[40%] h-[60%] bg-[#4a2b3d]/10 rounded-full blur-[100px]"
+                    className="absolute bottom-[10%] -right-[15%] w-[40%] h-[60%] bg-[#4a2b3d]/10 rounded-full blur-[100px]"
                 />
             </div>
 

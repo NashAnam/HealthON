@@ -19,10 +19,26 @@ export default function PrescriptionsPage() {
         patient_id: '',
         diagnosis: '',
         medication_name: '',
-        dosage: '',
-        frequency: '',
+        dosage_val: '',
+        dosage_unit: 'mg',
+        frequency: 'OD (Once daily)',
+        duration_val: '',
+        duration_unit: 'days',
         notes: ''
     });
+
+    const DOSAGE_UNITS = ['mg', 'ml', 'tab', 'cap', 'units', 'tsp', 'tbsp', 'puffs'];
+    const FREQUENCIES = [
+        'OD (Once daily)',
+        'BD (Twice daily)',
+        'TDS (Three times daily)',
+        'QID (Four times daily)',
+        'HS (At bedtime)',
+        'SOS (As needed)',
+        'AC (Before food)',
+        'PC (After food)'
+    ];
+    const DURATION_UNITS = ['days', 'weeks', 'months'];
 
     useEffect(() => {
         loadInitialData();
@@ -76,8 +92,9 @@ export default function PrescriptionsPage() {
                     patient_id: formData.patient_id,
                     diagnosis: formData.diagnosis,
                     medication_name: formData.medication_name,
-                    dosage: formData.dosage,
+                    dosage: `${formData.dosage_val}${formData.dosage_unit}`,
                     frequency: formData.frequency,
+                    duration: formData.duration_val ? `${formData.duration_val} ${formData.duration_unit}` : '',
                     notes: formData.notes,
                     created_at: new Date().toISOString()
                 }]);
@@ -86,7 +103,17 @@ export default function PrescriptionsPage() {
 
             toast.success('Saved!', { id: tid });
             setShowNewPrescription(false);
-            setFormData({ patient_id: '', diagnosis: '', medication_name: '', dosage: '', frequency: '', notes: '' });
+            setFormData({
+                patient_id: '',
+                diagnosis: '',
+                medication_name: '',
+                dosage_val: '',
+                dosage_unit: 'mg',
+                frequency: 'OD (Once daily)',
+                duration_val: '',
+                duration_unit: 'days',
+                notes: ''
+            });
             loadInitialData();
         } catch (error) {
             toast.error('Error: ' + error.message, { id: tid });
@@ -153,48 +180,82 @@ export default function PrescriptionsPage() {
                                         onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Medicine</label>
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="col-span-2 lg:col-span-3">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Medicine Name</label>
                                         <input
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                                            placeholder="e.g. Paracetamol"
+                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold"
                                             value={formData.medication_name}
                                             onChange={(e) => setFormData({ ...formData, medication_name: e.target.value })}
                                         />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Dosage</label>
-                                        <input
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
-                                            value={formData.dosage}
-                                            onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
-                                        />
+                                        <div className="flex bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
+                                            <input
+                                                type="number"
+                                                placeholder="500"
+                                                className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
+                                                value={formData.dosage_val}
+                                                onChange={(e) => setFormData({ ...formData, dosage_val: e.target.value })}
+                                            />
+                                            <select
+                                                className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
+                                                value={formData.dosage_unit}
+                                                onChange={(e) => setFormData({ ...formData, dosage_unit: e.target.value })}
+                                            >
+                                                {DOSAGE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Frequency</label>
-                                        <input
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+                                        <select
+                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-xs cursor-pointer"
                                             value={formData.frequency}
                                             onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+                                        >
+                                            {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2 lg:col-span-1">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Duration</label>
+                                        <div className="flex bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
+                                            <input
+                                                type="number"
+                                                placeholder="7"
+                                                className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
+                                                value={formData.duration_val}
+                                                onChange={(e) => setFormData({ ...formData, duration_val: e.target.value })}
+                                            />
+                                            <select
+                                                className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
+                                                value={formData.duration_unit}
+                                                onChange={(e) => setFormData({ ...formData, duration_unit: e.target.value })}
+                                            >
+                                                {DURATION_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2 lg:col-span-3">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Doctor's Notes / Instructions</label>
+                                        <textarea
+                                            placeholder="e.g. Take after meal"
+                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 h-20 font-medium text-sm"
+                                            value={formData.notes}
+                                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Notes</label>
-                                    <textarea
-                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none h-20"
-                                        value={formData.notes}
-                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    />
-                                </div>
-                            </div>
 
-                            <button
-                                onClick={handleSavePrescription}
-                                className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold mt-4 flex items-center justify-center gap-2"
-                            >
-                                <Save size={18} /> Save & Send
-                            </button>
+                                <button
+                                    onClick={handleSavePrescription}
+                                    className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold mt-4 flex items-center justify-center gap-2 hover:bg-teal-700 transition-colors"
+                                >
+                                    <Save size={18} /> Save & Send
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

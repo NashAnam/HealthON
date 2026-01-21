@@ -65,7 +65,7 @@ function TelemedicineRoomContent() {
         try {
             const { data: apt, error } = await supabase
                 .from('appointments')
-                .select('*, doctors(*)')
+                .select('*, doctors(*), patients(*)')
                 .eq('id', id)
                 .single();
 

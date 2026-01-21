@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, supabase } from '@/lib/supabase';
-import { Camera, Save, Utensils, Calendar, TrendingUp, Search, Info, Plus } from 'lucide-react';
+import { Camera, Save, Utensils, Calendar, TrendingUp, Search, Info, Plus, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { searchFood } from '@/lib/nutritionData';
 
@@ -206,6 +206,13 @@ export default function DietTrackerPage() {
     return (
         <div className="min-h-screen bg-white p-4 md:p-8">
             <div className="max-w-7xl mx-auto">
+                <button
+                    onClick={() => router.push('/patient/health-tracker')}
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-6 font-bold transition-colors group"
+                >
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    Back to Health Tracker
+                </button>
                 <div className="mb-8">
                     <h1 className="text-3xl font-black text-slate-900 mb-2">Diet Tracker</h1>
                     <p className="text-slate-500">Track your meals with AI-powered food recognition</p>

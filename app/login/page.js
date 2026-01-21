@@ -29,9 +29,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-x-hidden w-full">
-      {/* Background Decorations */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-plum-100 rounded-full blur-[100px] -mr-20 -mt-20 opacity-50"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-teal-100 rounded-full blur-[100px] -mr-20 -mb-20 opacity-50"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-100 rounded-full blur-[100px] -ml-20 -mb-20 opacity-50"></div>
 
       <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-[32px] shadow-2xl shadow-plum-200/50 border border-white/50 p-10 relative z-10 text-center">
 
