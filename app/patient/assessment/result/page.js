@@ -49,6 +49,27 @@ export function AssessmentResultPage() {
         }
     };
 
+    // Convert raw scores to 1-10 scale
+    const convertTo10Scale = (condition, rawScore) => {
+        // Map different scoring systems to 1-10 scale
+        const mappings = {
+            diabetes: { max: 100, threshold: { low: 30, high: 60 } },
+            hypertension: { max: 15, threshold: { low: 5, high: 10 } },
+            cvd: { max: 20, threshold: { low: 7, high: 14 } },
+            dyslipidemia: { max: 15, threshold: { low: 5, high: 10 } }
+        };
+
+        const config = mappings[condition];
+        if (!config) return 5; // Default middle value
+
+        // Normalize to 0-1 range
+        const normalized = rawScore / config.max;
+
+        // Convert to 1-10 scale
+        const score = Math.round(normalized * 10);
+        return Math.max(1, Math.min(10, score)); // Clamp between 1-10
+    };
+
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-white"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#5D2A42]"></div></div>;
 
     if (error) return (
@@ -101,47 +122,39 @@ export function AssessmentResultPage() {
                         <Activity className="w-8 h-8 text-teal-600" />
                     </div>
                     <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight">Health Risk Assessment</h1>
-                    <p className="text-sm text-slate-500 font-medium max-w-lg mx-auto">Based on WHO STEPS (Step 1) Framework. This analysis identifies non-lab based risk patterns.</p>
+                    <p className="text-sm text-slate-500 font-medium max-w-lg mx-auto">Based on WHO STEPS (Step 1) Framework. Risk scores shown on a scale of 1-10.</p>
                 </div>
 
                 <div className="grid gap-6">
-                    <ScoreCard
-                        title="Diabetes Risk Pattern"
-                        score={scores.diabetes}
-                        condition="diabetes"
+                    <RiskScoreCard
+                        title="Diabetes Risk"
+                        score={convertTo10Scale('diabetes', scores.diabetes)}
+                        rawScore={scores.diabetes}
                         icon={Droplet}
-                        max={100}
-                        confidence={assessment.individualConfidence?.diabetes || 'moderate'}
                     />
-                    <ScoreCard
-                        title="Hypertension Risk Pattern"
-                        score={scores.hypertension}
-                        condition="hypertension"
+                    <RiskScoreCard
+                        title="Hypertension Risk"
+                        score={convertTo10Scale('hypertension', scores.hypertension)}
+                        rawScore={scores.hypertension}
                         icon={Activity}
-                        max={15}
-                        confidence={assessment.individualConfidence?.hypertension || 'moderate'}
                     />
-                    <ScoreCard
-                        title="Cardiovascular Risk Pattern"
-                        score={scores.cvd}
-                        condition="cvd"
+                    <RiskScoreCard
+                        title="Cardiovascular Risk"
+                        score={convertTo10Scale('cvd', scores.cvd)}
+                        rawScore={scores.cvd}
                         icon={Heart}
-                        max={20}
-                        confidence={assessment.individualConfidence?.cvd || 'moderate'}
                     />
-                    <ScoreCard
-                        title="Dyslipidemia Risk Pattern"
-                        score={scores.dyslipidemia}
-                        condition="dyslipidemia"
+                    <RiskScoreCard
+                        title="Dyslipidemia Risk"
+                        score={convertTo10Scale('dyslipidemia', scores.dyslipidemia)}
+                        rawScore={scores.dyslipidemia}
                         icon={Zap}
-                        max={15}
-                        confidence={assessment.individualConfidence?.dyslipidemia || 'moderate'}
                     />
                 </div>
 
                 <div className="mt-12 text-center bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                    <h3 className="font-black text-slate-900 mb-2">Detailed Report Available</h3>
-                    <p className="text-sm text-slate-500 mb-6">A comprehensive PDF report with your responses is available for your doctor.</p>
+                    <h3 className="font-black text-slate-900 mb-2">Next Steps</h3>
+                    <p className="text-sm text-slate-500 mb-6">Review your risk scores and discuss with a healthcare professional.</p>
 
                     <div className="flex flex-wrap justify-center gap-3">
                         <button
@@ -169,62 +182,52 @@ export function AssessmentResultPage() {
     );
 }
 
-const ScoreCard = ({ title, score, condition, icon: Icon, confidence }) => {
-    // Import logic here or assume utility availability
-    // Note: getRiskLevel is imported at top
-    const { level } = getRiskLevel(condition, score);
-
-    // Safety-first styling and text
-    const config = {
-        'High': {
-            text: 'text-amber-700',
-            bg: 'bg-amber-50',
-            border: 'border-amber-100',
-            label: 'Requires Attention',
-            message: 'Your responses suggest valid risk factors. We recommend a medical review.'
-        },
-        'Moderate': {
-            text: 'text-blue-700',
-            bg: 'bg-blue-50',
-            border: 'border-blue-100',
-            label: 'Moderate Impact',
-            message: 'Some risk factors identified. Focusing on lifestyle changes may help reduce risk.'
-        },
-        'Low': {
-            text: 'text-teal-700',
-            bg: 'bg-teal-50',
-            border: 'border-teal-100',
-            label: 'Within Range',
-            message: 'Your current lifestyle patterns align with lower risk guidelines.'
-        }
+const RiskScoreCard = ({ title, score, rawScore, icon: Icon }) => {
+    const getRiskColor = (score) => {
+        if (score <= 3) return { text: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', label: 'Low Risk' };
+        if (score <= 6) return { text: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', label: 'Moderate Risk' };
+        return { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', label: 'High Risk' };
     };
 
-    const status = config[level] || config['Low'];
+    const status = getRiskColor(score);
 
     return (
-        <div className={`bg-white p-6 rounded-3xl border-2 ${status.border} transition-all hover:shadow-sm`}>
+        <div className={`bg-white p-6 rounded-3xl border-2 ${status.border} transition-all hover:shadow-lg`}>
             <div className="flex items-start gap-5">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${status.bg} shrink-0`}>
                     <Icon className={`w-6 h-6 ${status.text}`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <h3 className="font-black text-base text-slate-900">{title}</h3>
-                        <div className="flex items-center gap-2">
-                            {confidence && (
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    {confidence} Confidence
-                                </span>
-                            )}
-                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${status.bg} ${status.text}`}>
-                                {status.label}
-                            </span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                        <h3 className="font-black text-lg text-slate-900">{title}</h3>
+                        <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest ${status.bg} ${status.text}`}>
+                            {status.label}
+                        </span>
+                    </div>
+
+                    {/* Risk Score Display */}
+                    <div className="mb-4">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full ${score <= 3 ? 'bg-green-500' : score <= 6 ? 'bg-yellow-500' : 'bg-red-500'} transition-all`}
+                                        style={{ width: `${(score / 10) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="text-right min-w-[4rem]">
+                                <span className="text-3xl font-black text-slate-900">{score}</span>
+                                <span className="text-sm font-bold text-slate-400">/10</span>
+                            </div>
                         </div>
                     </div>
 
-                    <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                        {status.message}
+                    <p className="text-sm font-medium text-slate-600">
+                        {score <= 3 && 'Your current lifestyle patterns align with lower risk guidelines.'}
+                        {score > 3 && score <= 6 && 'Some risk factors identified. Lifestyle changes may help reduce risk.'}
+                        {score > 6 && 'Risk factors detected. We recommend consulting with a healthcare professional.'}
                     </p>
                 </div>
             </div>
@@ -232,13 +235,4 @@ const ScoreCard = ({ title, score, condition, icon: Icon, confidence }) => {
     );
 };
 
-// ... existing DetailItem ...
-const DetailItem = ({ label, value }) => (
-    <div className="flex justify-between items-center p-3 md:p-4 bg-white rounded-xl md:rounded-2xl border-2 border-slate-100">
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
-        <span className="text-xs md:text-sm font-black text-slate-900 capitalize">{value}</span>
-    </div>
-);
-
 export default AssessmentResultPage;
-

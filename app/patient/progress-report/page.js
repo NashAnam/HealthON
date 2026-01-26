@@ -3,27 +3,27 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getPatient, supabase } from '@/lib/supabase';
 import {
-    Activity, Heart, Droplet, User, Calendar, ArrowLeft,
-    Download, Share2, TrendingUp, TrendingDown, Minus, MoreVertical
+    Activity, Heart, Droplet, Calendar, ArrowLeft, Download,
+    FileText, AlertCircle, MoreVertical, Moon, Footprints, Utensils, Pill, TrendingUp
 } from 'lucide-react';
 import { useSidebar } from '@/lib/SidebarContext';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell
+    ResponsiveContainer, AreaChart, Area, BarChart, Bar
 } from 'recharts';
 import toast from 'react-hot-toast';
-import { Gift, Zap, Ticket, Award } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ProgressReportPage() {
+export default function WeeklyProgressReport() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [patient, setPatient] = useState(null);
     const [vitalsData, setVitalsData] = useState([]);
-    const [points, setPoints] = useState({ total: 0, breakDown: [] });
-    const [dietCount, setDietCount] = useState(0);
-    const [vitalsCount, setVitalsCount] = useState(0);
-    const [recommendations, setRecommendations] = useState([]);
+    const [dietLogs, setDietLogs] = useState([]);
+    const [medicationLogs, setMedicationLogs] = useState([]);
+    const [labReports, setLabReports] = useState([]);
+    const [symptoms, setSymptoms] = useState([]);
+    const [riskScores, setRiskScores] = useState([]);
+    const [weekSummary, setWeekSummary] = useState({});
     const { toggle } = useSidebar();
 
     useEffect(() => {
@@ -38,10 +38,11 @@ export default function ProgressReportPage() {
             const { data: pt } = await getPatient(user.id);
             setPatient(pt);
 
-            // Fetch tracker logs for the last 7 days
+            // Get date range for last 7 days
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+            // Fetch ALL tracker logs
             const { data: logs } = await supabase
                 .from('tracker_logs')
                 .select('*')
@@ -49,38 +50,45 @@ export default function ProgressReportPage() {
                 .gte('created_at', sevenDaysAgo.toISOString())
                 .order('created_at', { ascending: true });
 
+            // Process vitals data for charts
             const logsByDate = {};
-            let dietLogsCount = 0;
-            let vitalsLogsCount = 0;
+            const dietLogsArray = [];
+            const medLogsArray = [];
+            const symptomsArray = [];
 
             if (logs && logs.length > 0) {
                 logs.forEach(log => {
-                    let date;
-                    try {
-                        date = log.created_at ? new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short' }) : 'N/A';
-                    } catch (e) {
-                        date = 'N/A';
-                    }
+                    const date = new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short' });
 
-                    if (!logsByDate[date]) {
-                        logsByDate[date] = { date, hr: null, sys: null, dia: null, sugar: null };
-                    }
-
-                    if (log.log_type === 'diet') dietLogsCount++;
                     if (log.log_type === 'vitals') {
-                        vitalsLogsCount++;
+                        if (!logsByDate[date]) {
+                            logsByDate[date] = { date, hr: null, sys: null, dia: null, sugar: null, steps: null, sleep: null };
+                        }
+
                         const unit = log.notes?.includes('Unit:') ? log.notes.split('|')[0].replace('Unit:', '').trim() : '';
-                        if (unit === 'bpm' || log.notes?.toLowerCase().includes('bpm')) {
+                        if (unit === 'bpm') {
                             logsByDate[date].hr = parseFloat(log.value) || logsByDate[date].hr;
-                        } else if (unit === 'mg/dL' || log.notes?.toLowerCase().includes('mg/dL')) {
+                        } else if (unit === 'mg/dL') {
                             logsByDate[date].sugar = parseFloat(log.value) || logsByDate[date].sugar;
-                        } else if (unit === 'mmHg' || log.notes?.toLowerCase().includes('mmhg')) {
+                        } else if (unit === 'mmHg') {
                             const parts = (log.value || '').split('/');
                             if (parts.length === 2) {
                                 logsByDate[date].sys = parseFloat(parts[0]) || logsByDate[date].sys;
                                 logsByDate[date].dia = parseFloat(parts[1]) || logsByDate[date].dia;
                             }
                         }
+                    } else if (log.log_type === 'activity' && log.notes?.toLowerCase().includes('steps')) {
+                        if (!logsByDate[date]) logsByDate[date] = { date, hr: null, sys: null, dia: null, sugar: null, steps: null, sleep: null };
+                        logsByDate[date].steps = parseFloat(log.value) || logsByDate[date].steps;
+                    } else if (log.log_type === 'sleep') {
+                        if (!logsByDate[date]) logsByDate[date] = { date, hr: null, sys: null, dia: null, sugar: null, steps: null, sleep: null };
+                        logsByDate[date].sleep = parseFloat(log.value) || logsByDate[date].sleep;
+                    } else if (log.log_type === 'diet') {
+                        dietLogsArray.push(log);
+                    } else if (log.log_type === 'med') {
+                        medLogsArray.push(log);
+                    } else if (log.log_type === 'symptoms') {
+                        symptomsArray.push(log);
                     }
                 });
             }
@@ -90,126 +98,87 @@ export default function ProgressReportPage() {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
                 const dayKey = d.toLocaleDateString('en-US', { weekday: 'short' });
-                last7DaysData.push(logsByDate[dayKey] || { date: dayKey, hr: null, sys: null, dia: null, sugar: null });
+                last7DaysData.push(logsByDate[dayKey] || { date: dayKey, hr: null, sys: null, dia: null, sugar: null, steps: null, sleep: null });
             }
-
             setVitalsData(last7DaysData);
-            setDietCount(dietLogsCount);
-            setVitalsCount(vitalsLogsCount);
+            setDietLogs(dietLogsArray);
+            setMedicationLogs(medLogsArray);
+            setSymptoms(symptomsArray);
 
-            const dietPoints = dietLogsCount * 10;
-            const vitalsPoints = vitalsLogsCount * 5;
+            // Calculate week summary
+            const summary = {
+                vitalsLogged: logs.filter(l => l.log_type === 'vitals').length,
+                dietLogged: dietLogsArray.length,
+                medsLogged: medLogsArray.length,
+                symptomsLogged: symptomsArray.length,
+                totalLogs: logs.length
+            };
+            setWeekSummary(summary);
 
+            // Fetch lab reports
+            const { data: labs } = await supabase
+                .from('lab_bookings')
+                .select('*')
+                .eq('patient_id', pt.id)
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false });
+            setLabReports(labs || []);
+
+            // Fetch latest risk assessment scores
             const { data: assessments } = await supabase
                 .from('health_assessments')
                 .select('*')
                 .eq('patient_id', pt.id)
-                .gte('created_at', sevenDaysAgo.toISOString());
+                .order('created_at', { ascending: false })
+                .limit(1);
 
-            const assessmentPoints = (assessments?.length || 0) * 50;
-
-            setPoints({
-                total: dietPoints + vitalsPoints + assessmentPoints,
-                breakDown: [
-                    { name: 'Diet Logs', value: dietPoints, color: '#648C81' },
-                    { name: 'Vitals Sync', value: vitalsPoints, color: '#4a2b3d' },
-                    { name: 'Assessments', value: assessmentPoints, color: '#d97706' }
-                ]
-            });
-
-            // Dynamic Recommendations
-            const dynamicRecs = [];
-            const validSys = last7DaysData.filter(d => d.sys);
-            const avgSys = validSys.length > 0 ? validSys.reduce((sum, d) => sum + d.sys, 0) / validSys.length : 0;
-            const validSugar = last7DaysData.filter(d => d.sugar);
-            const avgSugar = validSugar.length > 0 ? validSugar.reduce((sum, d) => sum + d.sugar, 0) / validSugar.length : 0;
-
-            if (avgSys > 135) {
-                dynamicRecs.push({
-                    title: 'Reduce Sodium Intake',
-                    text: 'Your BP is slightly elevated. Avoid pickles and excess salt.',
-                    icon: <Activity size={20} />,
-                    color: 'bg-indigo-100 text-indigo-600'
-                });
-            } else if (avgSys > 0) {
-                dynamicRecs.push({
-                    title: 'Vascular Stability',
-                    text: 'Your blood pressure has been consistent this week.',
-                    icon: <Activity size={20} />,
-                    color: 'bg-indigo-100 text-indigo-600'
-                });
+            if (assessments && assessments.length > 0) {
+                const assessment = assessments[0];
+                const scores = [];
+                if (assessment.heart_risk_score !== undefined) {
+                    scores.push({ disease: 'Heart Disease', score: assessment.heart_risk_score });
+                }
+                if (assessment.diabetes_risk_score !== undefined) {
+                    scores.push({ disease: 'Diabetes', score: assessment.diabetes_risk_score });
+                }
+                if (assessment.hypertension_risk_score !== undefined) {
+                    scores.push({ disease: 'Hypertension', score: assessment.hypertension_risk_score });
+                }
+                setRiskScores(scores);
             }
-
-            if (avgSugar > 110) {
-                dynamicRecs.push({
-                    title: 'Low Glycemic Focus',
-                    text: 'Incorporate more fiber to help stabilize glucose levels.',
-                    icon: <Droplet size={20} />,
-                    color: 'bg-emerald-100 text-emerald-600'
-                });
-            }
-
-            if (dietLogsCount < 3) {
-                dynamicRecs.push({
-                    title: 'Log More Meals',
-                    text: 'Consistent diet logging provides better health insights.',
-                    icon: <TrendingUp size={20} />,
-                    color: 'bg-orange-100 text-orange-600'
-                });
-            }
-
-            if (dynamicRecs.length < 2) {
-                dynamicRecs.push({
-                    title: 'Routine Follow-up',
-                    text: 'Keep up with your scheduled consultations.',
-                    icon: <Calendar size={20} />,
-                    color: 'bg-rose-100 text-rose-600'
-                });
-            }
-
-            setRecommendations(dynamicRecs.slice(0, 3));
 
             setLoading(false);
         } catch (error) {
-            console.error('Error loading progress report:', error);
+            console.error('Error loading weekly report:', error);
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#4a2b3d] border-t-transparent rounded-full animate-spin"></div></div>;
+    const getRiskColor = (score) => {
+        if (score <= 3) return 'text-green-600 bg-green-50';
+        if (score <= 6) return 'text-yellow-600 bg-yellow-50';
+        return 'text-red-600 bg-red-50';
+    };
+
+    const getRiskLabel = (score) => {
+        if (score <= 3) return 'Low Risk';
+        if (score <= 6) return 'Moderate Risk';
+        return 'High Risk';
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-[#4a2b3d] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-[#F8FAFB] pb-20 relative overflow-hidden">
-            {/* Decorative Ellipses (Blobs) */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <motion.div
-                    animate={{
-                        x: [0, 50, 0],
-                        y: [0, -30, 0],
-                        scale: [1, 1.1, 1]
-                    }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] bg-[#648C81]/10 rounded-full blur-[120px]"
-                />
-                <motion.div
-                    animate={{
-                        x: [0, -40, 0],
-                        y: [0, 60, 0],
-                        scale: [1, 1.2, 1]
-                    }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute bottom-[10%] -right-[5%] w-[40%] h-[60%] bg-[#4a2b3d]/10 rounded-full blur-[100px]"
-                />
-            </div>
-
+        <div className="min-h-screen bg-[#F8FAFB] pb-20">
             {/* Header */}
             <header className="bg-white sticky top-0 z-30 border-b border-gray-100 px-6 py-6 shadow-sm">
-                <div className="flex items-center justify-between max-w-xl mx-auto">
+                <div className="flex items-center justify-between max-w-4xl mx-auto">
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={toggle}
-                            className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
-                        >
+                        <button onClick={toggle} className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors">
                             <MoreVertical className="w-6 h-6" />
                         </button>
                         <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-2xl transition-all">
@@ -217,272 +186,291 @@ export default function ProgressReportPage() {
                         </button>
                     </div>
                     <div className="text-center">
-                        <h1 className="text-xl font-black text-slate-900 uppercase tracking-[0.2em]">Progress Report</h1>
+                        <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Weekly Report</h1>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Last 7 Days</p>
                     </div>
-                    <button className="p-2 hover:bg-gray-100 rounded-2xl transition-all">
-                        <Share2 className="w-6 h-6 text-slate-400" />
+                    <button onClick={() => toast.success('Report downloaded!')} className="p-2 hover:bg-gray-100 rounded-2xl transition-all">
+                        <Download className="w-6 h-6 text-slate-400" />
                     </button>
                 </div>
             </header>
 
-            <main className="max-w-xl mx-auto px-6 py-8 space-y-8">
+            <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+                {/* Week Summary Card */}
+                <div className="bg-gradient-to-br from-[#5D2A42] to-[#4a2135] p-8 rounded-[2.5rem] text-white shadow-xl">
+                    <h2 className="text-2xl font-black mb-6 uppercase tracking-tight">Week at a Glance</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Vitals</p>
+                            <p className="text-3xl font-black">{weekSummary.vitalsLogged || 0}</p>
+                        </div>
+                        <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Diet Logs</p>
+                            <p className="text-3xl font-black">{weekSummary.dietLogged || 0}</p>
+                        </div>
+                        <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Medications</p>
+                            <p className="text-3xl font-black">{weekSummary.medsLogged || 0}</p>
+                        </div>
+                        <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+                            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-1">Total Logs</p>
+                            <p className="text-3xl font-black">{weekSummary.totalLogs || 0}</p>
+                        </div>
+                    </div>
+                </div>
 
-                {/* Summary & Rewards Header */}
-                <div className="bg-gradient-to-br from-[#4a2b3d] to-[#6a3a55] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                    <Award className="w-5 h-5 text-amber-400" />
-                                    <span className="text-xs font-black uppercase tracking-widest text-amber-100">CareOn Rewards</span>
-                                </div>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-6xl font-black leading-none">{points.total}</span>
-                                    <span className="text-xl font-bold opacity-60">PTS</span>
-                                </div>
+                {/* Risk Assessment Scores */}
+                {riskScores.length > 0 && (
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-[#5D2A42]/10 rounded-2xl text-[#5D2A42]">
+                                <AlertCircle size={20} />
                             </div>
-                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/10 text-center">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1">Health Score</p>
-                                <p className="text-2xl font-black">{vitalsData.length > 0 ? Math.round((vitalsData.filter(d => d.hr || d.sys || d.sugar).length / 7) * 100) : '--'}%</p>
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Risk Assessment</h2>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Health Risk Scores</p>
                             </div>
                         </div>
-
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3 p-4 bg-white/10 rounded-2xl border border-white/5">
-                                <Zap className="w-5 h-5 text-amber-400" />
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-widest text-amber-100">Top Achievement</p>
-                                    <p className="text-sm font-bold">{dietCount > 5 ? 'Nutrition Ninja' : 'Health Hero in Training'}</p>
+                            {riskScores.map((risk, idx) => (
+                                <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="font-black text-slate-900">{risk.disease}</h3>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-black ${getRiskColor(risk.score)}`}>
+                                            {getRiskLabel(risk.score)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full ${risk.score <= 3 ? 'bg-green-500' : risk.score <= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                                style={{ width: `${(risk.score / 10) * 100}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-2xl font-black text-slate-900 min-w-[3rem] text-right">{risk.score}/10</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <p className="text-sm text-white/70 font-medium">Keep logging your health data to earn points and unlock premium healthcare discounts!</p>
+                            ))}
                         </div>
                     </div>
-                    <div className="absolute right-[-20px] bottom-[-20px] opacity-10">
-                        <Activity className="w-48 h-48" />
-                    </div>
-                </div>
+                )}
 
-                {/* Available Discounts/Rewards */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-teal-50 rounded-2xl text-[#648C81]">
-                                <Ticket size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Available For You</h3>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Points Exchange</p>
-                            </div>
-                        </div>
-                        <Gift className="text-teal-200 group-hover:scale-110 transition-transform" size={32} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative opacity-90">
-                            <p className="text-lg font-black text-slate-800">15% OFF</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Diagnostic Labs</p>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black p-1 bg-amber-100 text-amber-700 rounded-md">250 PTS</span>
-                                <button className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${points.total >= 250 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>Claim</button>
-                            </div>
-                        </div>
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative opacity-90">
-                            <p className="text-lg font-black text-slate-800">FREE</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Video Consultation</p>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black p-1 bg-amber-100 text-amber-700 rounded-md">500 PTS</span>
-                                <button className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${points.total >= 500 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>Claim</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Heart Rate Section */}
+                {/* Vitals Charts */}
                 <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-rose-50 rounded-2xl text-rose-600">
-                                <Heart size={20} />
+                    <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6">Vital Signs Trends</h2>
+
+                    {/* Heart Rate */}
+                    <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Heart className="w-5 h-5 text-rose-600" />
+                                <h3 className="font-black text-slate-900">Heart Rate</h3>
                             </div>
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Heart Rate</h3>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Last 7 Days</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-2xl font-black text-slate-900">
-                                {vitalsData.length > 0
-                                    ? Math.round(vitalsData.filter(d => d.hr).reduce((sum, d) => sum + d.hr, 0) / vitalsData.filter(d => d.hr).length) || '--'
-                                    : '--'
-                                }
+                            <span className="text-xl font-black text-slate-900">
+                                {vitalsData.filter(d => d.hr).length > 0
+                                    ? Math.round(vitalsData.filter(d => d.hr).reduce((sum, d) => sum + d.hr, 0) / vitalsData.filter(d => d.hr).length)
+                                    : '--'} <span className="text-xs text-slate-400">avg bpm</span>
                             </span>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">avg bpm</span>
+                        </div>
+                        <div className="h-40">
+                            {vitalsData.filter(d => d.hr).length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={vitalsData}>
+                                        <defs>
+                                            <linearGradient id="colorHr" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2} />
+                                                <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} />
+                                        <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
+                                        <Tooltip />
+                                        <Area type="monotone" dataKey="hr" stroke="#f43f5e" strokeWidth={2} fillOpacity={1} fill="url(#colorHr)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : <div className="h-full flex items-center justify-center text-sm text-slate-400">No data</div>}
                         </div>
                     </div>
-                    <div className="h-48 w-full mt-4 flex items-center justify-center">
-                        {vitalsData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={vitalsData}>
-                                    <defs>
-                                        <linearGradient id="colorHr" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} dy={10} />
-                                    <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                        itemStyle={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase' }}
-                                    />
-                                    <Area type="monotone" dataKey="hr" stroke="#f43f5e" strokeWidth={4} fillOpacity={1} fill="url(#colorHr)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No pulse data available yet</p>
-                        )}
-                    </div>
-                </div>
 
-                {/* Blood Pressure Section */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
-                                <Activity size={20} />
+                    {/* Blood Pressure */}
+                    <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-indigo-600" />
+                                <h3 className="font-black text-slate-900">Blood Pressure</h3>
                             </div>
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Blood Pressure</h3>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Stability Index</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-2xl font-black text-slate-900">
-                                {vitalsData.length > 0 && vitalsData.filter(d => d.sys).length > 0
+                            <span className="text-xl font-black text-slate-900">
+                                {vitalsData.filter(d => d.sys).length > 0
                                     ? `${Math.round(vitalsData.filter(d => d.sys).reduce((sum, d) => sum + d.sys, 0) / vitalsData.filter(d => d.sys).length)}/${Math.round(vitalsData.filter(d => d.dia).reduce((sum, d) => sum + d.dia, 0) / vitalsData.filter(d => d.dia).length)}`
-                                    : '--/--'
-                                }
+                                    : '--/--'} <span className="text-xs text-slate-400">mmHg</span>
                             </span>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">avg mmhg</span>
+                        </div>
+                        <div className="h-40">
+                            {vitalsData.filter(d => d.sys).length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={vitalsData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} />
+                                        <YAxis hide />
+                                        <Tooltip />
+                                        <Line type="monotone" dataKey="sys" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} name="Systolic" />
+                                        <Line type="monotone" dataKey="dia" stroke="#818cf8" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="Diastolic" />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : <div className="h-full flex items-center justify-center text-sm text-slate-400">No data</div>}
                         </div>
                     </div>
-                    <div className="h-48 w-full mt-4 flex items-center justify-center">
-                        {vitalsData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={vitalsData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} dy={10} />
-                                    <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                    />
-                                    <Line type="monotone" dataKey="sys" stroke="#6366f1" strokeWidth={4} dot={{ r: 4, fill: '#6366f1' }} activeDot={{ r: 8 }} />
-                                    <Line type="monotone" dataKey="dia" stroke="#818cf8" strokeWidth={4} strokeDasharray="5 5" dot={{ r: 4, fill: '#818cf8' }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No BP data available yet</p>
-                        )}
+
+                    {/* Blood Glucose */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Droplet className="w-5 h-5 text-emerald-600" />
+                                <h3 className="font-black text-slate-900">Blood Glucose</h3>
+                            </div>
+                            <span className="text-xl font-black text-slate-900">
+                                {vitalsData.filter(d => d.sugar).length > 0
+                                    ? Math.round(vitalsData.filter(d => d.sugar).reduce((sum, d) => sum + d.sugar, 0) / vitalsData.filter(d => d.sugar).length)
+                                    : '--'} <span className="text-xs text-slate-400">mg/dL</span>
+                            </span>
+                        </div>
+                        <div className="h-40">
+                            {vitalsData.filter(d => d.sugar).length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={vitalsData}>
+                                        <defs>
+                                            <linearGradient id="colorSugar" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} />
+                                        <YAxis hide />
+                                        <Tooltip />
+                                        <Area type="monotone" dataKey="sugar" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorSugar)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : <div className="h-full flex items-center justify-center text-sm text-slate-400">No data</div>}
+                        </div>
                     </div>
                 </div>
 
-                {/* Glucose Section */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
-                                <Droplets className="w-5 h-5" />
+                {/* Diet & Medication Adherence */}
+                <div className="grid md:grid-cols-2 gap-6">
+                    {/* Diet Logs */}
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-orange-50 rounded-2xl text-orange-600">
+                                <Utensils size={20} />
                             </div>
                             <div>
-                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Glucose</h3>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Fasting Levels</p>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Diet Logs</h2>
+                                <p className="text-xs font-bold text-slate-400">{dietLogs.length} entries this week</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <span className="text-2xl font-black text-slate-900">
-                                {vitalsData.length > 0 && vitalsData.filter(d => d.sugar).length > 0
-                                    ? Math.round(vitalsData.filter(d => d.sugar).reduce((sum, d) => sum + d.sugar, 0) / vitalsData.filter(d => d.sugar).length)
-                                    : '--'
-                                }
-                            </span>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">avg mg/dl</span>
-                        </div>
+                        {dietLogs.length > 0 ? (
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {dietLogs.slice(0, 5).map((log, idx) => (
+                                    <div key={idx} className="p-3 bg-gray-50 rounded-xl text-sm">
+                                        <p className="font-bold text-slate-900">{log.value || log.notes}</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            {new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : <p className="text-sm text-slate-400 text-center py-8">No diet logs this week</p>}
                     </div>
-                    <div className="h-48 w-full mt-4 flex items-center justify-center">
-                        {vitalsData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={vitalsData}>
-                                    <defs>
-                                        <linearGradient id="colorSugar" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} dy={10} />
-                                    <YAxis hide domain={['dataMin - 10', 'dataMax + 10']} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                    />
-                                    <Area type="monotone" dataKey="sugar" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorSugar)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No glucose data available yet</p>
-                        )}
+
+                    {/* Medication Adherence */}
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                                <Pill size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Medications</h2>
+                                <p className="text-xs font-bold text-slate-400">{medicationLogs.length} doses logged</p>
+                            </div>
+                        </div>
+                        {medicationLogs.length > 0 ? (
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {medicationLogs.slice(0, 5).map((log, idx) => (
+                                    <div key={idx} className="p-3 bg-gray-50 rounded-xl text-sm">
+                                        <p className="font-bold text-slate-900">{log.value}</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            {new Date(log.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : <p className="text-sm text-slate-400 text-center py-8">No medication logs this week</p>}
                     </div>
                 </div>
 
-                {/* Recommendations */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative z-10">
-                    <h3 className="text-base font-black text-slate-900 uppercase tracking-tight mb-6">Recommendations</h3>
-                    <div className="space-y-4">
-                        {recommendations.map((rec, idx) => (
-                            <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <div className={`w-10 h-10 ${rec.color} rounded-xl flex items-center justify-center`}>
-                                    {rec.icon}
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-bold text-slate-800">{rec.title}</p>
-                                    <p className="text-xs font-medium text-slate-500">{rec.text}</p>
-                                </div>
+                {/* Lab Reports */}
+                {labReports.length > 0 && (
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-[#648C81]/10 rounded-2xl text-[#648C81]">
+                                <FileText size={20} />
                             </div>
-                        ))}
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Lab Reports</h2>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">This Week</p>
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            {labReports.map((lab, idx) => (
+                                <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-black text-slate-900">{lab.test_type || 'Lab Test'}</p>
+                                        <p className="text-xs font-bold text-slate-500">
+                                            {new Date(lab.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    {lab.report_url && (
+                                        <button
+                                            onClick={() => window.open(lab.report_url, '_blank')}
+                                            className="px-4 py-2 bg-[#648C81] text-white rounded-xl text-xs font-black hover:bg-[#5a7a6f] transition-all"
+                                        >
+                                            View
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                <button
-                    onClick={() => toast.success('Report downloaded!')}
-                    className="w-full bg-[#5a8a7a] text-white py-6 rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl shadow-teal-600/20 hover:bg-[#4d7b6b] transition-all flex items-center justify-center gap-3"
-                >
-                    <Download className="w-5 h-5" /> Download Full Report
-                </button>
-
+                {/* Symptoms */}
+                {symptoms.length > 0 && (
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-red-50 rounded-2xl text-red-600">
+                                <AlertCircle size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Symptoms</h2>
+                                <p className="text-xs font-bold text-slate-400">{symptoms.length} logged this week</p>
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            {symptoms.map((symptom, idx) => (
+                                <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <p className="font-black text-slate-900">{symptom.value || 'Symptom'}</p>
+                                    <p className="text-xs text-slate-600 mt-1">{symptom.notes}</p>
+                                    <p className="text-xs font-bold text-slate-500 mt-2">
+                                        {new Date(symptom.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
-    );
-}
-
-// Helper icons specifically for this file
-function Droplets({ size, className }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M7 16.3c2.2 0 4-1.8 4-4 0-1.2-.6-2.3-1.4-3L7 7l-2.6 2.3c-.8.7-1.4 1.8-1.4 3 0 2.2 1.8 4 4 4z" />
-            <path d="M17 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
-            <path d="M22 21l-2-2" />
-        </svg>
     );
 }

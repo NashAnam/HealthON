@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getDoctor, supabase } from '@/lib/supabase';
-import { FileText, Search, ArrowLeft, Calendar, User, Plus, X, Save } from 'lucide-react';
+import { FileText, Search, ArrowLeft, Calendar, User, Plus, X, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PrescriptionsPage() {
@@ -18,12 +18,15 @@ export default function PrescriptionsPage() {
     const [formData, setFormData] = useState({
         patient_id: '',
         diagnosis: '',
-        medication_name: '',
-        dosage_val: '',
-        dosage_unit: 'mg',
-        frequency: 'OD (Once daily)',
-        duration_val: '',
-        duration_unit: 'days',
+        medications: [{
+            name: '',
+            dosage_val: '',
+            dosage_unit: 'mg',
+            frequency: 'OD (Once daily)',
+            duration_val: '',
+            duration_unit: 'days',
+            instructions: 'After food'
+        }],
         notes: ''
     });
 
@@ -39,6 +42,35 @@ export default function PrescriptionsPage() {
         'PC (After food)'
     ];
     const DURATION_UNITS = ['days', 'weeks', 'months'];
+    const INSTRUCTIONS_PRESETS = ['After food', 'Before food', 'Empty stomach', 'With water', 'Avoid milk'];
+
+    const addMedication = () => {
+        setFormData({
+            ...formData,
+            medications: [...formData.medications, {
+                name: '',
+                dosage_val: '',
+                dosage_unit: 'mg',
+                frequency: 'OD (Once daily)',
+                duration_val: '',
+                duration_unit: 'days',
+                instructions: 'After food'
+            }]
+        });
+    };
+
+    const removeMedication = (index) => {
+        setFormData({
+            ...formData,
+            medications: formData.medications.filter((_, i) => i !== index)
+        });
+    };
+
+    const updateMedication = (index, field, value) => {
+        const newMeds = [...formData.medications];
+        newMeds[index][field] = value;
+        setFormData({ ...formData, medications: newMeds });
+    };
 
     useEffect(() => {
         loadInitialData();
@@ -81,7 +113,7 @@ export default function PrescriptionsPage() {
     const handleSavePrescription = async () => {
         if (!formData.patient_id) return toast.error('Select a patient');
         if (!formData.diagnosis) return toast.error('Enter diagnosis');
-        if (!formData.medication_name) return toast.error('Enter medication');
+        if (!formData.medications[0]?.name) return toast.error('Enter at least one medication');
 
         const tid = toast.loading('Saving...');
         try {
@@ -91,10 +123,13 @@ export default function PrescriptionsPage() {
                     doctor_id: doctor.id,
                     patient_id: formData.patient_id,
                     diagnosis: formData.diagnosis,
-                    medication_name: formData.medication_name,
-                    dosage: `${formData.dosage_val}${formData.dosage_unit}`,
-                    frequency: formData.frequency,
-                    duration: formData.duration_val ? `${formData.duration_val} ${formData.duration_unit}` : '',
+                    medications: formData.medications.map(m => ({
+                        name: m.name,
+                        dosage: `${m.dosage_val}${m.dosage_unit}`,
+                        frequency: m.frequency,
+                        duration: `${m.duration_val} ${m.duration_unit}`,
+                        instructions: m.instructions
+                    })),
                     notes: formData.notes,
                     created_at: new Date().toISOString()
                 }]);
@@ -106,12 +141,15 @@ export default function PrescriptionsPage() {
             setFormData({
                 patient_id: '',
                 diagnosis: '',
-                medication_name: '',
-                dosage_val: '',
-                dosage_unit: 'mg',
-                frequency: 'OD (Once daily)',
-                duration_val: '',
-                duration_unit: 'days',
+                medications: [{
+                    name: '',
+                    dosage_val: '',
+                    dosage_unit: 'mg',
+                    frequency: 'OD (Once daily)',
+                    duration_val: '',
+                    duration_unit: 'days',
+                    instructions: 'After food'
+                }],
                 notes: ''
             });
             loadInitialData();
@@ -180,73 +218,112 @@ export default function PrescriptionsPage() {
                                         onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div className="col-span-2 lg:col-span-3">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Medicine Name</label>
-                                        <input
-                                            placeholder="e.g. Paracetamol"
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold"
-                                            value={formData.medication_name}
-                                            onChange={(e) => setFormData({ ...formData, medication_name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Dosage</label>
-                                        <div className="flex bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
-                                            <input
-                                                type="number"
-                                                placeholder="500"
-                                                className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
-                                                value={formData.dosage_val}
-                                                onChange={(e) => setFormData({ ...formData, dosage_val: e.target.value })}
-                                            />
-                                            <select
-                                                className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
-                                                value={formData.dosage_unit}
-                                                onChange={(e) => setFormData({ ...formData, dosage_unit: e.target.value })}
-                                            >
-                                                {DOSAGE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                                            </select>
+                                <div className="space-y-4">
+                                    {formData.medications.map((med, idx) => (
+                                        <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase">Medicine #{idx + 1}</label>
+                                                {formData.medications.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeMedication(idx)}
+                                                        className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Medicine Name</label>
+                                                <input
+                                                    placeholder="e.g. Paracetamol"
+                                                    className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold"
+                                                    value={med.name}
+                                                    onChange={(e) => updateMedication(idx, 'name', e.target.value)}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Dosage</label>
+                                                    <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="500"
+                                                            className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
+                                                            value={med.dosage_val}
+                                                            onChange={(e) => updateMedication(idx, 'dosage_val', e.target.value)}
+                                                        />
+                                                        <select
+                                                            className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
+                                                            value={med.dosage_unit}
+                                                            onChange={(e) => updateMedication(idx, 'dosage_unit', e.target.value)}
+                                                        >
+                                                            {DOSAGE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Duration</label>
+                                                    <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="7"
+                                                            className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
+                                                            value={med.duration_val}
+                                                            onChange={(e) => updateMedication(idx, 'duration_val', e.target.value)}
+                                                        />
+                                                        <select
+                                                            className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
+                                                            value={med.duration_unit}
+                                                            onChange={(e) => updateMedication(idx, 'duration_unit', e.target.value)}
+                                                        >
+                                                            {DURATION_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Frequency</label>
+                                                <select
+                                                    className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-xs cursor-pointer"
+                                                    value={med.frequency}
+                                                    onChange={(e) => updateMedication(idx, 'frequency', e.target.value)}
+                                                >
+                                                    {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Instructions</label>
+                                                <select
+                                                    className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-xs cursor-pointer"
+                                                    value={med.instructions}
+                                                    onChange={(e) => updateMedication(idx, 'instructions', e.target.value)}
+                                                >
+                                                    {INSTRUCTIONS_PRESETS.map(i => <option key={i} value={i}>{i}</option>)}
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Frequency</label>
-                                        <select
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 font-bold text-xs cursor-pointer"
-                                            value={formData.frequency}
-                                            onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                                        >
-                                            {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-span-2 lg:col-span-1">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Duration</label>
-                                        <div className="flex bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
-                                            <input
-                                                type="number"
-                                                placeholder="7"
-                                                className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
-                                                value={formData.duration_val}
-                                                onChange={(e) => setFormData({ ...formData, duration_val: e.target.value })}
-                                            />
-                                            <select
-                                                className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
-                                                value={formData.duration_unit}
-                                                onChange={(e) => setFormData({ ...formData, duration_unit: e.target.value })}
-                                            >
-                                                {DURATION_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 lg:col-span-3">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Doctor's Notes / Instructions</label>
-                                        <textarea
-                                            placeholder="e.g. Take after meal"
-                                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 h-20 font-medium text-sm"
-                                            value={formData.notes}
-                                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                        />
-                                    </div>
+                                    ))}
+
+                                    <button
+                                        onClick={addMedication}
+                                        className="w-full py-3 bg-teal-50 text-teal-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-teal-100 transition-colors border border-teal-200"
+                                    >
+                                        <Plus size={18} /> Add Another Medicine
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Doctor's Notes / Instructions</label>
+                                    <textarea
+                                        placeholder="e.g. Take after meal"
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-teal-500 h-20 font-medium text-sm"
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    />
                                 </div>
 
                                 <button

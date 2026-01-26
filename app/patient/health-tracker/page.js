@@ -352,7 +352,7 @@ export default function HealthTrackerPage() {
         }
 
         // 24-hour refresh check for vitals, activity, and sleep
-        if (formData.log_type === 'vitals' || formData.log_type === 'activity' || formData.log_type === 'sleep') {
+        if (['vitals', 'activity', 'sleep'].includes(formData.log_type)) {
             const twentyFourHoursAgo = new Date();
             twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
@@ -361,27 +361,44 @@ export default function HealthTrackerPage() {
                 .select('*')
                 .eq('patient_id', patient.id)
                 .eq('log_type', formData.log_type)
-                .gte('created_at', twentyFourHoursAgo.toISOString());
+                .gte('created_at', twentyFourHoursAgo.toISOString())
+                .order('created_at', { ascending: false });
 
             if (checkError) {
                 console.error('Error checking recent logs:', checkError);
             } else if (recentLogs && recentLogs.length > 0) {
-                // Check if same unit type (for vitals)
-                if (formData.log_type === 'vitals' && formData.unit) {
-                    const sameUnitLog = recentLogs.find(log =>
-                        log.notes && log.notes.includes(`Unit: ${formData.unit}`)
-                    );
-                    if (sameUnitLog) {
-                        const lastLogTime = new Date(sameUnitLog.created_at);
-                        const hoursAgo = Math.floor((new Date() - lastLogTime) / (1000 * 60 * 60));
-                        toast.error(`You logged this vital ${hoursAgo} hour(s) ago. Please wait 24 hours between logs.`);
-                        return;
-                    }
+                let shouldBlock = false;
+                let blockingLog = null;
+
+                // For vitals, check specific unit type (e.g., don't block BP if you just logged Heart Rate)
+                if (formData.log_type === 'vitals') {
+                    // We check if we have a log with the SAME unit in the last 24h
+                    // Robust check: look for unit in notes OR if strict mode is on
+                    const currentUnit = formData.unit || '';
+                    blockingLog = recentLogs.find(log => {
+                        const logUnit = log.notes?.match(/Unit:\s*([a-zA-Z0-9\/]+)/)?.[1] || '';
+                        return logUnit === currentUnit;
+                    });
+                    if (blockingLog) shouldBlock = true;
                 } else {
-                    // For activity and sleep
-                    const lastLogTime = new Date(recentLogs[0].created_at);
-                    const hoursAgo = Math.floor((new Date() - lastLogTime) / (1000 * 60 * 60));
-                    toast.error(`You logged this ${hoursAgo} hour(s) ago. Please wait 24 hours between logs.`);
+                    // For activity/sleep, simple 24h block
+                    blockingLog = recentLogs[0];
+                    shouldBlock = true;
+                }
+
+                if (shouldBlock && blockingLog) {
+                    const lastLogTime = new Date(blockingLog.created_at);
+                    const now = new Date();
+                    const diffMs = now - lastLogTime;
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                    const hoursRemaining = 24 - diffHours;
+
+                    toast.error(`Daily Limit Reached. You can log this again in ${hoursRemaining} hours.`, {
+                        duration: 5000,
+                        icon: '⏳'
+                    });
                     return;
                 }
             }

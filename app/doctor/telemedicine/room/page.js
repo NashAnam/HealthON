@@ -193,7 +193,14 @@ function DoctorRoomContent() {
                 if (msg.type === 'answer') {
                     pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
                 } else if (msg.type === 'candidate') {
-                    pc.addIceCandidate(new RTCIceCandidate(msg.payload));
+                    // Only add ICE candidate if remote description is set
+                    if (pc.remoteDescription) {
+                        pc.addIceCandidate(new RTCIceCandidate(msg.payload)).catch(err => {
+                            console.error('Error adding ICE candidate:', err);
+                        });
+                    } else {
+                        console.log('Skipping ICE candidate - remote description not set yet');
+                    }
                 }
             }
         }
@@ -440,61 +447,6 @@ function DoctorRoomContent() {
                 patient={appointment?.patients}
                 doctor={doctor}
             />
-
-            <AnimatePresence>
-                {showEHRModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] overflow-y-auto p-8 shadow-2xl relative"
-                        >
-                            <button onClick={() => setShowEHRModal(false)} className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full">
-                                <X size={24} className="text-gray-400" />
-                            </button>
-
-                            <h2 className="text-2xl font-black text-gray-900 mb-2">Electronic Health Record</h2>
-                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-8">Patient: {appointment?.patients?.name}</p>
-
-                            <div className="space-y-6">
-                                <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
-                                    <h3 className="text-sm font-black text-teal-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Activity size={16} /> Vitals & Metrics
-                                    </h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div className="bg-white p-4 rounded-2xl shadow-sm">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase">Weight</p>
-                                            <p className="text-lg font-black text-gray-900">{appointment?.patients?.weight || 'N/A'} kg</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-2xl shadow-sm">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase">Height</p>
-                                            <p className="text-lg font-black text-gray-900">{appointment?.patients?.height || 'N/A'} cm</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-2xl shadow-sm">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase">Blood Type</p>
-                                            <p className="text-lg font-black text-gray-900">{appointment?.patients?.blood_type || 'N/A'}</p>
-                                        </div>
-                                        <div className="bg-white p-4 rounded-2xl shadow-sm">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase">Age</p>
-                                            <p className="text-lg font-black text-gray-900">{appointment?.patients?.age || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
-                                    <h3 className="text-sm font-black text-teal-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <FileText size={16} /> Medical History
-                                    </h3>
-                                    <p className="text-gray-700 font-medium leading-relaxed">
-                                        {appointment?.patients?.medical_history || 'No significant medical history recorded.'}
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             <AnimatePresence>
                 {showEHRModal && (

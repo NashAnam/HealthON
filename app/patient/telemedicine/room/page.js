@@ -188,7 +188,12 @@ function TelemedicineRoomContent() {
                         payload: answer
                     }]);
                 } else if (msg.type === 'candidate') {
-                    pc.addIceCandidate(new RTCIceCandidate(msg.payload));
+                    // Only add ICE candidate if remote description is set
+                    if (pc.remoteDescription) {
+                        await pc.addIceCandidate(new RTCIceCandidate(msg.payload));
+                    } else {
+                        console.log('Skipping ICE candidate - remote description not set yet');
+                    }
                 }
             }
         }

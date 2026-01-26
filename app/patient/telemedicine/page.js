@@ -24,10 +24,11 @@ export default function PatientTelemedicinePage() {
 
             const { data: appts } = await getAppointments(patient.id);
 
-            // Filter for telemedicine only
+            // Filter for telemedicine only and exclude completed/cancelled
             const teleAppts = (appts || []).filter(a =>
                 (a.consultation_type === 'telemedicine' || a.consultation_type === 'video') &&
-                a.status !== 'cancelled'
+                a.status !== 'cancelled' &&
+                a.status !== 'completed'
             ).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
 
             setAppointments(teleAppts);

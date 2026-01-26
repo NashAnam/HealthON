@@ -620,6 +620,12 @@ export default function PatientDashboard() {
                         </button>
                     </div>
                 </div>
+                {/* Version Indicator */}
+                <div className="text-center mt-12 mb-4">
+                    <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                        System Version 1.2 • build {new Date().toLocaleDateString()}
+                    </p>
+                </div>
             </main>
         </div>
     );

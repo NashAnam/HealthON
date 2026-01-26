@@ -607,6 +607,7 @@ function ModalItem({ label, value, color }) {
 // Full implementation of the detailed Consultation Modal
 function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('consultation');
   const [diagnosis, setDiagnosis] = useState('');
   const [notes, setNotes] = useState('');
@@ -615,6 +616,10 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
     { name: '', dosage: '500mg', frequency: 'OD (Once daily)', duration: '7 days', instructions: 'After food' }
   ]);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const addMedication = () => {
     setMedications([...medications, { name: '', dosage: '500mg', frequency: 'OD (Once daily)', duration: '7 days', instructions: 'After food' }]);
