@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { RefreshCw, Stethoscope, FlaskConical, CheckCircle2, XCircle } from 'lucide-react';
+import { supabase, createBlog, getBlogs, deleteBlog } from '@/lib/supabase';
+import { RefreshCw, Stethoscope, FlaskConical, CheckCircle2, XCircle, FileText, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -10,8 +10,13 @@ export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('doctors');
     const [doctors, setDoctors] = useState([]);
     const [labs, setLabs] = useState([]);
+    const [nutritionists, setNutritionists] = useState([]);
+    const [physiotherapists, setPhysiotherapists] = useState([]);
+    const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
+    const [showBlogEditor, setShowBlogEditor] = useState(false);
+    const [currentBlog, setCurrentBlog] = useState({ title: '', content: '', author: 'Admin' });
 
     useEffect(() => {
         const auth = localStorage.getItem('admin_auth');
@@ -51,54 +56,17 @@ export default function AdminDashboard() {
                 await fetchPendingDoctors();
             } else if (activeTab === 'labs') {
                 await fetchPendingLabs();
+            } else if (activeTab === 'nutritionists') {
+                await fetchPendingNutritionists();
+            } else if (activeTab === 'physiotherapists') {
+                await fetchPendingPhysiotherapists();
+            } else if (activeTab === 'blogs') {
+                await fetchAdminBlogs();
             }
         } finally {
             setLoading(false);
         }
     };
-
-    /*
-    const fetchPendingPayments = async () => {
-        try {
-            const { data: paymentsData, error: paymentsError } = await supabase
-                .from('payments')
-                .select('*')
-                .eq('payment_status', 'pending_verification')
-                .order('created_at', { ascending: false });
-
-            if (paymentsError) {
-                console.error('Payments error:', paymentsError);
-                toast.error('Failed to load payments');
-                return;
-            }
-
-            const enrichedPayments = await Promise.all(
-                (paymentsData || []).map(async (payment) => {
-                    const { data: patient } = await supabase
-                        .from('patients')
-                        .select('name, phone, user_id')
-                        .eq('id', payment.patient_id)
-                        .maybeSingle();
-
-                    return {
-                        ...payment,
-                        patients: patient || {
-                            name: 'Patient ID: ' + payment.patient_id.substring(0, 8),
-                            phone: 'N/A',
-                            user_id: null
-                        }
-                    };
-                })
-            );
-
-            console.log('Loaded payments:', enrichedPayments);
-            setPayments(enrichedPayments);
-        } catch (err) {
-            console.error('Error loading payments:', err);
-            toast.error('Error loading payments');
-        }
-    };
-    */
 
     const fetchPendingDoctors = async () => {
         const { data, error } = await supabase
@@ -121,44 +89,34 @@ export default function AdminDashboard() {
         if (error) throw error;
         setLabs(data || []);
     };
-
-    /*
-    const handleApprovePayment = async (payment) => {
-        if (!payment.patients?.user_id) {
-            toast.error('Cannot approve: Patient not found in database');
-            return;
-        }
-
-        if (!confirm(`Confirm receipt of ₹${payment.amount} from ${payment.patients?.name}?`)) return;
-
-        setProcessingId(payment.id);
-        try {
-            const subscriptionEndDate = new Date();
-            subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
-
-            await supabase
-                .from('patients')
-                .update({ subscription_end_date: subscriptionEndDate.toISOString() })
-                .eq('user_id', payment.patients.user_id);
-
-            await supabase
-                .from('payments')
-                .update({ payment_status: 'completed' })
-                .eq('id', payment.id);
-
-            toast.success('Payment Approved & Subscription Activated');
-            fetchData();
-        } catch (error) {
-            console.error('Approval error:', error);
-            toast.error('Error approving payment');
-        } finally {
-            setProcessingId(null);
-        }
+    const fetchPendingNutritionists = async () => {
+        const { data, error } = await supabase
+            .from('nutritionists')
+            .select('*')
+            .or('verified.eq.false,verified.is.null')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        setNutritionists(data || []);
     };
-    */
+    const fetchPendingPhysiotherapists = async () => {
+        const { data, error } = await supabase
+            .from('physiotherapists')
+            .select('*')
+            .or('verified.eq.false,verified.is.null')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        setPhysiotherapists(data || []);
+    };
+
+    const fetchAdminBlogs = async () => {
+        const { data, error } = await getBlogs();
+        if (error) {
+            console.error("Error fetching blogs:", error);
+        }
+        setBlogs(data || []);
+    };
 
     const handleVerifyDoctor = async (doctorId, doctorName) => {
-        // Removed confirm() to avoid silent blocking in some browsers
         setProcessingId(doctorId);
         try {
             const { error } = await supabase
@@ -178,7 +136,6 @@ export default function AdminDashboard() {
     };
 
     const handleVerifyLab = async (labId, labName) => {
-        // Removed confirm() to avoid silent blocking in some browsers
         setProcessingId(labId);
         try {
             const { error } = await supabase
@@ -196,17 +153,36 @@ export default function AdminDashboard() {
             setProcessingId(null);
         }
     };
+    const handleVerifyNutritionist = async (id) => {
+        setProcessingId(id);
+        try {
+            const { error } = await supabase.from('nutritionists').update({ verified: true }).eq('id', id);
+            if (error) throw error;
+            toast.success('Nutritionist verified!');
+            fetchData();
+        } catch (error) { toast.error('Error verifying'); } finally { setProcessingId(null); }
+    };
+    const handleVerifyPhysiotherapist = async (id) => {
+        setProcessingId(id);
+        try {
+            const { error } = await supabase.from('physiotherapists').update({ verified: true }).eq('id', id);
+            if (error) throw error;
+            toast.success('Physiotherapist verified!');
+            fetchData();
+        } catch (error) { toast.error('Error verifying'); } finally { setProcessingId(null); }
+    };
 
     const handleReject = async (id, type) => {
         setProcessingId(id);
         try {
-            // if (type === 'payment') {
-            //     await supabase.from('payments').update({ payment_status: 'rejected' }).eq('id', id);
-            // } else
             if (type === 'doctor') {
                 await supabase.from('doctors').delete().eq('id', id);
             } else if (type === 'lab') {
                 await supabase.from('labs').delete().eq('id', id);
+            } else if (type === 'nutritionist') {
+                await supabase.from('nutritionists').delete().eq('id', id);
+            } else if (type === 'physiotherapist') {
+                await supabase.from('physiotherapists').delete().eq('id', id);
             }
 
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} rejected`);
@@ -215,6 +191,38 @@ export default function AdminDashboard() {
             toast.error(`Error rejecting ${type}`);
         } finally {
             setProcessingId(null);
+        }
+    };
+
+    const handlePublishBlog = async () => {
+        if (!currentBlog.title || !currentBlog.content) {
+            toast.error('Please fill in title and content');
+            return;
+        }
+
+        try {
+            const { error } = await createBlog(currentBlog);
+            if (error) throw error;
+            toast.success('Blog published successfully!');
+            setShowBlogEditor(false);
+            setCurrentBlog({ title: '', content: '', author: 'Admin' });
+            fetchData();
+        } catch (error) {
+            console.error('Error publishing blog:', error);
+            toast.error('Failed to publish blog');
+        }
+    };
+
+    const handleDeleteBlog = async (id) => {
+        if (!confirm('Are you sure you want to delete this blog?')) return;
+        try {
+            const { error } = await deleteBlog(id);
+            if (error) throw error;
+            toast.success('Blog deleted');
+            fetchData();
+        } catch (error) {
+            console.error('Error deleting blog:', error);
+            toast.error('Failed to delete blog');
         }
     };
 
@@ -268,17 +276,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-4 mb-6">
-                    {/* <button
-                        onClick={() => setActiveTab('payments')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'payments'
-                            ? 'bg-indigo-600 text-white shadow-lg'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
-                            }`}
-                    >
-                        <Users className="w-5 h-5" />
-                        Payments ({payments.length})
-                    </button> */}
+                <div className="flex gap-4 mb-6 flex-wrap">
                     <button
                         onClick={() => setActiveTab('doctors')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'doctors'
@@ -300,6 +298,36 @@ export default function AdminDashboard() {
                         Labs ({labs.length})
                     </button>
                     <button
+                        onClick={() => setActiveTab('nutritionists')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'nutritionists'
+                            ? 'bg-teal-600 text-white shadow-lg'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                            }`}
+                    >
+                        <RefreshCw className="w-5 h-5" />
+                        Nutritionists ({nutritionists.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('physiotherapists')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'physiotherapists'
+                            ? 'bg-orange-600 text-white shadow-lg'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                            }`}
+                    >
+                        <RefreshCw className="w-5 h-5" />
+                        Physio ({physiotherapists.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('blogs')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'blogs'
+                            ? 'bg-rose-600 text-white shadow-lg'
+                            : 'bg-white text-slate-600 hover:bg-slate-100'
+                            }`}
+                    >
+                        <FileText className="w-5 h-5" />
+                        Manage Blogs
+                    </button>
+                    <button
                         onClick={fetchData}
                         className="ml-auto p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
                     >
@@ -309,15 +337,6 @@ export default function AdminDashboard() {
 
                 {/* Content */}
                 <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                    {/* {activeTab === 'payments' && (
-                        <PaymentsTable
-                            payments={payments}
-                            loading={loading}
-                            processingId={processingId}
-                            onApprove={handleApprovePayment}
-                            onReject={(id) => handleReject(id, 'payment')}
-                        />
-                    )} */}
                     {activeTab === 'doctors' && (
                         <DoctorsTable
                             doctors={doctors}
@@ -336,83 +355,105 @@ export default function AdminDashboard() {
                             onReject={(id) => handleReject(id, 'lab')}
                         />
                     )}
+                    {activeTab === 'nutritionists' && (
+                        <GenericExpertTable
+                            data={nutritionists}
+                            loading={loading}
+                            processingId={processingId}
+                            onVerify={handleVerifyNutritionist}
+                            onReject={(id) => handleReject(id, 'nutritionist')}
+                            type="Nutritionists"
+                        />
+                    )}
+                    {activeTab === 'physiotherapists' && (
+                        <GenericExpertTable
+                            data={physiotherapists}
+                            loading={loading}
+                            processingId={processingId}
+                            onVerify={handleVerifyPhysiotherapist}
+                            onReject={(id) => handleReject(id, 'physiotherapist')}
+                            type="Physiotherapists"
+                        />
+                    )}
+                    {activeTab === 'blogs' && (
+                        <div className="p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-800">Published Blogs</h3>
+                                <button
+                                    onClick={() => setShowBlogEditor(!showBlogEditor)}
+                                    className="px-6 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-all flex items-center gap-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    {showBlogEditor ? 'Cancel' : 'Write New Blog'}
+                                </button>
+                            </div>
+
+                            {showBlogEditor && (
+                                <div className="mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-4">
+                                    <h4 className="text-lg font-bold text-slate-700 mb-4">New Blog Post</h4>
+                                    <div className="space-y-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Blog Title"
+                                            className="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                                            value={currentBlog.title}
+                                            onChange={(e) => setCurrentBlog({ ...currentBlog, title: e.target.value })}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Author Name"
+                                            className="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                                            value={currentBlog.author}
+                                            onChange={(e) => setCurrentBlog({ ...currentBlog, author: e.target.value })}
+                                        />
+                                        <textarea
+                                            placeholder="Blog Content..."
+                                            rows="8"
+                                            className="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 resize-none"
+                                            value={currentBlog.content}
+                                            onChange={(e) => setCurrentBlog({ ...currentBlog, content: e.target.value })}
+                                        />
+                                        <button
+                                            onClick={handlePublishBlog}
+                                            className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-black transition-all"
+                                        >
+                                            Publish Post
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-4">
+                                {loading && !blogs.length ? (
+                                    <div className="text-center py-10 text-slate-500">Loading blogs...</div>
+                                ) : blogs.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-500 bg-slate-50 rounded-2xl">No blogs found.</div>
+                                ) : (
+                                    blogs.map(blog => (
+                                        <div key={blog.id} className="flex justify-between items-start p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                                            <div>
+                                                <h4 className="text-lg font-bold text-slate-900">{blog.title}</h4>
+                                                <p className="text-sm text-slate-500 mb-2">By {blog.author} • {new Date(blog.created_at).toLocaleDateString()}</p>
+                                                <p className="text-slate-600 line-clamp-2">{blog.content}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteBlog(blog.id)}
+                                                className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all ml-4"
+                                                title="Delete Blog"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
-
-/* function PaymentsTable({ payments, loading, processingId, onApprove, onReject }) {
-    return (
-        <table className="w-full">
-            <thead className="bg-slate-50 border-b">
-                <tr>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Date</th>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Patient</th>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Transaction ID</th>
-                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Amount</th>
-                    <th className="p-6 text-right font-bold text-slate-600 text-sm">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {loading ? (
-                    <tr>
-                        <td colSpan="5" className="p-12 text-center text-slate-500">
-                            <div className="flex items-center justify-center gap-3">
-                                <div className="w-5 h-5 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"></div>
-                                Loading payments...
-                            </div>
-                        </td>
-                    </tr>
-                ) : payments.length === 0 ? (
-                    <tr>
-                        <td colSpan="5" className="p-12 text-center text-slate-500">
-                            No pending payments
-                        </td>
-                    </tr>
-                ) : (
-                    payments.map((payment) => (
-                        <tr key={payment.id} className="border-b hover:bg-slate-50">
-                            <td className="p-6 text-sm text-slate-700">
-                                {new Date(payment.created_at).toLocaleDateString('en-US')}
-                            </td>
-                            <td className="p-6">
-                                <div className="font-bold text-slate-900">{payment.patients?.name}</div>
-                                <div className="text-sm text-slate-500">{payment.patients?.phone}</div>
-                            </td>
-                            <td className="p-6 text-sm text-slate-700 font-mono">{payment.transaction_id}</td>
-                            <td className="p-6 text-lg font-bold text-slate-900">₹{payment.amount}</td>
-                            <td className="p-6 text-right">
-                                <div className="flex gap-2 justify-end">
-                                    <button
-                                        onClick={() => onApprove(payment)}
-                                        disabled={processingId === payment.id}
-                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
-                                    >
-                                        {processingId === payment.id ? (
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        ) : (
-                                            <CheckCircle2 className="w-4 h-4" />
-                                        )}
-                                        Approve
-                                    </button>
-                                    <button
-                                        onClick={() => onReject(payment.id)}
-                                        disabled={processingId === payment.id}
-                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
-                                    >
-                                        <XCircle className="w-4 h-4" />
-                                        Reject
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))
-                )}
-            </tbody>
-        </table>
-    );
-} */
 
 function DoctorsTable({ doctors, loading, processingId, onVerify, onReject }) {
     return (
@@ -540,4 +581,55 @@ function LabsTable({ labs, loading, processingId, onVerify, onReject }) {
             </tbody>
         </table>
     );
+}
+function GenericExpertTable({ data, loading, processingId, onVerify, onReject, type }) {
+    return (
+        <table className="w-full">
+            <thead className="bg-slate-50 border-b">
+                <tr>
+                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Name</th>
+                    <th className="p-6 text-left font-bold text-slate-600 text-sm">Qualification</th>
+                    <th className="p-6 text-right font-bold text-slate-600 text-sm">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {loading ? (
+                    <tr><td colSpan="3" className="p-12 text-center text-slate-500">Loading {type}...</td></tr>
+                ) : data.length === 0 ? (
+                    <tr><td colSpan="3" className="p-12 text-center text-slate-500">No pending {type}</td></tr>
+                ) : (
+                    data.map((item) => (
+                        <tr key={item.id} className="border-b hover:bg-slate-50">
+                            <td className="p-6 font-bold text-slate-900">{item.name}</td>
+                            <td className="p-6 text-sm text-slate-700">{item.qualification}</td>
+                            <td className="p-6 text-right">
+                                <div className="flex gap-2 justify-end">
+                                    <button
+                                        onClick={() => onVerify(item.id)}
+                                        disabled={processingId === item.id}
+                                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {processingId === item.id ? "..." : <CheckCircle2 className="w-4 h-4" />}
+                                        Verify
+                                    </button>
+                                    <button
+                                        onClick={() => onReject(item.id)}
+                                        disabled={processingId === item.id}
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                        Reject
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))
+                )}
+            </tbody>
+        </table>
+    );
+}
+
+export function StatCard({ icon: Icon, label, value, color }) {
+    // ... logic if needed, but not exported here
 }

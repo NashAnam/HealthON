@@ -29,15 +29,20 @@ export default function PatientDashboard() {
     const loadDashboard = async () => {
         try {
             const user = await getCurrentUser();
+
+            // Allow guest access - don't redirect if no user
             if (!user) {
-                router.push('/login');
+                setLoading(false);
                 return;
             }
+
             setUser(user);
 
             const { data: patientData } = await getPatient(user.id);
             if (!patientData) {
-                router.push('/complete-profile');
+                // User is logged in but has no patient profile
+                // This shouldn't happen in normal flow, but handle it
+                setLoading(false);
                 return;
             }
 
@@ -152,6 +157,18 @@ export default function PatientDashboard() {
             toast.error('Failed to load dashboard data');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFeatureClick = (path) => {
+        if (!user) {
+            // Store the intended destination
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('redirect_after_login', path);
+            }
+            router.push('/login');
+        } else {
+            router.push(path);
         }
     };
 
@@ -406,16 +423,20 @@ export default function PatientDashboard() {
                     </button>
                     <div className="flex flex-col">
                         <h1 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-1">Health Portal</h1>
-                        <p className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">{patient?.name || 'Dashboard'}</p>
+                        <p className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">
+                            {user ? (patient?.name || 'Dashboard') : 'Guest'}
+                        </p>
                     </div>
                 </div>
                 <div
-                    onClick={() => router.push('/about')}
+                    onClick={() => router.push('/')}
                     className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100"
                 >
+                    <img src="/logo.png" alt="HealthON" className="w-6 h-6 rounded-md" />
                     <span className="text-[10px] font-black text-[#5a8a7a] uppercase tracking-[0.2em]">HealthOn</span>
+                    <div className="w-8 h-12 border-l border-gray-200 mx-1 hidden md:block"></div>
                     <div className="w-10 h-10 rounded-full bg-[#4a2b3d] flex items-center justify-center text-white font-bold shadow-md">
-                        {patient?.name?.[0] || 'U'}
+                        {user ? (patient?.name?.[0] || 'U') : 'G'}
                     </div>
                 </div>
             </header>
@@ -427,7 +448,7 @@ export default function PatientDashboard() {
 
                     {/* 1st: Health Assessment */}
                     <button
-                        onClick={() => router.push('/patient/assessment')}
+                        onClick={() => handleFeatureClick('/patient/assessment')}
                         className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center hover:shadow-xl hover:border-[#5a8a7a]/30 transition-all group active:scale-95 min-h-[180px] md:min-h-[280px]"
                     >
                         <div className="w-14 h-14 md:w-20 md:h-20 bg-[#5a8a7a]/10 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-[#5a8a7a] group-hover:scale-110 group-hover:bg-[#5a8a7a] group-hover:text-white transition-all duration-300">
@@ -441,7 +462,7 @@ export default function PatientDashboard() {
 
                     {/* 2nd: Health Tracker (Standard Style) */}
                     <button
-                        onClick={() => router.push('/patient/health-tracker')}
+                        onClick={() => handleFeatureClick('/patient/health-tracker')}
                         className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center hover:shadow-xl hover:border-plum-100 transition-all group active:scale-95 min-h-[180px] md:min-h-[280px]"
                     >
                         <div className="w-14 h-14 md:w-20 md:h-20 bg-plum-50 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-plum-600 group-hover:scale-110 group-hover:bg-plum-600 group-hover:text-white transition-all duration-300">
@@ -461,13 +482,13 @@ export default function PatientDashboard() {
                         <h3 className="text-sm md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight leading-tight">Book Appointment</h3>
                         <div className="flex flex-col sm:flex-row gap-2 md:gap-4 w-full mt-2">
                             <button
-                                onClick={() => router.push('/patient/doctor-booking')}
+                                onClick={() => handleFeatureClick('/patient/doctor-booking')}
                                 className="flex-1 bg-[#5a8a7a] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:shadow-lg active:scale-95 transition-all"
                             >
                                 Doctor
                             </button>
                             <button
-                                onClick={() => router.push('/patient/lab-booking')}
+                                onClick={() => handleFeatureClick('/patient/lab-booking')}
                                 className="flex-1 bg-[#4a2b3d] text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] hover:shadow-lg active:scale-95 transition-all"
                             >
                                 Lab Test
@@ -477,7 +498,7 @@ export default function PatientDashboard() {
 
                     {/* 4th: Weekly Progress */}
                     <button
-                        onClick={() => router.push('/patient/progress-report')}
+                        onClick={() => handleFeatureClick('/patient/progress-report')}
                         className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4 md:gap-6 text-center hover:shadow-xl hover:border-rose-100 transition-all group active:scale-95 min-h-[180px] md:min-h-[280px]"
                     >
                         <div className="w-14 h-14 md:w-20 md:h-20 bg-rose-50 rounded-2xl md:rounded-[2rem] flex items-center justify-center text-rose-600 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
@@ -518,7 +539,7 @@ export default function PatientDashboard() {
                             )}
                         </div>
                         <button
-                            onClick={() => router.push('/patient/appointments')}
+                            onClick={() => handleFeatureClick('/patient/appointments')}
                             className="w-full mt-6 py-3 bg-[#5a8a7a] text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#5a8a7a]/20 hover:bg-[#4a7a6a] transition-all"
                         >
                             View All Appointments
@@ -613,7 +634,7 @@ export default function PatientDashboard() {
                             })()}
                         </div>
                         <button
-                            onClick={() => router.push('/patient/reminders')}
+                            onClick={() => handleFeatureClick('/patient/reminders')}
                             className="w-full mt-6 py-3 bg-[#4a2b3d] text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#4a2b3d]/20 hover:bg-[#3a1b2d] transition-all"
                         >
                             View All Records

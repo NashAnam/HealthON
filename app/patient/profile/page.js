@@ -66,6 +66,16 @@ export default function PatientProfilePage() {
     };
 
     const handleSave = async () => {
+        if (!formData.name || !formData.phone) {
+            toast.error('Name and Phone Number are required');
+            return;
+        }
+
+        if (!/^[6-9]\d{9}$/.test(formData.phone)) {
+            toast.error('Please enter a valid 10-digit Indian phone number (starting with 6-9)');
+            return;
+        }
+
         setSaving(true);
         try {
             // Sanitize payload to prevent 400 errors (e.g. empty strings for numbers/dates)
@@ -185,7 +195,15 @@ export default function PatientProfilePage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <InputGroup label="Email" icon={<Mail size={16} />} value={formData.email} disabled />
-                        <InputGroup label="Phone Number" icon={<Phone size={16} />} value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                        <InputGroup
+                            label="Phone Number"
+                            icon={<Phone size={16} />}
+                            value={formData.phone}
+                            onChange={e => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                setFormData({ ...formData, phone: val });
+                            }}
+                        />
                         <InputGroup label="Address" icon={<MapPin size={16} />} value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
                         <InputGroup label="Emergency Contact" icon={<Shield size={16} />} placeholder="Name & Phone" value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} />
                     </div>

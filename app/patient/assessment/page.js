@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCurrentUser, getPatient, saveAssessment, getLatestAssessment } from '@/lib/supabase';
 import { calculateAllRisks } from '@/lib/whoStepsRiskCalculator';
-import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const QUESTIONS = [
@@ -208,6 +208,8 @@ export default function AssessmentPage() {
   const [loading, setLoading] = useState(false);
   const [patient, setPatient] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     loadPatient();
@@ -315,9 +317,37 @@ export default function AssessmentPage() {
         {/* Question Card */}
         <div className="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-100 min-h-[400px] flex flex-col justify-center animate-in fade-in slide-in-from-bottom-8 duration-500">
 
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
-            {currentQ.label}
-          </h2>
+          <div className="flex items-start gap-4 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight flex-1">
+              {currentQ.label}
+            </h2>
+            {/* Audio Playback Button */}
+            <button
+              onClick={() => {
+                if (audioRef.current) {
+                  if (isPlaying) {
+                    audioRef.current.pause();
+                    setIsPlaying(false);
+                  } else {
+                    audioRef.current.play();
+                    setIsPlaying(true);
+                  }
+                }
+              }}
+              className="p-4 bg-[#649488] hover:bg-[#527569] text-white rounded-2xl transition-all shadow-lg flex-shrink-0"
+              title="Listen to question in Hindi"
+            >
+              {isPlaying ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+            </button>
+            {/* Hidden Audio Element */}
+            <audio
+              ref={audioRef}
+              onEnded={() => setIsPlaying(false)}
+              onPause={() => setIsPlaying(false)}
+            >
+              <source src={`/audio/assessment/question-${currentQuestionIndex + 1}.mp3`} type="audio/mpeg" />
+            </audio>
+          </div>
 
           {currentQ.subLabel && (
             <p className="text-xl text-slate-500 mb-8 font-medium">

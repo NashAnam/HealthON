@@ -233,10 +233,8 @@ function TelemedicineRoomContent() {
         <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
             {/* Call Header */}
             <div className="p-4 md:p-5 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-50">
-                <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 bg-plum-800 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-plum-500/10 text-sm">
-                        H
-                    </div>
+                <div className="flex items-center gap-4 cursor-pointer" onClick={() => router.push('/')}>
+                    <img src="/logo.png" alt="HealthON" className="w-9 h-9 rounded-xl shadow-lg shadow-black/5" />
                     <div>
                         <h1 className="text-slate-900 font-black leading-none tracking-tight text-base">HealthON Virtual</h1>
                         <p className="text-[9px] text-plum-600 font-black uppercase tracking-[0.15em] mt-1.5">Telemedicine Session</p>

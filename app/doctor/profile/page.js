@@ -62,6 +62,16 @@ export default function DoctorProfilePage() {
     };
 
     const handleSave = async () => {
+        if (!formData.name || !formData.phone) {
+            toast.error('Name and Phone Number are required');
+            return;
+        }
+
+        if (!/^[6-9]\d{9}$/.test(formData.phone)) {
+            toast.error('Please enter a valid 10-digit Indian phone number (starting with 6-9)');
+            return;
+        }
+
         setSaving(true);
         try {
             const { error } = await supabase
@@ -156,7 +166,15 @@ export default function DoctorProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <InputGroup label="Full Name" icon={<User size={16} />} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                         <InputGroup label="Email" icon={<Mail size={16} />} value={formData.email} disabled />
-                        <InputGroup label="Phone Number" icon={<Phone size={16} />} value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                        <InputGroup
+                            label="Phone Number"
+                            icon={<Phone size={16} />}
+                            value={formData.phone}
+                            onChange={e => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                setFormData({ ...formData, phone: val });
+                            }}
+                        />
                         <InputGroup label="Specialty" icon={<Stethoscope size={16} />} value={formData.specialty} onChange={e => setFormData({ ...formData, specialty: e.target.value })} />
                         <InputGroup label="License Number" icon={<Award size={16} />} value={formData.licenseNumber} onChange={e => setFormData({ ...formData, licenseNumber: e.target.value })} />
                         <InputGroup label="Experience (Years)" icon={<Calendar size={16} />} type="number" value={formData.experience} onChange={e => setFormData({ ...formData, experience: e.target.value })} />

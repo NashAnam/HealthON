@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, supabase } from '@/lib/supabase';
+import { getCurrentUser, supabase, signOut } from '@/lib/supabase';
 import { useSidebar } from '@/lib/SidebarContext';
 import { Calendar, User, Activity, Clock, Video, MapPin, LogOut, FileText, Users, ArrowRight, Check, X, MoreHorizontal, Search, Settings, Plus, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -165,7 +165,7 @@ export default function DoctorDashboard() {
           </p>
 
           <button
-            onClick={() => router.push('/')}
+            onClick={async () => { await signOut(); router.push('/'); }}
             className="px-10 py-4 bg-plum-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-plum-800/20"
           >
             Logout to Homepage
