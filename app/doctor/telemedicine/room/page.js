@@ -42,6 +42,7 @@ function DoctorRoomContent() {
     const videoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
+    const signalingChannel = useRef(null);
     const pendingCandidates = useRef([]);
 
     useEffect(() => {
@@ -52,6 +53,9 @@ function DoctorRoomContent() {
             }
             if (peerConnection.current) {
                 peerConnection.current.close();
+            }
+            if (signalingChannel.current) {
+                supabase.removeChannel(signalingChannel.current);
             }
         };
     }, [id]);
@@ -168,7 +172,9 @@ function DoctorRoomContent() {
         peerConnection.current = pc;
 
         // Listen for signaling
-        const channel = supabase.channel(`signaling:${id}`)
+        signalingChannel.current = supabase.channel(`signaling:${id}`);
+
+        signalingChannel.current
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'telemedicine_signaling', filter: `appointment_id=eq.${id}` },
                 payload => {
                     handleSignaling(payload.new);
@@ -190,24 +196,27 @@ function DoctorRoomContent() {
             });
 
         async function handleSignaling(msg) {
+            if (pc.signalingState === 'closed') return;
+
             if (msg.sender_role === 'patient') {
                 if (msg.type === 'answer') {
-                    // Check if signalingState is conducive to setting a remote answer
-                    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') {
-                        try {
-                            await pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
-                            // Process buffered candidates
-                            while (pendingCandidates.current.length > 0) {
-                                const candidate = pendingCandidates.current.shift();
-                                await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(err =>
-                                    console.error('Error adding buffered candidate:', err)
-                                );
-                            }
-                        } catch (err) {
-                            console.error('Error setting remote answer:', err);
-                        }
-                    } else {
+                    // Doctor expects answer ONLY when in have-local-offer state
+                    if (pc.signalingState !== 'have-local-offer') {
                         console.log(`Skipping answer - signalingState is ${pc.signalingState}`);
+                        return;
+                    }
+
+                    try {
+                        await pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
+                        // Process buffered candidates
+                        while (pendingCandidates.current.length > 0) {
+                            const candidate = pendingCandidates.current.shift();
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(err =>
+                                console.error('Error adding buffered candidate:', err)
+                            );
+                        }
+                    } catch (err) {
+                        console.error('Error setting remote answer:', err);
                     }
                 } else if (msg.type === 'candidate') {
                     if (pc.remoteDescription && pc.remoteDescription.type) {

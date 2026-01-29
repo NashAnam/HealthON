@@ -36,6 +36,7 @@ function TelemedicineRoomContent() {
     const videoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
+    const signalingChannel = useRef(null);
     const pendingCandidates = useRef([]);
 
     useEffect(() => {
@@ -46,6 +47,9 @@ function TelemedicineRoomContent() {
             }
             if (peerConnection.current) {
                 peerConnection.current.close();
+            }
+            if (signalingChannel.current) {
+                supabase.removeChannel(signalingChannel.current);
             }
         };
     }, [id]);
@@ -153,7 +157,9 @@ function TelemedicineRoomContent() {
         peerConnection.current = pc;
 
         // Listen for signaling
-        const channel = supabase.channel(`signaling:${id}`)
+        signalingChannel.current = supabase.channel(`signaling:${id}`);
+
+        signalingChannel.current
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'telemedicine_signaling', filter: `appointment_id=eq.${id}` },
                 async payload => {
                     handleSignaling(payload.new);
@@ -177,11 +183,13 @@ function TelemedicineRoomContent() {
             });
 
         async function handleSignaling(msg) {
+            if (pc.signalingState === 'closed') return;
+
             if (msg.sender_role === 'doctor') {
                 if (msg.type === 'offer') {
-                    // Avoid processing the same offer twice if already processing or set
-                    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
-                        console.log('Skipping offer - already in progress or set');
+                    // Patient expects offer ONLY when stable
+                    if (pc.signalingState !== 'stable') {
+                        console.log(`Skipping offer - signalingState is ${pc.signalingState}`);
                         return;
                     }
 
