@@ -97,6 +97,37 @@ export default function DoctorBookingPage() {
     setFilteredDoctors(filtered);
   };
 
+  const formatDays = (days) => {
+    if (!days) return 'Contact for availability';
+
+    let daysArray = [];
+    if (Array.isArray(days)) {
+      daysArray = days;
+    } else if (typeof days === 'string') {
+      // Handle "MonTueWed" or "Mon, Tue, Wed"
+      if (days.includes(',')) {
+        daysArray = days.split(',').map(d => d.trim());
+      } else {
+        const matches = days.match(/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/gi);
+        daysArray = matches || days.replace(/([A-Z])/g, ' $1').trim().split(/\s+/);
+      }
+    }
+
+    // Standardize to full names and deduplicate
+    const dayMap = {
+      'mon': 'Monday', 'tue': 'Tuesday', 'wed': 'Wednesday', 'thu': 'Thursday', 'fri': 'Friday', 'sat': 'Saturday', 'sun': 'Sunday',
+      'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday', 'thursday': 'Thursday', 'friday': 'Friday', 'saturday': 'Saturday', 'sunday': 'Sunday'
+    };
+
+    const uniqueDays = [...new Set(daysArray
+      .map(d => d.toLowerCase().substring(0, 3))
+      .map(d => dayMap[d] || d)
+      .filter(Boolean)
+    )];
+
+    return uniqueDays.join(', ');
+  };
+
   const handleBookAppointment = async () => {
     if (!bookingData.appointment_date || !bookingData.appointment_time || !bookingData.reason) {
       toast.error('Please fill in all required fields');
@@ -340,9 +371,7 @@ export default function DoctorBookingPage() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-xs">
-                        {Array.isArray(doctor.available_days)
-                          ? doctor.available_days.join(', ')
-                          : doctor.available_days.replace(/([A-Z])/g, ' $1').trim()}
+                        {formatDays(doctor.available_days)}
                       </p>
                       <p className="text-xs text-gray-400">Available Days</p>
                     </div>
@@ -387,9 +416,7 @@ export default function DoctorBookingPage() {
                   <div className="bg-purple-50 px-3 py-2 rounded-xl border border-purple-100 flex-1">
                     <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Days</p>
                     <p className="text-xs font-bold text-purple-900">
-                      {Array.isArray(selectedDoctor.available_days)
-                        ? selectedDoctor.available_days.join(', ')
-                        : selectedDoctor.available_days}
+                      {formatDays(selectedDoctor.available_days)}
                     </p>
                   </div>
                   <div className="bg-teal-50 px-3 py-2 rounded-xl border border-teal-100 flex-1">
@@ -472,8 +499,8 @@ export default function DoctorBookingPage() {
                               key={dateStr}
                               onClick={() => setBookingData({ ...bookingData, appointment_date: dateStr })}
                               className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected
-                                  ? 'border-[#4a2b3d] bg-[#4a2b3d] text-white shadow-lg shadow-[#4a2b3d]/20 scale-[1.02]'
-                                  : 'border-slate-100 bg-white text-slate-600 hover:border-[#4a2b3d]/30 hover:bg-slate-50'
+                                ? 'border-[#4a2b3d] bg-[#4a2b3d] text-white shadow-lg shadow-[#4a2b3d]/20 scale-[1.02]'
+                                : 'border-slate-100 bg-white text-slate-600 hover:border-[#4a2b3d]/30 hover:bg-slate-50'
                                 }`}
                             >
                               <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">{dayName}</span>
@@ -535,8 +562,8 @@ export default function DoctorBookingPage() {
                             key={slot.value}
                             onClick={() => setBookingData({ ...bookingData, appointment_time: slot.value })}
                             className={`py-2 px-1 rounded-lg text-xs font-bold border transition-all ${bookingData.appointment_time === slot.value
-                                ? 'bg-[#5a8a7a] text-white border-[#5a8a7a]'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-[#5a8a7a]'
+                              ? 'bg-[#5a8a7a] text-white border-[#5a8a7a]'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-[#5a8a7a]'
                               }`}
                           >
                             {slot.label}
