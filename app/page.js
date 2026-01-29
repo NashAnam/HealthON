@@ -67,13 +67,8 @@ export default function LandingPage() {
                         <span className="text-2xl font-black tracking-tight text-[#1a1a2e] group-hover:text-[#4a2b3d] transition-colors">HealthON</span>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-8">
-                        <button
-                            onClick={() => router.push('/login')}
-                            className="px-6 py-2.5 bg-[#4a2b3d] text-white rounded-full font-bold text-sm shadow-lg shadow-[#4a2b3d]/20 hover:bg-[#4a2b3d] hover:shadow-xl hover:shadow-[#4a2b3d]/30 hover:-translate-y-0.5 transition-all"
-                        >
-                            Sign In
-                        </button>
+                    <div className="md:flex items-center gap-8">
+                        {/* Sign in removed as requested */}
                     </div>
                 </div>
             </nav>
@@ -130,17 +125,6 @@ export default function LandingPage() {
                                 </button>
                             </motion.div>
 
-                            <div className="flex items-center gap-8 pt-4">
-                                <div>
-                                    <p className="text-3xl font-black text-[#4a2b3d]">10k+</p>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Users</p>
-                                </div>
-                                <div className="w-px h-10 bg-[#4a2b3d]/10"></div>
-                                <div>
-                                    <p className="text-3xl font-black text-[#5a8a7a]">50+</p>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Experts</p>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Right Content - App Slideshow (Use Case Screenshots) */}
@@ -275,7 +259,7 @@ export default function LandingPage() {
                         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#5a8a7a]/20 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
 
                         <div className="relative z-10">
-                            <h2 className="text-3xl font-black text-white mb-12 uppercase tracking-wide">Development Team</h2>
+                            <h2 className="text-3xl font-black text-white mb-12 uppercase tracking-wide">Our Team</h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 justify-center max-w-4xl mx-auto">
                                 {[
@@ -312,9 +296,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-8">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#4a2b3d] rounded-xl flex items-center justify-center">
-                                <span className="font-black text-lg">H</span>
-                            </div>
+                            <Image src="/logo.png" alt="HealthON" width={40} height={40} className="rounded-xl" />
                             <span className="text-2xl font-black tracking-tight">HealthON</span>
                         </div>
                         <div className="flex gap-8 text-sm font-bold text-gray-400">
@@ -327,10 +309,7 @@ export default function LandingPage() {
                     <div className="border-t border-white/5 pt-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
                         <p className="text-gray-500 text-xs">© 2026 HealthON. All rights reserved.</p>
                         <div className="flex gap-4">
-                            <a href="#" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#4a2b3d] transition-colors">
-                                <TwitterIcon className="w-4 h-4" />
-                            </a>
-                            <a href="#" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#4a2b3d] transition-colors">
+                            <a href="https://www.instagram.com/healthon.app_" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#4a2b3d] transition-colors">
                                 <InstagramIcon className="w-4 h-4" />
                             </a>
                         </div>
@@ -341,13 +320,6 @@ export default function LandingPage() {
     );
 }
 
-function TwitterIcon(props) {
-    return (
-        <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
-            <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-        </svg>
-    )
-}
 
 function InstagramIcon(props) {
     return (
