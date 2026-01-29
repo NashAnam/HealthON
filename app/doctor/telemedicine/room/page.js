@@ -42,6 +42,7 @@ function DoctorRoomContent() {
     const videoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
+    const pendingCandidates = useRef([]);
 
     useEffect(() => {
         loadAppointment();
@@ -188,18 +189,34 @@ function DoctorRoomContent() {
                 }
             });
 
-        function handleSignaling(msg) {
+        async function handleSignaling(msg) {
             if (msg.sender_role === 'patient') {
                 if (msg.type === 'answer') {
-                    pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
+                    // Check if signalingState is conducive to setting a remote answer
+                    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') {
+                        try {
+                            await pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
+                            // Process buffered candidates
+                            while (pendingCandidates.current.length > 0) {
+                                const candidate = pendingCandidates.current.shift();
+                                await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(err =>
+                                    console.error('Error adding buffered candidate:', err)
+                                );
+                            }
+                        } catch (err) {
+                            console.error('Error setting remote answer:', err);
+                        }
+                    } else {
+                        console.log(`Skipping answer - signalingState is ${pc.signalingState}`);
+                    }
                 } else if (msg.type === 'candidate') {
-                    // Only add ICE candidate if remote description is set
-                    if (pc.remoteDescription) {
+                    if (pc.remoteDescription && pc.remoteDescription.type) {
                         pc.addIceCandidate(new RTCIceCandidate(msg.payload)).catch(err => {
                             console.error('Error adding ICE candidate:', err);
                         });
                     } else {
-                        console.log('Skipping ICE candidate - remote description not set yet');
+                        console.log('Buffering ICE candidate - remote description not set yet');
+                        pendingCandidates.current.push(msg.payload);
                     }
                 }
             }

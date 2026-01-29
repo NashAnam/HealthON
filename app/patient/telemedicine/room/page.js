@@ -36,6 +36,7 @@ function TelemedicineRoomContent() {
     const videoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
+    const pendingCandidates = useRef([]);
 
     useEffect(() => {
         loadAppointment();
@@ -178,21 +179,41 @@ function TelemedicineRoomContent() {
         async function handleSignaling(msg) {
             if (msg.sender_role === 'doctor') {
                 if (msg.type === 'offer') {
-                    await pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    await supabase.from('telemedicine_signaling').insert([{
-                        appointment_id: id,
-                        sender_role: 'patient',
-                        type: 'answer',
-                        payload: answer
-                    }]);
+                    // Avoid processing the same offer twice if already processing or set
+                    if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
+                        console.log('Skipping offer - already in progress or set');
+                        return;
+                    }
+
+                    try {
+                        await pc.setRemoteDescription(new RTCSessionDescription(msg.payload));
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        await supabase.from('telemedicine_signaling').insert([{
+                            appointment_id: id,
+                            sender_role: 'patient',
+                            type: 'answer',
+                            payload: answer
+                        }]);
+
+                        // Process buffered candidates
+                        while (pendingCandidates.current.length > 0) {
+                            const candidate = pendingCandidates.current.shift();
+                            await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(err =>
+                                console.error('Error adding buffered candidate:', err)
+                            );
+                        }
+                    } catch (err) {
+                        console.error('Error handling offer:', err);
+                    }
                 } else if (msg.type === 'candidate') {
-                    // Only add ICE candidate if remote description is set
-                    if (pc.remoteDescription) {
-                        await pc.addIceCandidate(new RTCIceCandidate(msg.payload));
+                    if (pc.remoteDescription && pc.remoteDescription.type) {
+                        await pc.addIceCandidate(new RTCIceCandidate(msg.payload)).catch(err =>
+                            console.error('Error adding ICE candidate:', err)
+                        );
                     } else {
-                        console.log('Skipping ICE candidate - remote description not set yet');
+                        console.log('Buffering ICE candidate - remote description not set yet');
+                        pendingCandidates.current.push(msg.payload);
                     }
                 }
             }
@@ -253,9 +274,9 @@ function TelemedicineRoomContent() {
                 </div>
             </div>
 
-            <div className="flex-1 p-4 md:p-6 flex flex-col lg:flex-row gap-6 overflow-hidden relative">
+            <div className="flex-1 p-4 md:p-6 flex flex-col lg:flex-row gap-6 overflow-y-auto relative">
                 {/* Main Video Area */}
-                <div className="flex-1 relative rounded-[2.5rem] bg-slate-900 shadow-2xl overflow-hidden flex items-center justify-center group border border-slate-800">
+                <div className="flex-1 relative min-h-[500px] md:min-h-0 rounded-[2.5rem] bg-slate-900 shadow-2xl overflow-hidden flex items-center justify-center group border border-slate-800">
                     {!isJoined ? (
                         <div className="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-8 text-center">
                             {/* Dynamic Background for Lobby */}
