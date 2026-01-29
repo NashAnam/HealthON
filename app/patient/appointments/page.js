@@ -92,6 +92,45 @@ export default function AppointmentsPage() {
         }
     };
 
+    const parseDaysToArray = (days) => {
+        if (!days) return [];
+        if (Array.isArray(days)) return days.map(d => d.toLowerCase().trim());
+
+        const cleanStr = days.toLowerCase()
+            .replace(/thurs/g, 'thursday')
+            .replace(/thu/g, 'thursday')
+            .replace(/tues/g, 'tuesday')
+            .replace(/tue/g, 'tuesday')
+            .replace(/mon/g, 'monday')
+            .replace(/wed/g, 'wednesday')
+            .replace(/fri/g, 'friday')
+            .replace(/sat/g, 'saturday')
+            .replace(/sun/g, 'sunday');
+
+        const matches = cleanStr.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/g);
+        return matches ? [...new Set(matches)] : [];
+    };
+
+    const parseTimeToMinutes = (tStr) => {
+        if (!tStr) return 0;
+        try {
+            const parts = tStr.toUpperCase().trim().match(/(\d+):?(\d+)?\s*(AM|PM)?/);
+            if (!parts) return 0;
+
+            let hours = parseInt(parts[1]);
+            let minutes = parts[2] ? parseInt(parts[2]) : 0;
+            const modifier = parts[3];
+
+            if (modifier === 'PM' && hours < 12) hours += 12;
+            if (modifier === 'AM' && hours === 12) hours = 0;
+
+            return hours * 60 + minutes;
+        } catch (e) {
+            console.error('Time parsing error:', e);
+            return 0;
+        }
+    };
+
     const generateTimeSlots = (timingsStr) => {
         if (!timingsStr) {
             setAvailableSlots(['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '04:00 PM', '06:00 PM']);
@@ -101,28 +140,23 @@ export default function AppointmentsPage() {
         // Simple parser for "09:00 AM - 05:00 PM"
         const slots = [];
         try {
-            const [startPart, endPart] = timingsStr.split('-').map(s => s.trim());
+            const parts = timingsStr.split('-').map(s => s.trim());
+            if (parts.length === 2) {
+                const startTime = parseTimeToMinutes(parts[0]);
+                const endTime = parseTimeToMinutes(parts[1]);
 
-            const parseTime = (t) => {
-                const [time, modifier] = t.split(' ');
-                let [hours, minutes] = time.split(':').map(Number);
-                if (modifier === 'PM' && hours < 12) hours += 12;
-                if (modifier === 'AM' && hours === 12) hours = 0;
-                return hours * 60 + (minutes || 0);
-            };
-
-            const startTime = parseTime(startPart);
-            const endTime = parseTime(endPart);
-
-            // Generate 30min slots
-            for (let t = startTime; t < endTime; t += 30) {
-                const h = Math.floor(t / 60);
-                const m = t % 60;
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                const h12 = h % 12 || 12;
-                slots.push(`${h12}:${m === 0 ? '00' : m} ${ampm}`);
+                // Generate 30min slots
+                for (let t = startTime; t < endTime; t += 30) {
+                    const h = Math.floor(t / 60);
+                    const m = t % 60;
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const h12 = h % 12 || 12;
+                    slots.push(`${h12}:${m === 0 ? '00' : m.toString().padStart(2, '0')} ${ampm}`);
+                }
+                setAvailableSlots(slots);
+            } else {
+                setAvailableSlots(['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '04:00 PM', '06:00 PM']);
             }
-            setAvailableSlots(slots);
         } catch (e) {
             console.error('Error parsing timings:', e);
             setAvailableSlots(['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '04:00 PM', '06:00 PM']);
@@ -151,18 +185,10 @@ export default function AppointmentsPage() {
 
     const checkAvailability = (dateStr) => {
         if (!selectedDoctor || !selectedDoctor.available_days || !dateStr) return true;
+        const selectedDay = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+        const availableDays = parseDaysToArray(selectedDoctor.available_days);
 
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const selectedDate = new Date(dateStr);
-        // Correct for timezone offset to ensure we get the right day
-        const dayIndex = selectedDate.getDay();
-        const selectedDay = days[dayIndex];
-
-        const availableDays = Array.isArray(selectedDoctor.available_days)
-            ? selectedDoctor.available_days
-            : (selectedDoctor.available_days || '').split(',').map(d => d.trim());
-
-        return availableDays.some(d => d.toLowerCase() === selectedDay.toLowerCase());
+        return availableDays.some(d => selectedDay.includes(d));
     };
 
     const confirmReschedule = async () => {

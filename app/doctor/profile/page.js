@@ -326,12 +326,24 @@ const TimeRangeSelector = ({ value, onChange }) => {
 
     useEffect(() => {
         if (value && value.includes('-')) {
-            const parts = value.split('-');
-            // Parsing "9:00 AM - 5:00 PM" back is annoying but we can try basic parsing or just leave defaults if render only
-            // Since this is edit mode, ideally we parse.
-            // For MVP speed, let's keep defaults if complex string.
+            try {
+                const parts = value.split('-').map(p => p.trim());
+                if (parts.length === 2) {
+                    const to24h = (t12) => {
+                        const [time, modifier] = t12.split(' ');
+                        let [h, m] = time.split(':').map(Number);
+                        if (modifier === 'PM' && h < 12) h += 12;
+                        if (modifier === 'AM' && h === 12) h = 0;
+                        return `${h.toString().padStart(2, '0')}:${(m || 0).toString().padStart(2, '0')}`;
+                    };
+                    setStart(to24h(parts[0]));
+                    setEnd(to24h(parts[1]));
+                }
+            } catch (e) {
+                console.error('Error parsing time range:', e);
+            }
         }
-    }, []);
+    }, [value]);
 
     const handleTimeChange = (newStart, newEnd) => {
         setStart(newStart);

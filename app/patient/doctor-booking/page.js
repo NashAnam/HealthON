@@ -128,6 +128,46 @@ export default function DoctorBookingPage() {
     return uniqueDays.join(', ');
   };
 
+  const parseDaysToArray = (days) => {
+    if (!days) return [];
+    if (Array.isArray(days)) return days.map(d => d.toLowerCase().trim());
+
+    // Normalize to handle mixed formats like "mon, Tuesday, Fri"
+    const cleanStr = days.toLowerCase()
+      .replace(/thurs/g, 'thursday')
+      .replace(/thu/g, 'thursday')
+      .replace(/tues/g, 'tuesday')
+      .replace(/tue/g, 'tuesday')
+      .replace(/mon/g, 'monday')
+      .replace(/wed/g, 'wednesday')
+      .replace(/fri/g, 'friday')
+      .replace(/sat/g, 'saturday')
+      .replace(/sun/g, 'sunday');
+
+    const matches = cleanStr.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/g);
+    return matches ? [...new Set(matches)] : [];
+  };
+
+  const parseTimeToMinutes = (tStr) => {
+    if (!tStr) return 0;
+    try {
+      const parts = tStr.toUpperCase().trim().match(/(\d+):?(\d+)?\s*(AM|PM)?/);
+      if (!parts) return 0;
+
+      let hours = parseInt(parts[1]);
+      let minutes = parts[2] ? parseInt(parts[2]) : 0;
+      const modifier = parts[3];
+
+      if (modifier === 'PM' && hours < 12) hours += 12;
+      if (modifier === 'AM' && hours === 12) hours = 0;
+
+      return hours * 60 + minutes;
+    } catch (e) {
+      console.error('Time parsing error:', e);
+      return 0;
+    }
+  };
+
   const handleBookAppointment = async () => {
     if (!bookingData.appointment_date || !bookingData.appointment_time || !bookingData.reason) {
       toast.error('Please fill in all required fields');
@@ -145,35 +185,12 @@ export default function DoctorBookingPage() {
       const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
       // Check if doctor is available on selected day
-      let availableDays = [];
-      if (Array.isArray(selectedDoctor.available_days)) {
-        availableDays = selectedDoctor.available_days;
-      } else if (typeof selectedDoctor.available_days === 'string') {
-        // Handle various string formats: "MonTueWed" or "Mon, Tue, Wed"
-        if (selectedDoctor.available_days.includes(',')) {
-          availableDays = selectedDoctor.available_days.split(',').map(d => d.trim());
-        } else {
-          // Try to match standard day names
-          const matches = selectedDoctor.available_days.match(/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/g);
-          if (matches) {
-            availableDays = matches;
-          } else {
-            // Fallback for mashed string like "MonTueWed"
-            availableDays = selectedDoctor.available_days.replace(/([A-Z])/g, ' $1').trim().split(' ');
-          }
-        }
-      }
+      // Use the new robust parser
+      const availableDays = parseDaysToArray(selectedDoctor.available_days);
 
-      // Normalize day names for comparison (Case Insensitive)
-      const selectedDayShort = dayOfWeek.substring(0, 3).toLowerCase(); // "mon"
+      const selectedDayShort = dayOfWeek.toLowerCase();
 
-      const isAvailable = availableDays.some(d => {
-        // specific check for "thurs" -> "thu"
-        let cleanD = d.toLowerCase().trim();
-        if (cleanD.startsWith('thur')) cleanD = 'thu';
-        const dShort = cleanD.substring(0, 3);
-        return dShort === selectedDayShort;
-      });
+      const isAvailable = availableDays.some(d => selectedDayShort.includes(d));
 
       if (!isAvailable) {
         toast.error(`Dr. ${selectedDoctor.name} is not available on ${dayOfWeek}. Available: ${availableDays.join(', ')}`);
@@ -440,31 +457,8 @@ export default function DoctorBookingPage() {
                           let daysFound = 0;
                           let dayOffset = 0;
 
-                          // Parse available days from doctor data
-                          let validDays = [];
-                          if (Array.isArray(selectedDoctor.available_days)) {
-                            validDays = selectedDoctor.available_days;
-                          } else if (typeof selectedDoctor.available_days === 'string') {
-                            // Clean and parse string
-                            const cleanStr = selectedDoctor.available_days.replace(/([A-Z])/g, ' $1').trim();
-                            // Split by comma or space
-                            const parts = cleanStr.includes(',') ? cleanStr.split(',') : cleanStr.split(' ');
-
-                            validDays = parts.map(p => {
-                              let d = p.trim().toLowerCase();
-                              if (d.startsWith('mon')) return 'monday';
-                              if (d.startsWith('tue')) return 'tuesday';
-                              if (d.startsWith('wed')) return 'wednesday';
-                              if (d.startsWith('thu')) return 'thursday';
-                              if (d.startsWith('fri')) return 'friday';
-                              if (d.startsWith('sat')) return 'saturday';
-                              if (d.startsWith('sun')) return 'sunday';
-                              return null;
-                            }).filter(Boolean);
-                          }
-
-                          // If no valid days parsing, fallback to showing next 7 days
-                          if (validDays.length === 0) validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                          // Use robust parsing
+                          const validDays = parseDaysToArray(selectedDoctor.available_days);
 
                           while (daysFound < 6) { // Show next 6 valid slots
                             const d = new Date(today);
@@ -524,37 +518,30 @@ export default function DoctorBookingPage() {
                         let endTime = 17;  // Default 5 PM
 
                         if (selectedDoctor.timings) {
-                          // Extremely basic parsing logic for "6PM - 9PM" or "10:00 - 17:00"
-                          const times = selectedDoctor.timings.toUpperCase().split('-').map(t => t.trim());
-                          if (times.length === 2) {
-                            const parseTime = (tStr) => {
-                              let h = parseInt(tStr);
-                              if (tStr.includes('PM') && h !== 12) h += 12;
-                              if (tStr.includes('AM') && h === 12) h = 0;
-                              return h;
-                            };
-                            const s = parseTime(times[0]);
-                            const e = parseTime(times[1]);
-                            if (!isNaN(s) && !isNaN(e)) {
-                              startTime = s;
-                              endTime = e;
-                            }
+                          const parts = selectedDoctor.timings.split('-').map(t => t.trim());
+                          if (parts.length === 2) {
+                            startTime = parseTimeToMinutes(parts[0]) / 60;
+                            endTime = parseTimeToMinutes(parts[1]) / 60;
                           }
                         }
 
                         // Generate 30 min slots
-                        for (let h = startTime; h < endTime; h++) {
-                          for (let m of ['00', '30']) {
-                            // Format time for display (12h) and value (24h)
-                            const date = new Date();
-                            date.setHours(h);
-                            date.setMinutes(parseInt(m));
+                        for (let t = startTime * 60; t < endTime * 60; t += 30) {
+                          const h = Math.floor(t / 60);
+                          const m = t % 60;
 
-                            const timeValue = `${h.toString().padStart(2, '0')}:${m}`;
-                            const timeDisplay = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                          const date = new Date();
+                          date.setHours(h);
+                          date.setMinutes(m);
 
-                            timeSlots.push({ value: timeValue, label: timeDisplay });
-                          }
+                          const timeValue = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                          const timeDisplay = date.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          });
+
+                          timeSlots.push({ value: timeValue, label: timeDisplay });
                         }
 
                         return timeSlots.map((slot) => (
