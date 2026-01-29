@@ -205,8 +205,11 @@ export default function DietTrackerPage() {
 
             loadData();
         } catch (error) {
-            console.error('Save error:', error);
-            toast.error('Failed to save diet log');
+            console.error('Save error full details:', JSON.stringify(error, null, 2));
+            console.error('Save error message:', error.message);
+            console.error('Save error details:', error.details);
+            console.error('Save error hint:', error.hint);
+            toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
         }
     };
 
