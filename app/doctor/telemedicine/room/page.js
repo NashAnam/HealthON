@@ -44,6 +44,7 @@ function DoctorRoomContent() {
     const peerConnection = useRef(null);
     const signalingChannel = useRef(null);
     const pendingCandidates = useRef([]);
+    const processedMessages = useRef(new Set());
 
     useEffect(() => {
         loadAppointment();
@@ -176,8 +177,8 @@ function DoctorRoomContent() {
 
         signalingChannel.current
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'telemedicine_signaling', filter: `appointment_id=eq.${id}` },
-                payload => {
-                    handleSignaling(payload.new);
+                async payload => {
+                    await handleSignaling(payload.new);
                 })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
@@ -190,12 +191,17 @@ function DoctorRoomContent() {
                         .order('created_at', { ascending: true });
 
                     if (data) {
-                        data.forEach(msg => handleSignaling(msg));
+                        for (const msg of data) {
+                            await handleSignaling(msg);
+                        }
                     }
                 }
             });
 
         async function handleSignaling(msg) {
+            if (processedMessages.current.has(msg.id)) return;
+            processedMessages.current.add(msg.id);
+
             if (pc.signalingState === 'closed') return;
 
             if (msg.sender_role === 'patient') {
