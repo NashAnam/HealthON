@@ -1,31 +1,32 @@
--- MASTER SETUP SCRIPT
+-- MASTER SETUP SCRIPT v2 (Schema Repair)
 -- Run this in Supabase SQL Editor.
--- It creates missing tables (like diet_logs) AND applies all security fixes.
 
 -- ==============================================================================
--- 1. CREATE MISSING TABLES
+-- 1. CREATE OR REPAIR DIET LOGS TABLE
 -- ==============================================================================
 
--- Diet Logs (Was missing in some environments)
 CREATE TABLE IF NOT EXISTS public.diet_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
     date DATE NOT NULL,
     meal_type TEXT,
     food_name TEXT NOT NULL,
-    calories DECIMAL,
-    protein DECIMAL,
-    carbs DECIMAL,
-    fats DECIMAL,
-    fiber DECIMAL,
-    gi INTEGER,
-    vitamins TEXT,
-    minerals TEXT,
-    image_url TEXT,
-    ai_recognized BOOLEAN DEFAULT FALSE,
-    notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure all columns exist (Fix for "Could not find column 'fiber'" error)
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS calories DECIMAL;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS protein DECIMAL;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS carbs DECIMAL;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS fats DECIMAL;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS fiber DECIMAL;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS gi INTEGER;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS vitamins TEXT;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS minerals TEXT;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS ai_recognized BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.diet_logs ADD COLUMN IF NOT EXISTS notes TEXT;
+
 
 -- ==============================================================================
 -- 2. SECURE ADMIN ACTIONS (RPC Functions)
@@ -88,8 +89,8 @@ FOR ALL USING (
 ALTER TABLE IF EXISTS public.payments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Patients view own payments" ON public.payments;
 DROP POLICY IF EXISTS "Enable read access for all users" ON public.payments;
-DROP POLICY IF EXISTS "Patients_View_Own_Payments" ON public.payments; -- Clean up
-DROP POLICY IF EXISTS "Patients_Make_Payments" ON public.payments;       -- Clean up
+DROP POLICY IF EXISTS "Patients_View_Own_Payments" ON public.payments;
+DROP POLICY IF EXISTS "Patients_Make_Payments" ON public.payments;
 
 CREATE POLICY "Patients_View_Own_Payments" ON public.payments
 FOR SELECT USING (
@@ -104,7 +105,7 @@ FOR INSERT WITH CHECK (
 -- DOCTORS (Marketplace Access)
 ALTER TABLE public.doctors ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read access" ON public.doctors;
-DROP POLICY IF EXISTS "Public_View_Verified_Doctors" ON public.doctors; -- Clean up
+DROP POLICY IF EXISTS "Public_View_Verified_Doctors" ON public.doctors;
 
 CREATE POLICY "Public_View_Verified_Doctors" ON public.doctors
 FOR SELECT USING (verified = true);
