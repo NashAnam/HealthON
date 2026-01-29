@@ -142,8 +142,20 @@ function DoctorRoomContent() {
 
     const initWebRTC = async () => {
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
         });
+
+        // Log connection changes for diagnostics
+        pc.oniceconnectionstatechange = () => {
+            console.log(`❄️ ICE State: ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                // Optionally handle reconnection logic here if needed
+            }
+        };
 
         if (!localStream) {
             console.error("Cannot initialize WebRTC: localStream is null");
@@ -155,7 +167,14 @@ function DoctorRoomContent() {
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
         pc.ontrack = (event) => {
-            setRemoteStream(event.streams[0]);
+            console.log('📽️ Remote track received:', event.track.kind);
+            if (event.streams && event.streams[0]) {
+                setRemoteStream(event.streams[0]);
+            } else {
+                // Fallback for browsers that don't bundle tracks into streams automatically
+                const newStream = new MediaStream([event.track]);
+                setRemoteStream(newStream);
+            }
             setIsConnected(true);
         };
 
@@ -250,6 +269,14 @@ function DoctorRoomContent() {
 
     const handleJoin = async () => {
         setIsJoined(true);
+        try {
+            // NUCLEAR RESET: Clear stale signaling messages for this appointment
+            // to prevent InvalidStateError from old offers/answers
+            await supabase.from('telemedicine_signaling').delete().eq('appointment_id', id);
+            console.log('🧹 Signaling table cleared for fresh session');
+        } catch (e) {
+            console.warn('Signaling cleanup failed (may be expected if no records exist):', e);
+        }
         toast.success("Opening MD Suite...");
         await initWebRTC();
     };

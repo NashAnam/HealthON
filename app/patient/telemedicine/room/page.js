@@ -127,8 +127,16 @@ function TelemedicineRoomContent() {
 
     const initWebRTC = async () => {
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
         });
+
+        pc.oniceconnectionstatechange = () => {
+            console.log(`❄️ ICE State: ${pc.iceConnectionState}`);
+        };
 
         if (!localStream) {
             console.error("Cannot initialize WebRTC: localStream is null");
@@ -140,7 +148,13 @@ function TelemedicineRoomContent() {
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
         pc.ontrack = (event) => {
-            setRemoteStream(event.streams[0]);
+            console.log('📽️ Remote track received:', event.track.kind);
+            if (event.streams && event.streams[0]) {
+                setRemoteStream(event.streams[0]);
+            } else {
+                const newStream = new MediaStream([event.track]);
+                setRemoteStream(newStream);
+            }
             setIsConnected(true);
         };
 
