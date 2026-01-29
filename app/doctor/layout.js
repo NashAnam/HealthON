@@ -7,7 +7,7 @@ export default function DoctorLayout({ children }) {
         <SidebarProvider>
             <div className="flex min-h-screen bg-[#FAFAFA]">
                 <DoctorSidebar />
-                <div className="flex-1 transition-all duration-300">
+                <div className="flex-1 transition-all duration-300 lg:pl-64">
                     {children}
                 </div>
                 <Toaster position="top-right" />

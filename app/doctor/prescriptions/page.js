@@ -12,6 +12,7 @@ export default function PrescriptionsPage() {
     const [filteredPrescriptions, setFilteredPrescriptions] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showNewPrescription, setShowNewPrescription] = useState(false);
+    const [selectedPrescription, setSelectedPrescription] = useState(null);
 
     // Form Data
     const [patients, setPatients] = useState([]);
@@ -80,6 +81,47 @@ export default function PrescriptionsPage() {
         filterPrescriptions();
     }, [prescriptions, searchTerm]);
 
+    const handleDeletePrescription = async (rxId) => {
+        if (!confirm('Are you sure you want to delete this prescription? This will also remove the associated medication reminders for the patient.')) return;
+
+        const tid = toast.loading('Deleting...');
+        try {
+            // 1. Delete the prescription
+            // We include the doctor_id filter to ensure the current doctor can only affect their own records
+            const { error: rxError, count } = await supabase
+                .from('prescriptions')
+                .delete({ count: 'exact' })
+                .eq('id', rxId)
+                .eq('doctor_id', doctor.id);
+
+            if (rxError) throw rxError;
+
+            // If count is 0, it means either the record is gone or RLS blocked the deletion
+            if (count === 0) {
+                const { data: exists } = await supabase.from('prescriptions').select('id').eq('id', rxId).maybeSingle();
+                if (exists) {
+                    throw new Error('Database Permission Denied: You do not have permission to delete this record. Please run the SQL fix provided in the implementation plan.');
+                }
+            }
+
+            // 2. Delete associated reminders
+            await supabase
+                .from('reminders')
+                .delete()
+                .ilike('description', `%[Ref-RX:${rxId}]%`);
+
+            toast.success('Prescription deleted successfully!', { id: tid });
+            setSelectedPrescription(null);
+
+            // Optimistic update
+            setPrescriptions(prev => prev.filter(p => p.id !== rxId));
+            loadInitialData();
+        } catch (err) {
+            console.error('Delete Error:', err);
+            toast.error(err.message || 'Failed to delete. Check your database permissions.', { id: tid });
+        }
+    };
+
     const loadInitialData = async () => {
         const user = await getCurrentUser();
         if (!user) return router.push('/login');
@@ -117,7 +159,7 @@ export default function PrescriptionsPage() {
 
         const tid = toast.loading('Saving...');
         try {
-            const { error } = await supabase
+            const { data: newRx, error } = await supabase
                 .from('prescriptions')
                 .insert([{
                     doctor_id: doctor.id,
@@ -132,9 +174,52 @@ export default function PrescriptionsPage() {
                     })),
                     notes: formData.notes,
                     created_at: new Date().toISOString()
-                }]);
+                }])
+                .select()
+                .single();
 
             if (error) throw error;
+
+            // Automatically create medication reminders for the patient
+            try {
+                const frequencyToTimes = {
+                    'OD (Once daily)': ['08:00'],
+                    'BD (Twice daily)': ['08:00', '20:00'],
+                    'TDS (Three times daily)': ['08:00', '14:00', '20:00'],
+                    'QID (Four times daily)': ['08:00', '12:00', '16:00', '20:00'],
+                    'HS (At bedtime)': ['22:00'],
+                    'AC (Before food)': ['07:30'],
+                    'PC (After food)': ['08:30'],
+                    'SOS (As needed)': [] // No recurring reminder
+                };
+
+                const today = new Date().toISOString().split('T')[0];
+                const reminderEntries = [];
+                formData.medications.forEach(med => {
+                    const times = frequencyToTimes[med.frequency] || ['09:00'];
+                    times.forEach(time => {
+                        reminderEntries.push({
+                            patient_id: formData.patient_id,
+                            title: `Take ${med.name}`,
+                            description: `${med.dosage} (${med.frequency}) - ${med.instructions}`,
+                            reminder_type: 'medication',
+                            reminder_time: `${today}T${time}:00`,
+                            frequency: 'daily',
+                            is_active: true,
+                            created_at: new Date().toISOString()
+                        });
+                    });
+                });
+
+                if (reminderEntries.length > 0) {
+                    await supabase.from('reminders').insert(reminderEntries.map(r => ({
+                        ...r,
+                        description: `${r.description} [Ref-RX:${newRx.id}]`
+                    })));
+                }
+            } catch (remErr) {
+                console.error('Error auto-creating reminders:', remErr);
+            }
 
             toast.success('Saved!', { id: tid });
             setShowNewPrescription(false);
@@ -192,13 +277,15 @@ export default function PrescriptionsPage() {
                 {showNewPrescription && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNewPrescription(false)} />
-                        <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 p-6 flex flex-col gap-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <h2 className="text-lg font-bold">New Prescription</h2>
-                                <button onClick={() => setShowNewPrescription(false)}><X /></button>
+                        <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                                <h2 className="text-lg font-black text-[#4a2b3d] uppercase tracking-tight">New Prescription</h2>
+                                <button onClick={() => setShowNewPrescription(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400">
+                                    <X size={20} />
+                                </button>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Patient</label>
                                     <select
@@ -335,14 +422,19 @@ export default function PrescriptionsPage() {
                             </div>
                         </div>
                     </div>
-                )}
+                )
+                }
 
                 <div className="space-y-4">
                     {filteredPrescriptions.map(rx => (
-                        <div key={rx.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div
+                            key={rx.id}
+                            onClick={() => setSelectedPrescription(rx)}
+                            className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-teal-500 transition-all cursor-pointer group"
+                        >
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="font-bold text-lg">{rx.patients?.name}</h3>
+                                    <h3 className="font-bold text-lg group-hover:text-teal-700 transition-colors uppercase tracking-tight">{rx.patients?.name}</h3>
                                     <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">{new Date(rx.created_at).toLocaleDateString()}</p>
                                 </div>
                                 <div className="text-right">
@@ -351,14 +443,17 @@ export default function PrescriptionsPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-300 uppercase mb-1">Diagnosis</p>
-                                    <p className="text-sm font-medium">{rx.diagnosis}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Diagnosis</p>
+                                    <p className="text-sm font-bold text-slate-700">{rx.diagnosis}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-300 uppercase mb-1">Prescription</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Prescription</p>
                                     <p className="text-sm font-bold text-teal-700">
                                         {rx.medication_name || (rx.medications && rx.medications[0]?.name)}
                                         <span className="text-slate-400 ml-2 font-medium">{rx.dosage || (rx.medications && rx.medications[0]?.dosage)}</span>
+                                        {rx.medications && rx.medications.length > 1 && (
+                                            <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded ml-2">+{rx.medications.length - 1} more</span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -368,7 +463,105 @@ export default function PrescriptionsPage() {
                         <div className="text-center py-12 text-slate-400">No records found</div>
                     )}
                 </div>
-            </main>
-        </div>
+
+                {/* View Prescription Modal */}
+                {
+                    selectedPrescription && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedPrescription(null)} />
+                            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden">
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                                    <div>
+                                        <h2 className="text-lg font-black text-[#4a2b3d] uppercase tracking-tight">Prescription Details</h2>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                            Date: {new Date(selectedPrescription.created_at).toLocaleDateString('en-GB')}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleDeletePrescription(selectedPrescription.id)}
+                                            className="p-2 hover:bg-rose-50 rounded-full transition-all text-rose-500 group/del"
+                                            title="Delete Prescription"
+                                        >
+                                            <Trash2 size={20} className="group-hover/del:scale-110" />
+                                        </button>
+                                        <button onClick={() => setSelectedPrescription(null)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400">
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+                                    {/* Patient Info */}
+                                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-xl flex items-center justify-center font-black text-xl">
+                                                {selectedPrescription.patients?.name?.[0] || 'P'}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-slate-900 uppercase tracking-tight">{selectedPrescription.patients?.name}</h3>
+                                                <p className="text-xs font-bold text-slate-500">{selectedPrescription.patients?.phone || 'No phone provided'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t border-slate-200">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diagnosis</p>
+                                            <p className="text-sm font-bold text-slate-800">{selectedPrescription.diagnosis}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Medications */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Medications</h4>
+                                        {(selectedPrescription.medications || []).map((med, idx) => (
+                                            <div key={idx} className="bg-white border-2 border-slate-100 rounded-2xl p-5 hover:border-teal-100 transition-colors">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <h5 className="font-black text-slate-900 uppercase text-sm tracking-tight">{med.name}</h5>
+                                                    <span className="text-[10px] bg-teal-50 text-teal-700 px-2 py-1 rounded-lg font-black uppercase tracking-widest">
+                                                        {med.frequency}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-slate-50 p-3 rounded-xl">
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Dosage</p>
+                                                        <p className="text-xs font-black text-slate-700">{med.dosage}</p>
+                                                    </div>
+                                                    <div className="bg-slate-50 p-3 rounded-xl">
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Duration</p>
+                                                        <p className="text-xs font-black text-slate-700">{med.duration}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 flex items-center gap-2 text-slate-500">
+                                                    <FileText size={14} className="text-teal-600" />
+                                                    <p className="text-xs font-bold italic">{med.instructions}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Notes */}
+                                    {selectedPrescription.notes && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doctor's Notes</h4>
+                                            <div className="bg-plum-50/50 border border-plum-100 rounded-2xl p-5">
+                                                <p className="text-sm text-slate-700 font-medium leading-relaxed">{selectedPrescription.notes}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-6 border-t border-slate-100 shrink-0">
+                                    <button
+                                        onClick={() => setSelectedPrescription(null)}
+                                        className="w-full py-4 bg-[#4a2b3d] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-opacity-90 transition-all shadow-lg"
+                                    >
+                                        Close Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+            </main >
+        </div >
     );
 }

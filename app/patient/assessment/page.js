@@ -322,31 +322,34 @@ export default function AssessmentPage() {
               {currentQ.label}
             </h2>
             {/* Audio Playback Button */}
+            {/* Audio Playback Button */}
             <button
               onClick={() => {
-                if (audioRef.current) {
+                if ('speechSynthesis' in window) {
                   if (isPlaying) {
-                    audioRef.current.pause();
+                    window.speechSynthesis.cancel();
                     setIsPlaying(false);
                   } else {
-                    audioRef.current.play();
+                    const textToRead = `${currentQ.label}. ${currentQ.subLabel || ''}`;
+                    const utterance = new SpeechSynthesisUtterance(textToRead);
+                    utterance.onend = () => setIsPlaying(false);
+                    // Try to find a good voice
+                    const voices = window.speechSynthesis.getVoices();
+                    // Prefer Google UK English Female or similar if available, otherwise default
+                    // utterance.voice = voices.find(v => v.name.includes('Female')) || voices[0]; 
+                    // Keeping default for reliability
+                    window.speechSynthesis.speak(utterance);
                     setIsPlaying(true);
                   }
+                } else {
+                  toast.error('Text-to-speech not supported in this browser');
                 }
               }}
               className="p-4 bg-[#649488] hover:bg-[#527569] text-white rounded-2xl transition-all shadow-lg flex-shrink-0"
-              title="Listen to question in Hindi"
+              title="Read Question"
             >
               {isPlaying ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
             </button>
-            {/* Hidden Audio Element */}
-            <audio
-              ref={audioRef}
-              onEnded={() => setIsPlaying(false)}
-              onPause={() => setIsPlaying(false)}
-            >
-              <source src={`/audio/assessment/question-${currentQuestionIndex + 1}.mp3`} type="audio/mpeg" />
-            </audio>
           </div>
 
           {currentQ.subLabel && (

@@ -29,6 +29,7 @@ export default function DoctorSidebar() {
         { name: 'OPD & Appointments', icon: Calendar, href: '/doctor/opd' },
         { name: 'Prescriptions', icon: FileText, href: '/doctor/prescriptions' },
         { name: 'Telemedicine', icon: Video, href: '/doctor/telemedicine' },
+        { name: 'Profile & Schedule', icon: User, href: '/doctor/profile' },
     ];
 
     return (

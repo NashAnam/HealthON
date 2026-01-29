@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, ArrowLeft, AlertCircle, Video, X, MapPin, User, Stethoscope, FileText, Info } from 'lucide-react';
-import { getCurrentUser, getPatient, getAppointments, supabase } from '@/lib/supabase';
+import { getCurrentUser, getPatient, getAppointments, supabase, getDoctorById } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import { useSidebar } from '@/lib/SidebarContext';
 import { MoreVertical } from 'lucide-react';
@@ -16,6 +16,9 @@ export default function AppointmentsPage() {
     const { toggle } = useSidebar();
     const [isRescheduling, setIsRescheduling] = useState(false);
     const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' });
+    const [selectedDoctor, setSelectedDoctor] = useState(null);
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -31,10 +34,11 @@ export default function AppointmentsPage() {
 
             const { data: patientData } = await getPatient(user.id);
             if (!patientData) {
-                router.push('/complete-profile');
+                // No profile, redirect to login
+                localStorage.setItem('redirect_after_login', window.location.pathname);
+                router.push('/login');
                 return;
             }
-
             setPatient(patientData);
 
             // Fetch appointments and lab bookings
@@ -69,13 +73,60 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleRescheduleClick = (apt) => {
+    const handleRescheduleClick = async (apt) => {
         setSelectedAppointment(apt);
         setIsRescheduling(true);
         setRescheduleData({
             date: apt.appointment_date ? apt.appointment_date.split('T')[0] : '', // Format date for input type="date"
             time: apt.appointment_time || ''
         });
+
+        if (apt.doctor_id) {
+            setLoadingSlots(true);
+            const { data: doc } = await getDoctorById(apt.doctor_id);
+            setSelectedDoctor(doc);
+            if (doc) {
+                generateTimeSlots(doc.timings);
+            }
+            setLoadingSlots(false);
+        }
+    };
+
+    const generateTimeSlots = (timingsStr) => {
+        if (!timingsStr) {
+            setAvailableSlots(['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '04:00 PM', '06:00 PM']);
+            return;
+        }
+
+        // Simple parser for "09:00 AM - 05:00 PM"
+        const slots = [];
+        try {
+            const [startPart, endPart] = timingsStr.split('-').map(s => s.trim());
+
+            const parseTime = (t) => {
+                const [time, modifier] = t.split(' ');
+                let [hours, minutes] = time.split(':').map(Number);
+                if (modifier === 'PM' && hours < 12) hours += 12;
+                if (modifier === 'AM' && hours === 12) hours = 0;
+                return hours * 60 + (minutes || 0);
+            };
+
+            const startTime = parseTime(startPart);
+            const endTime = parseTime(endPart);
+
+            // Generate 30min slots
+            for (let t = startTime; t < endTime; t += 30) {
+                const h = Math.floor(t / 60);
+                const m = t % 60;
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const h12 = h % 12 || 12;
+                slots.push(`${h12}:${m === 0 ? '00' : m} ${ampm}`);
+            }
+            setAvailableSlots(slots);
+        } catch (e) {
+            console.error('Error parsing timings:', e);
+            setAvailableSlots(['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '04:00 PM', '06:00 PM']);
+        }
     };
 
     const handleCancelAppointment = async (appointmentId) => {
@@ -96,6 +147,22 @@ export default function AppointmentsPage() {
             toast.error('Failed to cancel appointment', { id: tid });
             console.error(error);
         }
+    };
+
+    const checkAvailability = (dateStr) => {
+        if (!selectedDoctor || !selectedDoctor.available_days || !dateStr) return true;
+
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const selectedDate = new Date(dateStr);
+        // Correct for timezone offset to ensure we get the right day
+        const dayIndex = selectedDate.getDay();
+        const selectedDay = days[dayIndex];
+
+        const availableDays = Array.isArray(selectedDoctor.available_days)
+            ? selectedDoctor.available_days
+            : (selectedDoctor.available_days || '').split(',').map(d => d.trim());
+
+        return availableDays.some(d => d.toLowerCase() === selectedDay.toLowerCase());
     };
 
     const confirmReschedule = async () => {
@@ -432,12 +499,19 @@ export default function AppointmentsPage() {
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Scheduled Date</p>
                                         {isRescheduling ? (
-                                            <input
-                                                type="date"
-                                                className="w-full mt-2 p-3 rounded-xl border border-gray-200 font-bold text-slate-700"
-                                                value={rescheduleData.date}
-                                                onChange={e => setRescheduleData({ ...rescheduleData, date: e.target.value })}
-                                            />
+                                            <>
+                                                <input
+                                                    type="date"
+                                                    className="w-full mt-2 p-3 rounded-xl border border-gray-200 font-bold text-slate-700"
+                                                    value={rescheduleData.date}
+                                                    onChange={e => setRescheduleData({ ...rescheduleData, date: e.target.value })}
+                                                />
+                                                {!checkAvailability(rescheduleData.date) && (
+                                                    <p className="mt-2 text-[10px] font-bold text-rose-500 uppercase tracking-widest flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> Doctor may not be available on this day
+                                                    </p>
+                                                )}
+                                            </>
                                         ) : (
                                             <p className="text-base font-black text-slate-900 leading-none mt-1">
                                                 {selectedAppointment.appointment_date ? new Date(selectedAppointment.appointment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'}
@@ -453,12 +527,32 @@ export default function AppointmentsPage() {
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Time Slot</p>
                                         {isRescheduling ? (
-                                            <input
-                                                type="time"
-                                                className="w-full mt-2 p-3 rounded-xl border border-gray-200 font-bold text-slate-700"
-                                                value={rescheduleData.time}
-                                                onChange={e => setRescheduleData({ ...rescheduleData, time: e.target.value })}
-                                            />
+                                            <div className="mt-4">
+                                                {loadingSlots ? (
+                                                    <div className="flex justify-center py-4">
+                                                        <div className="w-6 h-6 border-2 border-[#5a8a7a] border-t-transparent rounded-full animate-spin"></div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                                        {availableSlots.length > 0 ? (
+                                                            availableSlots.map((slot) => (
+                                                                <button
+                                                                    key={slot}
+                                                                    onClick={() => setRescheduleData({ ...rescheduleData, time: slot })}
+                                                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${rescheduleData.time === slot
+                                                                        ? 'bg-[#5a8a7a] text-white shadow-lg shadow-[#5a8a7a]/20'
+                                                                        : 'bg-white border border-gray-100 text-gray-400 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    {slot}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <p className="text-xs font-bold text-gray-400">No slots available for this time range.</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
                                             <p className="text-base font-black text-[#5a8a7a] leading-none mt-1">
                                                 {selectedAppointment.appointment_time || '10:00 AM'}

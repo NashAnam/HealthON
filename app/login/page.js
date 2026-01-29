@@ -27,17 +27,14 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
+      // Store patient data in Supabase after OAuth
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('temp_patient_data', JSON.stringify(formData));
-        // Get the redirect path if it exists
-        const redirectPath = sessionStorage.getItem('redirect_after_login');
-        if (redirectPath) {
-          // Store it in a different key so we can use it after OAuth redirect
-          sessionStorage.setItem('post_auth_redirect', redirectPath);
-          sessionStorage.removeItem('redirect_after_login');
-        }
+        // Store temporarily in localStorage (will be used after OAuth redirect)
+        localStorage.setItem('pending_patient_data', JSON.stringify(formData));
       }
-      const { error } = await signInWithGoogle();
+
+      // Redirect to patient dashboard after OAuth
+      const { error } = await signInWithGoogle(`${window.location.origin}/patient/dashboard`);
       if (error) throw error;
     } catch (err) {
       toast.error(err.message);
@@ -53,7 +50,7 @@ export default function LoginPage() {
         <span className="text-2xl font-black tracking-tight text-[#1a1a2e]">HealthON</span>
       </div>
 
-      <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-[32px] shadow-2xl p-10 relative z-10 text-center border border-white/50">
+      <div className="max-w-md w-full bg-white/80 backdrop-blur-lg rounded-[32px] shadow-2xl p-6 md:p-10 relative z-10 text-center border border-white/50">
 
         <div className="w-20 h-20 bg-[#602E5A] rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-purple-900/20 p-4">
           <Activity className="w-full h-full text-white" />

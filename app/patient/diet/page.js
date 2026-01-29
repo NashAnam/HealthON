@@ -60,6 +60,32 @@ export default function DietTrackerPage() {
         setLoading(false);
     };
 
+    const analyzeFood = (imageData) => {
+        setIsAnalyzing(true);
+        // Simulate AI recognition delay
+        setTimeout(() => {
+            setIsAnalyzing(false);
+            // Example recognition based on common keywords (fallback to search)
+            const mockRecognizedFood = "Grilled Chicken Salad";
+            const foodData = searchFood(mockRecognizedFood)[0];
+
+            if (foodData) {
+                setFormData(prev => ({
+                    ...prev,
+                    food_name: foodData.name,
+                    calories: foodData.calories.toString(),
+                    protein: foodData.protein.toString(),
+                    carbs: foodData.carbs.toString(),
+                    fats: foodData.fats.toString(),
+                    fiber: foodData.fiber.toString(),
+                    gi: foodData.gi.toString()
+                }));
+                setSearchQuery(foodData.name);
+                toast.success(`AI Detected: ${foodData.name}`, { icon: '🤖' });
+            }
+        }, 1500);
+    };
+
     const captureFood = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({

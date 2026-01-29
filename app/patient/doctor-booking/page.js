@@ -108,6 +108,58 @@ export default function DoctorBookingPage() {
       return;
     }
 
+    // Validate doctor availability
+    if (selectedDoctor.available_days && selectedDoctor.timings) {
+      const selectedDate = new Date(bookingData.appointment_date);
+      const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+      // Check if doctor is available on selected day
+      let availableDays = [];
+      if (Array.isArray(selectedDoctor.available_days)) {
+        availableDays = selectedDoctor.available_days;
+      } else if (typeof selectedDoctor.available_days === 'string') {
+        // Handle various string formats: "MonTueWed" or "Mon, Tue, Wed"
+        if (selectedDoctor.available_days.includes(',')) {
+          availableDays = selectedDoctor.available_days.split(',').map(d => d.trim());
+        } else {
+          // Try to match standard day names
+          const matches = selectedDoctor.available_days.match(/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/g);
+          if (matches) {
+            availableDays = matches;
+          } else {
+            // Fallback for mashed string like "MonTueWed"
+            availableDays = selectedDoctor.available_days.replace(/([A-Z])/g, ' $1').trim().split(' ');
+          }
+        }
+      }
+
+      // Normalize day names for comparison (Case Insensitive)
+      const selectedDayShort = dayOfWeek.substring(0, 3).toLowerCase(); // "mon"
+
+      const isAvailable = availableDays.some(d => {
+        // specific check for "thurs" -> "thu"
+        let cleanD = d.toLowerCase().trim();
+        if (cleanD.startsWith('thur')) cleanD = 'thu';
+        const dShort = cleanD.substring(0, 3);
+        return dShort === selectedDayShort;
+      });
+
+      if (!isAvailable) {
+        toast.error(`Dr. ${selectedDoctor.name} is not available on ${dayOfWeek}. Available: ${availableDays.join(', ')}`);
+        return;
+      }
+
+      // Check if time is within doctor's timings
+      // Handle "10am-5pm" or "10:00-17:00" formats loosely if needed, 
+      // but assuming standard HH:MM - HH:MM or similar from database for now.
+      // If timings are just a string description, we might skip strict validation or just warn.
+      if (selectedDoctor.timings && selectedDoctor.timings.includes('-')) {
+        // Simple string check for now 
+        // Re-implementing strict check might be complex without standardizing DB format
+        // For now, let's rely on user reading the displayed timings which we will add to the modal
+      }
+    }
+
     try {
       const { data: appointment, error: bookingError } = await createAppointment({
         patient_id: patient.id,
@@ -273,25 +325,40 @@ export default function DoctorBookingPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                {doctor.address && (
                   <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
-                      <Star size={16} fill="currentColor" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+                      <MapPin size={16} />
+                    </div>
+                    <span className="line-clamp-2 text-xs font-medium">{doctor.address}</span>
+                  </div>
+                )}
+                {doctor.available_days && (
+                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                    <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500">
+                      <Calendar size={16} />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-900">{doctor.experience || '5+'} Years</p>
-                      <p className="text-xs text-gray-400">Experience</p>
+                      <p className="font-bold text-gray-900 text-xs">
+                        {Array.isArray(doctor.available_days)
+                          ? doctor.available_days.join(', ')
+                          : doctor.available_days.replace(/([A-Z])/g, ' $1').trim()}
+                      </p>
+                      <p className="text-xs text-gray-400">Available Days</p>
                     </div>
                   </div>
-                  {doctor.address && (
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
-                        <MapPin size={16} />
-                      </div>
-                      <span className="line-clamp-2 text-xs font-medium">{doctor.address}</span>
+                )}
+                {doctor.timings && (
+                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                    <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center text-teal-500">
+                      <Clock size={16} />
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-xs">{doctor.timings}</p>
+                      <p className="text-xs text-gray-400">Timings</p>
+                    </div>
+                  </div>
+                )}
 
                 <button
                   onClick={() => {
@@ -314,28 +381,169 @@ export default function DoctorBookingPage() {
               <div className="p-6 border-b border-gray-100 bg-gray-50/50">
                 <h2 className="text-xl font-bold text-gray-900">Book Appointment</h2>
                 <p className="text-sm text-gray-500">{selectedDoctor.name?.toLowerCase().startsWith('dr') ? selectedDoctor.name : `Dr. ${selectedDoctor.name}`} • {selectedDoctor.specialty}</p>
+
+                {/* Show Availability Here */}
+                <div className="mt-4 flex gap-4">
+                  <div className="bg-purple-50 px-3 py-2 rounded-xl border border-purple-100 flex-1">
+                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">Days</p>
+                    <p className="text-xs font-bold text-purple-900">
+                      {Array.isArray(selectedDoctor.available_days)
+                        ? selectedDoctor.available_days.join(', ')
+                        : selectedDoctor.available_days}
+                    </p>
+                  </div>
+                  <div className="bg-teal-50 px-3 py-2 rounded-xl border border-teal-100 flex-1">
+                    <p className="text-[10px] font-black text-teal-400 uppercase tracking-widest mb-1">Time</p>
+                    <p className="text-xs font-bold text-teal-900">{selectedDoctor.timings || 'Contact for timings'}</p>
+                  </div>
+                </div>
               </div>
 
               <div className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Smart Date Selection */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Date</label>
-                    <input
-                      type="date"
-                      value={bookingData.appointment_date}
-                      onChange={(e) => setBookingData({ ...bookingData, appointment_date: e.target.value })}
-                      min={new Date().toLocaleDateString('en-CA')}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] outline-none text-sm font-medium"
-                    />
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Select Date</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(() => {
+                        // Helper to get next available dates
+                        const getNextAvailableDates = () => {
+                          const dates = [];
+                          const today = new Date();
+                          let daysFound = 0;
+                          let dayOffset = 0;
+
+                          // Parse available days from doctor data
+                          let validDays = [];
+                          if (Array.isArray(selectedDoctor.available_days)) {
+                            validDays = selectedDoctor.available_days;
+                          } else if (typeof selectedDoctor.available_days === 'string') {
+                            // Clean and parse string
+                            const cleanStr = selectedDoctor.available_days.replace(/([A-Z])/g, ' $1').trim();
+                            // Split by comma or space
+                            const parts = cleanStr.includes(',') ? cleanStr.split(',') : cleanStr.split(' ');
+
+                            validDays = parts.map(p => {
+                              let d = p.trim().toLowerCase();
+                              if (d.startsWith('mon')) return 'monday';
+                              if (d.startsWith('tue')) return 'tuesday';
+                              if (d.startsWith('wed')) return 'wednesday';
+                              if (d.startsWith('thu')) return 'thursday';
+                              if (d.startsWith('fri')) return 'friday';
+                              if (d.startsWith('sat')) return 'saturday';
+                              if (d.startsWith('sun')) return 'sunday';
+                              return null;
+                            }).filter(Boolean);
+                          }
+
+                          // If no valid days parsing, fallback to showing next 7 days
+                          if (validDays.length === 0) validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+                          while (daysFound < 6) { // Show next 6 valid slots
+                            const d = new Date(today);
+                            d.setDate(today.getDate() + dayOffset);
+                            const dayName = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+                            // Simple case-insensitive check
+                            const isAvailable = validDays.some(vd => dayName.includes(vd));
+
+                            if (isAvailable) {
+                              dates.push(d);
+                              daysFound++;
+                            }
+                            dayOffset++;
+                            // Safety break
+                            if (dayOffset > 30) break;
+                          }
+                          return dates;
+                        };
+
+                        const availableDates = getNextAvailableDates();
+
+                        return availableDates.map((date) => {
+                          const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                          const isSelected = bookingData.appointment_date === dateStr;
+                          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                          const dayNum = date.getDate();
+                          const month = date.toLocaleDateString('en-US', { month: 'short' });
+
+                          return (
+                            <button
+                              key={dateStr}
+                              onClick={() => setBookingData({ ...bookingData, appointment_date: dateStr })}
+                              className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected
+                                  ? 'border-[#4a2b3d] bg-[#4a2b3d] text-white shadow-lg shadow-[#4a2b3d]/20 scale-[1.02]'
+                                  : 'border-slate-100 bg-white text-slate-600 hover:border-[#4a2b3d]/30 hover:bg-slate-50'
+                                }`}
+                            >
+                              <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">{dayName}</span>
+                              <span className="text-lg font-black">{dayNum}</span>
+                              <span className="text-[10px] font-bold opacity-80">{month}</span>
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
+
+                  {/* Time Slot Selection */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Time Slot</label>
-                    <input
-                      type="time"
-                      value={bookingData.appointment_time}
-                      onChange={(e) => setBookingData({ ...bookingData, appointment_time: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4a2b3d]/20 focus:border-[#4a2b3d] outline-none text-sm font-medium"
-                    />
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Select Time</label>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                      {(() => {
+                        // Generate times based on doctor timings (e.g. "6PM - 9PM")
+                        let timeSlots = [];
+                        let startTime = 9; // Default 9 AM
+                        let endTime = 17;  // Default 5 PM
+
+                        if (selectedDoctor.timings) {
+                          // Extremely basic parsing logic for "6PM - 9PM" or "10:00 - 17:00"
+                          const times = selectedDoctor.timings.toUpperCase().split('-').map(t => t.trim());
+                          if (times.length === 2) {
+                            const parseTime = (tStr) => {
+                              let h = parseInt(tStr);
+                              if (tStr.includes('PM') && h !== 12) h += 12;
+                              if (tStr.includes('AM') && h === 12) h = 0;
+                              return h;
+                            };
+                            const s = parseTime(times[0]);
+                            const e = parseTime(times[1]);
+                            if (!isNaN(s) && !isNaN(e)) {
+                              startTime = s;
+                              endTime = e;
+                            }
+                          }
+                        }
+
+                        // Generate 30 min slots
+                        for (let h = startTime; h < endTime; h++) {
+                          for (let m of ['00', '30']) {
+                            // Format time for display (12h) and value (24h)
+                            const date = new Date();
+                            date.setHours(h);
+                            date.setMinutes(parseInt(m));
+
+                            const timeValue = `${h.toString().padStart(2, '0')}:${m}`;
+                            const timeDisplay = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+                            timeSlots.push({ value: timeValue, label: timeDisplay });
+                          }
+                        }
+
+                        return timeSlots.map((slot) => (
+                          <button
+                            key={slot.value}
+                            onClick={() => setBookingData({ ...bookingData, appointment_time: slot.value })}
+                            className={`py-2 px-1 rounded-lg text-xs font-bold border transition-all ${bookingData.appointment_time === slot.value
+                                ? 'bg-[#5a8a7a] text-white border-[#5a8a7a]'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-[#5a8a7a]'
+                              }`}
+                          >
+                            {slot.label}
+                          </button>
+                        ));
+                      })()}
+                    </div>
                   </div>
                 </div>
 

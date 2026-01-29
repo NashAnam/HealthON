@@ -25,10 +25,11 @@ export default function PrescriptionsPage() {
 
             const { data: patientData } = await getPatient(user.id);
             if (!patientData) {
-                router.push('/complete-profile');
+                // No profile, redirect to login
+                localStorage.setItem('redirect_after_login', window.location.pathname);
+                router.push('/login');
                 return;
             }
-
             setPatient(patientData);
 
             // Fetch prescriptions

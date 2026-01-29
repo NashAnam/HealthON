@@ -154,6 +154,103 @@ export default function WeeklyProgressReport() {
         }
     };
 
+    const handleDownloadReport = () => {
+        if (!patient) {
+            toast.error('Patient data not loaded');
+            return;
+        }
+
+        const tid = toast.loading('Generating report...');
+
+        try {
+            let report = `# HealthOn Weekly Medical Report\n`;
+            report += `**Patient Name:** ${patient.name}\n`;
+            report += `**Period:** ${new Date(new Date().setDate(new Date().getDate() - 7)).toLocaleDateString()} - ${new Date().toLocaleDateString()}\n\n`;
+            report += `---\n\n`;
+
+            // Vitals
+            report += `## 📊 Vitals Summary\n`;
+            report += `| Metric | Average | Status |\n`;
+            report += `| :--- | :--- | :--- |\n`;
+
+            const avgHr = vitalsData.filter(d => d.hr).length > 0
+                ? Math.round(vitalsData.filter(d => d.hr).reduce((sum, d) => sum + d.hr, 0) / vitalsData.filter(d => d.hr).length)
+                : 'N/A';
+            report += `| **Heart Rate** | ${avgHr} bpm | ${avgHr !== 'N/A' ? (avgHr < 100 ? 'Normal' : 'Elevated') : '--'} |\n`;
+
+            const avgSys = vitalsData.filter(d => d.sys).length > 0
+                ? Math.round(vitalsData.filter(d => d.sys).reduce((sum, d) => sum + d.sys, 0) / vitalsData.filter(d => d.sys).length)
+                : 'N/A';
+            const avgDia = vitalsData.filter(d => d.dia).length > 0
+                ? Math.round(vitalsData.filter(d => d.dia).reduce((sum, d) => sum + d.dia, 0) / vitalsData.filter(d => d.dia).length)
+                : 'N/A';
+            report += `| **Blood Pressure** | ${avgSys}/${avgDia} mmHg | ${avgSys !== 'N/A' ? (avgSys < 130 ? 'Stable' : 'High') : '--'} |\n`;
+
+            const avgSugar = vitalsData.filter(d => d.sugar).length > 0
+                ? Math.round(vitalsData.filter(d => d.sugar).reduce((sum, d) => sum + d.sugar, 0) / vitalsData.filter(d => d.sugar).length)
+                : 'N/A';
+            report += `| **Blood Glucose** | ${avgSugar} mg/dL | ${avgSugar !== 'N/A' ? (avgSugar < 140 ? 'Good Control' : 'Check Log') : '--'} |\n\n`;
+
+            report += `---\n\n`;
+
+            // Diet
+            report += `## 🍎 Diet & Lifestyle\n`;
+            report += `* **Total Meals Logged:** ${dietLogs.length}\n`;
+            report += `* **Recent Entries:** ${dietLogs.slice(0, 5).map(l => l.value || l.notes).join(', ') || 'None'}\n\n`;
+
+            report += `---\n\n`;
+
+            // Meds
+            report += `## 💊 Medication Adherence\n`;
+            report += `* **Total Doses Logged:** ${medicationLogs.length}\n`;
+            report += `* **Recent Meds:** ${[...new Set(medicationLogs.map(l => l.value))].join(', ') || 'None'}\n\n`;
+
+            report += `---\n\n`;
+
+            // Risk Scores
+            report += `## ⚠️ Health Risk Scores (AI Insight)\n`;
+            riskScores.forEach(rs => {
+                const label = rs.score <= 3 ? 'Low' : rs.score <= 6 ? 'Moderate' : 'High';
+                report += `* **${rs.disease}:** ${rs.score}/10 (${label})\n`;
+            });
+            if (riskScores.length === 0) report += `* No risk assessments found for this period.\n`;
+            report += `\n---\n\n`;
+
+            // Lab Reports
+            report += `## 🧪 Lab Reports\n`;
+            labReports.forEach(lab => {
+                report += `* **${lab.test_type || 'Lab Test'}:** ${new Date(lab.test_date || lab.created_at).toLocaleDateString()}${lab.report_url ? ' (Report Available)' : ''}\n`;
+            });
+            if (labReports.length === 0) report += `* No lab tests reported this week.\n`;
+            report += `\n---\n\n`;
+
+            // Symptoms
+            report += `## 🩺 Symptoms\n`;
+            symptoms.forEach(s => {
+                report += `* **${s.value}:** ${s.notes} (${new Date(s.created_at).toLocaleDateString()})\n`;
+            });
+            if (symptoms.length === 0) report += `* No symptoms reported this week.\n`;
+
+            report += `\n***Disclaimer:** This report is for informational purposes only and does not replace professional medical advice. Always consult your doctor for diagnosis or treatment.*\n`;
+
+            // Create and trigger download
+            const blob = new Blob([report], { type: 'text/markdown' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `HealthOn_Report_${patient.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.md`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            toast.success('Report downloaded successfully!', { id: tid });
+        } catch (error) {
+            console.error('Download report error:', error);
+            toast.error('Failed to generate report', { id: tid });
+        }
+    };
+
     const getRiskColor = (score) => {
         if (score <= 3) return 'text-green-600 bg-green-50';
         if (score <= 6) return 'text-yellow-600 bg-yellow-50';
@@ -189,7 +286,7 @@ export default function WeeklyProgressReport() {
                         <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Weekly Report</h1>
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Last 7 Days</p>
                     </div>
-                    <button onClick={() => toast.success('Report downloaded!')} className="p-2 hover:bg-gray-100 rounded-2xl transition-all">
+                    <button onClick={handleDownloadReport} className="p-2 hover:bg-gray-100 rounded-2xl transition-all">
                         <Download className="w-6 h-6 text-slate-400" />
                     </button>
                 </div>

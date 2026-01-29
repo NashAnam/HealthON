@@ -26,9 +26,10 @@ export default function RemindersPage() {
 
       const { data: patientData } = await getPatient(user.id);
       if (!patientData) {
-        console.error('Patient record missing');
-        // Handle gracefully, maybe redirect to complete-profile
-        return setLoading(false);
+        // No profile, redirect to login
+        localStorage.setItem('redirect_after_login', window.location.pathname);
+        router.push('/login');
+        return;
       }
       setPatient(patientData);
 

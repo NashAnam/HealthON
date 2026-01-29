@@ -37,13 +37,50 @@ export default function CompleteProfilePage() {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '', phone: '', qualification: '', experience: '', available_days: '', timings: '',
-    address: '', license_number: '', tests_list: '', report_delivery_method: '',
-    specialty: '', fee: '', labType: '', accreditations: ''
+    address: '', tests_list: '', report_delivery_method: '',
+    specialty: '', fee: '', labType: ''
   });
 
   useEffect(() => {
-    checkProfile();
-    loadTemporaryData();
+    const handlePatientFlow = async () => {
+      // 1. Check for temp patient data from login
+      if (typeof window !== 'undefined') {
+        const tempPatientStr = sessionStorage.getItem('temp_patient_data');
+        if (tempPatientStr) {
+          try {
+            const user = await getCurrentUser();
+            if (user) {
+              const patientData = JSON.parse(tempPatientStr);
+              // Create patient profile
+              await createPatient({
+                user_id: user.id,
+                name: patientData.name,
+                phone: patientData.phone,
+                age: patientData.age,
+                email: user.email
+              });
+
+              // Clear temp data
+              sessionStorage.removeItem('temp_patient_data');
+
+              // Redirect to patient dashboard
+              const redirectPath = sessionStorage.getItem('post_auth_redirect') || '/patient/dashboard';
+              sessionStorage.removeItem('post_auth_redirect');
+              router.replace(redirectPath);
+              return;
+            }
+          } catch (err) {
+            console.error('Error creating patient profile:', err);
+            toast.error('Failed to create profile. Please try again.');
+          }
+        }
+      }
+
+      checkProfile();
+      loadTemporaryData();
+    };
+
+    handlePatientFlow();
   }, []);
 
   const loadTemporaryData = () => {
@@ -56,7 +93,6 @@ export default function CompleteProfilePage() {
       }
       if (savedType) {
         setUserType(savedType);
-        // We keep expert_type to know which profile to create after login
       }
     }
   };
@@ -76,22 +112,19 @@ export default function CompleteProfilePage() {
           getPhysiotherapist(currentUser.id)
         ]);
 
-        // NOTE: Commented out patient redirect to allow users to upgrade/select other roles if needed
-        /*
         if (patientRes.data) {
           if (typeof window !== 'undefined') {
-            const redirectPath = sessionStorage.getItem('post_auth_redirect');
-            if (redirectPath) {
-              sessionStorage.removeItem('post_auth_redirect');
-              router.replace(redirectPath);
-              return;
-            }
+            // If we're on complete-profile but acts as a patient, maybe we should redirect?
+            // Unless they explicitly want to become an expert?
+            // For now, if they have a patient profile, we assume they are a logging-in patient
+            // UNLESS they clicked "Join Team" which wouldn't have set temp_patient_data
+
+            // Check if they just came from Login Page (Login as Patient)
+            // We can infer this if they hit this page without specific expert intent
+            router.replace('/patient/dashboard');
+            return;
           }
-          // Only redirect if we are sure? 
-          // router.replace('/patient/dashboard');
-          // return;
         }
-        */
 
         if (doctorRes.data) {
           router.replace('/doctor/dashboard');
@@ -123,9 +156,12 @@ export default function CompleteProfilePage() {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('expert_type', type);
         sessionStorage.setItem('temp_expert_form', JSON.stringify(formData));
+
+        // Explicitly redirect back to valid complete-profile page
+        const redirectUrl = `${window.location.origin}/complete-profile`;
+        const { error } = await signInWithGoogle(redirectUrl);
+        if (error) throw error;
       }
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
     } catch (err) {
       toast.error(err.message);
       setSubmitting(false);
@@ -159,14 +195,18 @@ export default function CompleteProfilePage() {
         address: formData.address,
       };
 
-      const daysInput = formData.available_days || 'Mon-Sat';
-      let processedDays;
-      if (daysInput.toLowerCase().includes('-')) {
-        // Handle range like Mon-Sat
-        processedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      let processedDays = [];
+      if (Array.isArray(formData.available_days)) {
+        processedDays = formData.available_days;
       } else {
-        // Handle comma separated list
-        processedDays = daysInput.split(',').map(d => d.trim()).filter(Boolean);
+        const daysInput = formData.available_days || 'Mon-Sat';
+        if (daysInput.toLowerCase().includes('-')) {
+          // Handle range like Mon-Sat
+          processedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        } else {
+          // Handle comma separated list
+          processedDays = daysInput.split(',').map(d => d.trim()).filter(Boolean);
+        }
       }
 
       if (userType === 'doctor') {
@@ -182,11 +222,8 @@ export default function CompleteProfilePage() {
       } else if (userType === 'lab') {
         result = await createLab({
           ...profileData,
-          license_number: formData.license_number,
           tests_list: formData.tests_list,
-          report_delivery_method: formData.report_delivery_method,
-          lab_type: formData.labType,
-          accreditations: formData.accreditations
+          report_delivery_method: formData.report_delivery_method
         });
       } else if (userType === 'nutritionist') {
         result = await createNutritionist({
@@ -247,7 +284,7 @@ export default function CompleteProfilePage() {
       </div>
 
       <div className="max-w-4xl w-full bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 mt-16">
-        <div className="p-10 md:p-14 bg-white max-h-[85vh] overflow-y-auto">
+        <div className="p-6 md:p-14 bg-white max-h-[85vh] overflow-y-auto">
           {!userType ? (
             <div className="h-full flex flex-col justify-center">
               <div className="text-center mb-12">
@@ -277,8 +314,8 @@ export default function CompleteProfilePage() {
                     setUserType(null);
                     setFormData({
                       name: '', phone: '', qualification: '', experience: '', available_days: '', timings: '',
-                      address: '', license_number: '', tests_list: '', report_delivery_method: '',
-                      specialty: '', fee: '', bio: '', labType: '', accreditations: ''
+                      address: '', tests_list: '', report_delivery_method: '',
+                      specialty: '', fee: '', bio: '', labType: ''
                     });
                   }}
                   className="mb-6 flex items-center gap-2 text-slate-500 hover:text-[#602E5A] transition-colors text-sm font-bold uppercase tracking-wider"
@@ -303,13 +340,10 @@ export default function CompleteProfilePage() {
                     <InputField
                       icon={Phone}
                       label="Phone Number"
-                      type="tel"
+                      type="text"
                       placeholder="10-digit mobile"
                       value={formData.phone}
-                      onChange={e => {
-                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                        setFormData({ ...formData, phone: val });
-                      }}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     />
                   </div>
 
@@ -332,8 +366,14 @@ export default function CompleteProfilePage() {
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-6">
-                        <InputField icon={Calendar} label="Available Days" placeholder="e.g. Mon-Fri" value={formData.available_days} onChange={e => setFormData({ ...formData, available_days: e.target.value })} />
-                        <InputField icon={Clock} label="Timings" placeholder="e.g. 9 AM - 5 PM" value={formData.timings} onChange={e => setFormData({ ...formData, timings: e.target.value })} />
+                        <DaySelector
+                          value={formData.available_days}
+                          onChange={days => setFormData({ ...formData, available_days: days })}
+                        />
+                        <TimeRangeSelector
+                          value={formData.timings}
+                          onChange={time => setFormData({ ...formData, timings: time })}
+                        />
                       </div>
                       <InputField icon={MapPin} label="Address" placeholder="Clinic Address" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
 
@@ -343,29 +383,25 @@ export default function CompleteProfilePage() {
                   {userType === 'lab' && (
                     <>
                       <InputField icon={MapPin} label="Lab Address" placeholder="City" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <InputField icon={FileText} label="License Number" placeholder="Registration ID" value={formData.license_number} onChange={e => setFormData({ ...formData, license_number: e.target.value })} />
-                        <div className="space-y-2 group">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Lab Type</label>
-                          <div className="relative">
-                            <FlaskConical className="absolute top-4 left-4 h-5 w-5 text-gray-400 z-10" />
-                            <select
-                              className="block w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 focus:border-[#602E5A] font-medium appearance-none"
-                              value={formData.labType}
-                              onChange={(e) => setFormData({ ...formData, labType: e.target.value })}
-                            >
-                              <option value="">Select Type</option>
-                              <option value="Pathology">Pathology</option>
-                              <option value="Radiology">Radiology</option>
-                              <option value="Microbiology">Microbiology</option>
-                              <option value="Biochemistry">Biochemistry</option>
-                              <option value="Multi-specialty">Multi-specialty</option>
-                            </select>
-                          </div>
+                      <div className="space-y-2 group">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Lab Type</label>
+                        <div className="relative">
+                          <FlaskConical className="absolute top-4 left-4 h-5 w-5 text-gray-400 z-10" />
+                          <select
+                            className="block w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 focus:border-[#602E5A] font-medium appearance-none"
+                            value={formData.labType}
+                            onChange={(e) => setFormData({ ...formData, labType: e.target.value })}
+                          >
+                            <option value="">Select Type</option>
+                            <option value="Pathology">Pathology</option>
+                            <option value="Radiology">Radiology</option>
+                            <option value="Microbiology">Microbiology</option>
+                            <option value="Biochemistry">Biochemistry</option>
+                            <option value="Multi-specialty">Multi-specialty</option>
+                          </select>
                         </div>
                       </div>
                       <TextAreaField icon={FileText} label="Tests Offered" placeholder="List of tests available" value={formData.tests_list} onChange={e => setFormData({ ...formData, tests_list: e.target.value })} />
-                      <InputField icon={Award} label="Accreditations" placeholder="e.g. NABL, CAP" value={formData.accreditations} onChange={e => setFormData({ ...formData, accreditations: e.target.value })} />
                       <InputField icon={Truck} label="Report Delivery" placeholder="e.g. Email, Physical" value={formData.report_delivery_method} onChange={e => setFormData({ ...formData, report_delivery_method: e.target.value })} />
                     </>
                   )}
@@ -439,5 +475,110 @@ const RoleButton = ({ icon: Icon, title, desc, onClick, color }) => {
         <ArrowRight className="w-4 h-4" />
       </div>
     </button>
+  );
+};
+
+const DaySelector = ({ value, onChange }) => {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const fullDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  // Parse current value
+  let selected = [];
+  if (Array.isArray(value)) {
+    selected = value;
+  } else if (typeof value === 'string' && value) {
+    if (value.includes('-')) selected = fullDays; // lazy default for ranges
+    else selected = value.split(',').map(d => d.trim());
+  }
+
+  const toggleDay = (dayFull) => {
+    let newSelected;
+    if (selected.includes(dayFull)) {
+      newSelected = selected.filter(d => d !== dayFull);
+    } else {
+      newSelected = [...selected, dayFull];
+    }
+    // Sort based on week order
+    newSelected.sort((a, b) => fullDays.indexOf(a) - fullDays.indexOf(b));
+    onChange(newSelected);
+  };
+
+  return (
+    <div className="space-y-2 group">
+      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Available Days</label>
+      <div className="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+        {fullDays.map((day, i) => (
+          <button
+            key={day}
+            type="button"
+            onClick={() => toggleDay(day)}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${selected.includes(day)
+              ? 'bg-[#602E5A] text-white border-[#602E5A] shadow-md'
+              : 'bg-white text-gray-500 border-gray-200 hover:border-[#602E5A]/30'
+              }`}
+          >
+            {days[i]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const TimeRangeSelector = ({ value, onChange }) => {
+  const [start, setStart] = useState('09:00');
+  const [end, setEnd] = useState('17:00');
+
+  useEffect(() => {
+    if (value && value.includes('-')) {
+      // Try to parse "9:00 AM - 5:00 PM" back to start/end if possible
+      // This is tricky without strict format, but strict format is what we want to ENFORCE now.
+      // If we can't parse, we just leave defaults.
+    }
+  }, []);
+
+  const handleTimeChange = (newStart, newEnd) => {
+    setStart(newStart);
+    setEnd(newEnd);
+
+    // Format to 12h
+    const format12 = (time24) => {
+      if (!time24) return '';
+      const [h, m] = time24.split(':');
+      const date = new Date();
+      date.setHours(h);
+      date.setMinutes(m);
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    const formatted = `${format12(newStart)} - ${format12(newEnd)}`;
+    onChange(formatted);
+  };
+
+  return (
+    <div className="space-y-2 group">
+      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Timings</label>
+      <div className="flex items-center gap-2 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+        <div className="flex-1">
+          <label className="text-[10px] text-gray-400 font-bold uppercase mb-1 block">Start</label>
+          <input
+            type="time"
+            value={start}
+            onChange={e => handleTimeChange(e.target.value, end)}
+            className="w-full bg-white border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20"
+          />
+        </div>
+        <span className="text-gray-300 font-bold mt-4">-</span>
+        <div className="flex-1">
+          <label className="text-[10px] text-gray-400 font-bold uppercase mb-1 block">End</label>
+          <input
+            type="time"
+            value={end}
+            onChange={e => handleTimeChange(start, e.target.value)}
+            className="w-full bg-white border border-gray-200 rounded-xl px-2 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20"
+          />
+        </div>
+      </div>
+    </div>
   );
 };

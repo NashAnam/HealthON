@@ -237,8 +237,9 @@ export default function DoctorDashboard() {
               </div>
               <motion.div
                 whileHover={{ rotate: 5, scale: 1.1 }}
+                onClick={() => router.push('/doctor/profile')}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg overflow-hidden shrink-0"
+                className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg overflow-hidden shrink-0 cursor-pointer"
               >
                 {doctor?.name?.[0] || 'D'}
               </motion.div>
@@ -271,7 +272,7 @@ export default function DoctorDashboard() {
           </motion.div>
 
           {/* Stats Grid - High Density Mobile */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8 md:mb-10">
             <StatCard label="Appointments" value={stats.todayApts} icon={<Calendar className="w-5 h-5 text-plum-600" />} color="plum" delay={0.1} onClick={() => router.push('/doctor/opd')} />
             <StatCard label="Patients" value={stats.totalPatients} icon={<Users className="w-5 h-5 text-teal-600" />} color="teal" delay={0.2} onClick={() => router.push('/doctor/patients')} />
             <StatCard label="Prescriptions" value={stats.prescriptions} icon={<FileText className="w-5 h-5 text-rose-600" />} color="rose" delay={0.3} onClick={() => router.push('/doctor/prescriptions')} />
@@ -438,7 +439,7 @@ function StatCard({ label, value, icon, color, delay = 0, onClick }) {
       transition={{ delay, duration: 0.5 }}
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
       onClick={onClick}
-      className={`p-4 md:p-6 rounded-2xl md:rounded-[2rem] border ${themes[color]} bg-white shadow-sm hover:shadow-xl hover:shadow-${color}-500/5 transition-all group relative overflow-hidden cursor-pointer`}
+      className={`p-3 md:p-6 rounded-2xl md:rounded-[2rem] border ${themes[color]} bg-white shadow-sm hover:shadow-xl hover:shadow-${color}-500/5 transition-all group relative overflow-hidden cursor-pointer`}
     >
       <div className="flex justify-between items-start mb-2 md:mb-4">
         <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${iconBgs[color]} flex items-center justify-center group-hover:scale-110 transition-transform relative z-10`}>

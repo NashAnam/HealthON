@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heart, Activity, Thermometer, Droplets, Scale, AlertCircle, Calendar, Bell, ChevronRight, FileText, Pill, Stethoscope, Utensils, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCurrentUser, getPatient, getLatestVitals, supabase, getAppointments, getReminders } from '@/lib/supabase';
+import { getCurrentUser, getPatient, getLatestVitals, supabase, getAppointments, getReminders, createPatient } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSidebar } from '@/lib/SidebarContext';
@@ -13,6 +13,7 @@ export default function PatientDashboard() {
     const router = useRouter();
     const { toggle } = useSidebar();
     const [loading, setLoading] = useState(true);
+    const [isGuest, setIsGuest] = useState(false);
     const [user, setUser] = useState(null);
     const [patient, setPatient] = useState(null);
     const [vitals, setVitals] = useState(null);
@@ -30,20 +31,49 @@ export default function PatientDashboard() {
         try {
             const user = await getCurrentUser();
 
-            // Allow guest access - don't redirect if no user
+            // GUEST MODE - No user logged in
             if (!user) {
+                setIsGuest(true);
                 setLoading(false);
                 return;
             }
 
+            // AUTHENTICATED MODE
+            setIsGuest(false);
             setUser(user);
 
-            const { data: patientData } = await getPatient(user.id);
+            // Check for patient profile
+            let { data: patientData } = await getPatient(user.id);
+
+            // If no profile, create from login form data
             if (!patientData) {
-                // User is logged in but has no patient profile
-                // This shouldn't happen in normal flow, but handle it
-                setLoading(false);
-                return;
+                const pendingData = localStorage.getItem('pending_patient_data');
+                if (pendingData) {
+                    try {
+                        const formData = JSON.parse(pendingData);
+                        await createPatient({
+                            user_id: user.id,
+                            name: formData.name,
+                            phone: formData.phone,
+                            age: parseInt(formData.age),
+                            email: user.email,
+                            accepted_terms: false
+                        });
+                        localStorage.removeItem('pending_patient_data');
+
+                        // Reload patient data
+                        const result = await getPatient(user.id);
+                        patientData = result.data;
+                    } catch (err) {
+                        console.error('Error creating patient from pending data:', err);
+                        setLoading(false);
+                        return;
+                    }
+                } else {
+                    // No pending data and no profile - redirect to login
+                    router.push('/login');
+                    return;
+                }
             }
 
             setPatient(patientData);
@@ -51,6 +81,8 @@ export default function PatientDashboard() {
             // Show Terms & Conditions if not accepted
             if (!patientData.accepted_terms) {
                 setShowTerms(true);
+                setLoading(false);
+                return; // Don't load data until T&C accepted
             }
 
             // Fetch data in parallel
@@ -161,13 +193,12 @@ export default function PatientDashboard() {
     };
 
     const handleFeatureClick = (path) => {
-        if (!user) {
-            // Store the intended destination
-            if (typeof window !== 'undefined') {
-                sessionStorage.setItem('redirect_after_login', path);
-            }
+        if (isGuest) {
+            // Store the intended destination and redirect to login
+            localStorage.setItem('redirect_after_login', path);
             router.push('/login');
         } else {
+            // Authenticated user, go directly
             router.push(path);
         }
     };
@@ -179,25 +210,28 @@ export default function PatientDashboard() {
                 console.error('No user found');
                 return;
             }
-
-            console.log('Updating terms for user:', user.id);
-
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('patients')
                 .update({ accepted_terms: true })
-                .eq('user_id', user.id)
-                .select();
-
-            console.log('Update result:', { data, error });
+                .eq('id', patient.id);
 
             if (error) throw error;
 
             setShowTerms(false);
-            setPatient({ ...patient, accepted_terms: true });
-            toast.success('Terms accepted. Welcome to your Health Portal!');
+            toast.success('Welcome to CareOn!');
+
+            // Check for pending redirect and navigate to intended feature
+            const pendingPath = localStorage.getItem('redirect_after_login');
+            if (pendingPath) {
+                localStorage.removeItem('redirect_after_login');
+                router.push(pendingPath);
+            } else {
+                // Reload dashboard to show data
+                window.location.reload();
+            }
         } catch (error) {
-            console.error('Terms acceptance error:', error);
-            toast.error('Failed to save your preference');
+            console.error('Error accepting terms:', error);
+            toast.error('Failed to accept terms. Please try again.');
         }
     };
 
@@ -444,7 +478,7 @@ export default function PatientDashboard() {
             <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8">
 
                 {/* 2x2 Grid for Dashboard Sections */}
-                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8 mb-8">
 
                     {/* 1st: Health Assessment */}
                     <button
@@ -526,7 +560,9 @@ export default function PatientDashboard() {
                                 appointments.map((appt, i) => (
                                     <div key={i} className="bg-emerald-50/50 p-4 rounded-2xl border-l-4 border-[#5a8a7a] flex justify-between items-center group hover:bg-emerald-50 transition-colors">
                                         <div>
-                                            <h4 className="font-bold text-slate-800">{appt.doctors?.name || 'Doctor Visit'}</h4>
+                                            <h4 className="font-bold text-slate-800">
+                                                {appt.doctors?.name ? `Dr. ${appt.doctors.name}` : 'Doctor Visit'}
+                                            </h4>
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
                                                 {appt.appointment_date ? new Date(appt.appointment_date).toLocaleDateString('en-US') : 'N/A'}
                                             </p>
@@ -555,39 +591,7 @@ export default function PatientDashboard() {
                         <div className="space-y-4">
                             {(() => {
                                 const activeReminders = reminders.filter(r => {
-                                    if (!r.is_active) return false;
-
-                                    const now = new Date();
-                                    // Handle ISO date-time strings
-                                    if (r.reminder_time && r.reminder_time.includes('T')) {
-                                        const remDate = new Date(r.reminder_time);
-                                        // If it's a one-time reminder in the past, hide it
-                                        if (remDate < now && (!r.frequency || r.frequency === 'once')) return false;
-                                    }
-
-                                    // Handle recurring or simple time strings (HH:mm)
-                                    if (r.reminder_time) {
-                                        let hour, min;
-                                        if (r.reminder_time.includes('T')) {
-                                            const d = new Date(r.reminder_time);
-                                            hour = d.getHours();
-                                            min = d.getMinutes();
-                                        } else {
-                                            const timeMatch = r.reminder_time.match(/(\d+):(\d+)/);
-                                            if (timeMatch) {
-                                                hour = parseInt(timeMatch[1]);
-                                                min = parseInt(timeMatch[2]);
-                                                if (r.reminder_time.toLowerCase().includes('pm') && hour < 12) hour += 12;
-                                                if (r.reminder_time.toLowerCase().includes('am') && hour === 12) hour = 0;
-                                            }
-                                        }
-
-                                        if (hour !== undefined && min !== undefined) {
-                                            const remTotalMin = hour * 60 + min;
-                                            const nowTotalMin = now.getHours() * 60 + now.getMinutes();
-                                            if (remTotalMin < nowTotalMin) return false;
-                                        }
-                                    }
+                                    // Show all active reminders regardless of time (checklist style)
                                     return true;
                                 });
 

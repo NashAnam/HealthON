@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { X, Clock, Bell } from 'lucide-react';
+import { X, Clock, Bell, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createReminder } from '@/lib/supabase';
 
@@ -10,7 +10,8 @@ export default function ReminderModal({ isOpen, onClose, patientId, onSuccess })
         description: '',
         reminder_time: '',
         reminder_date: '',
-        reminder_type: 'general'
+        reminder_type: 'general',
+        frequency: 'once'
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -31,7 +32,7 @@ export default function ReminderModal({ isOpen, onClose, patientId, onSuccess })
                 title: formData.title,
                 description: formData.description || '',
                 reminder_time: reminderDateTime,
-                frequency: 'daily',
+                frequency: formData.frequency,
                 is_active: true
             });
 
@@ -130,7 +131,25 @@ export default function ReminderModal({ isOpen, onClose, patientId, onSuccess })
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="flex items-center gap-3">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                id="repeatDaily"
+                                checked={formData.frequency === 'daily'}
+                                onChange={(e) => setFormData({ ...formData, frequency: e.target.checked ? 'daily' : 'once' })}
+                                className="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-slate-200 bg-slate-50 transition-all checked:border-[#4a2b3d] checked:bg-[#4a2b3d]"
+                            />
+                            <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100">
+                                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                            </div>
+                        </div>
+                        <label htmlFor="repeatDaily" className="text-xs font-black text-slate-500 uppercase tracking-widest cursor-pointer select-none">
+                            Repeat Daily
+                        </label>
+                    </div>
+
+                    <div className="pt-2">
                         <button
                             type="submit"
                             disabled={submitting}

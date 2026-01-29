@@ -63,7 +63,7 @@ export default function ExpertLoginPage() {
                 <span className="text-2xl font-black tracking-tight text-[#1a1a2e]">HealthON</span>
             </div>
 
-            <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl p-10 text-center relative overflow-hidden">
+            <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl p-6 md:p-10 text-center relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-full blur-3xl -mr-16 -mt-16"></div>
 
                 <div className="w-20 h-20 bg-teal-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-900/10 relative z-10">
