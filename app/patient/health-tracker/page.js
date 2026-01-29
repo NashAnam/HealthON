@@ -581,7 +581,7 @@ export default function HealthTrackerPage() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={toggle}
-                            className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
+                            className="p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
                         >
                             <MoreVertical className="w-6 h-6" />
                         </button>

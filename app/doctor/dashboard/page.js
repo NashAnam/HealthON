@@ -668,6 +668,20 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
       const msg = error?.message || error?.details || 'Unknown error occurred';
       toast.error(`Failed to save prescription: ${msg}`);
     } finally {
+    }
+  };
+
+  const handleCompleteOnly = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
+      if (error) throw error;
+      toast.success('Session marked as completed! ✅');
+      onClose();
+    } catch (error) {
+      console.error('Error completing session:', error);
+      toast.error('Failed to complete session');
+    } finally {
       setIsSaving(false);
     }
   };
@@ -886,8 +900,12 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
             </div>
 
             <div className="bg-white p-8 border-t border-gray-100 flex flex-wrap gap-4 items-center">
-              <button className="px-8 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest ml-auto hover:bg-gray-200 transition-all">
-                Save Draft
+              <button
+                onClick={handleCompleteOnly}
+                disabled={isSaving}
+                className="px-8 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest ml-auto hover:bg-gray-200 transition-all disabled:opacity-50"
+              >
+                Complete Without Prescription
               </button>
               <button
                 onClick={handleSharePrescription}

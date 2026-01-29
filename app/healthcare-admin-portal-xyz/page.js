@@ -119,10 +119,12 @@ export default function AdminDashboard() {
     const handleVerifyDoctor = async (doctorId, doctorName) => {
         setProcessingId(doctorId);
         try {
-            const { error } = await supabase
-                .from('doctors')
-                .update({ verified: true })
-                .eq('id', doctorId);
+            // Updated to use Secure RPC
+            const { error } = await supabase.rpc('admin_verify_user', {
+                target_table: 'doctors',
+                target_id: doctorId,
+                passphrase: passphrase // Send key for verification
+            });
 
             if (error) throw error;
             toast.success('Doctor verified successfully!');
@@ -138,10 +140,11 @@ export default function AdminDashboard() {
     const handleVerifyLab = async (labId, labName) => {
         setProcessingId(labId);
         try {
-            const { error } = await supabase
-                .from('labs')
-                .update({ verified: true })
-                .eq('id', labId);
+            const { error } = await supabase.rpc('admin_verify_user', {
+                target_table: 'labs',
+                target_id: labId,
+                passphrase: passphrase
+            });
 
             if (error) throw error;
             toast.success('Lab verified successfully!');
@@ -156,7 +159,11 @@ export default function AdminDashboard() {
     const handleVerifyNutritionist = async (id) => {
         setProcessingId(id);
         try {
-            const { error } = await supabase.from('nutritionists').update({ verified: true }).eq('id', id);
+            const { error } = await supabase.rpc('admin_verify_user', {
+                target_table: 'nutritionists',
+                target_id: id,
+                passphrase: passphrase
+            });
             if (error) throw error;
             toast.success('Nutritionist verified!');
             fetchData();
@@ -165,7 +172,11 @@ export default function AdminDashboard() {
     const handleVerifyPhysiotherapist = async (id) => {
         setProcessingId(id);
         try {
-            const { error } = await supabase.from('physiotherapists').update({ verified: true }).eq('id', id);
+            const { error } = await supabase.rpc('admin_verify_user', {
+                target_table: 'physiotherapists',
+                target_id: id,
+                passphrase: passphrase
+            });
             if (error) throw error;
             toast.success('Physiotherapist verified!');
             fetchData();
@@ -175,20 +186,28 @@ export default function AdminDashboard() {
     const handleReject = async (id, type) => {
         setProcessingId(id);
         try {
-            if (type === 'doctor') {
-                await supabase.from('doctors').delete().eq('id', id);
-            } else if (type === 'lab') {
-                await supabase.from('labs').delete().eq('id', id);
-            } else if (type === 'nutritionist') {
-                await supabase.from('nutritionists').delete().eq('id', id);
-            } else if (type === 'physiotherapist') {
-                await supabase.from('physiotherapists').delete().eq('id', id);
-            }
+            // Map 'type' to table name
+            const tableMap = {
+                'doctor': 'doctors',
+                'lab': 'labs',
+                'nutritionist': 'nutritionists',
+                'physiotherapist': 'physiotherapists'
+            };
+            const tableName = tableMap[type] || type + 's';
+
+            const { error } = await supabase.rpc('admin_reject_user', {
+                target_table: tableName,
+                target_id: id,
+                passphrase: passphrase
+            });
+
+            if (error) throw error;
 
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} rejected`);
             fetchData();
         } catch (error) {
-            toast.error(`Error rejecting ${type}`);
+            console.error(error);
+            toast.error(`Error rejecting ${type}: ` + error.message);
         } finally {
             setProcessingId(null);
         }

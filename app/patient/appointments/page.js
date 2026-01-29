@@ -163,6 +163,26 @@ export default function AppointmentsPage() {
         }
     };
 
+    const isExpired = (date, time) => {
+        if (!date || !time) return false;
+        try {
+            const appointmentDate = new Date(date);
+            const timeMinutes = parseTimeToMinutes(time);
+
+            // Set appointment date hours/minutes
+            appointmentDate.setHours(Math.floor(timeMinutes / 60), timeMinutes % 60, 0, 0);
+
+            const now = new Date();
+            const diffInMs = now - appointmentDate;
+            const diffInMinutes = diffInMs / (1000 * 60);
+
+            // If more than 30 mins past scheduled time
+            return diffInMinutes > 30;
+        } catch (e) {
+            return false;
+        }
+    };
+
     const handleCancelAppointment = async (appointmentId) => {
         if (!confirm('Are you sure you want to cancel this appointment?')) return;
 
@@ -233,7 +253,7 @@ export default function AppointmentsPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={toggle}
-                        className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
+                        className="p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
                     >
                         <MoreVertical className="w-6 h-6" />
                     </button>
@@ -326,7 +346,7 @@ export default function AppointmentsPage() {
                                             </div>
                                         </div>
 
-                                        {appointment.type === 'doctor' && appointment.status === 'confirmed' && appointment.consultation_type === 'telemedicine' && (
+                                        {appointment.type === 'doctor' && appointment.status === 'confirmed' && appointment.consultation_type === 'telemedicine' && !isExpired(appointment.appointment_date, appointment.appointment_time) && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -336,6 +356,12 @@ export default function AppointmentsPage() {
                                             >
                                                 <Video size={16} /> Join Appointment
                                             </button>
+                                        )}
+
+                                        {appointment.type === 'doctor' && appointment.status === 'confirmed' && appointment.consultation_type === 'telemedicine' && isExpired(appointment.appointment_date, appointment.appointment_time) && (
+                                            <div className="w-full py-4 bg-gray-100 text-gray-400 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center border-2 border-dashed border-gray-200">
+                                                Slot Expired
+                                            </div>
                                         )}
 
                                         <button
@@ -593,13 +619,18 @@ export default function AppointmentsPage() {
                         <div className="p-8 bg-gray-50 border-t border-gray-100 flex gap-4">
                             {!isRescheduling ? (
                                 <>
-                                    {selectedAppointment.status === 'confirmed' && selectedAppointment.consultation_type === 'telemedicine' && (
+                                    {selectedAppointment.status === 'confirmed' && selectedAppointment.consultation_type === 'telemedicine' && !isExpired(selectedAppointment.appointment_date, selectedAppointment.appointment_time) && (
                                         <button
                                             onClick={() => router.push(`/patient/telemedicine/room?id=${selectedAppointment.id}`)}
                                             className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-teal-600/20 active:scale-95 flex items-center justify-center gap-3"
                                         >
                                             <Video size={18} /> Join Video Call
                                         </button>
+                                    )}
+                                    {selectedAppointment.status === 'confirmed' && selectedAppointment.consultation_type === 'telemedicine' && isExpired(selectedAppointment.appointment_date, selectedAppointment.appointment_time) && (
+                                        <div className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-2xl font-black text-xs uppercase tracking-widest text-center border border-gray-200">
+                                            Expired
+                                        </div>
                                     )}
                                     <button
                                         onClick={() => { setSelectedAppointment(null); setIsRescheduling(false); }}

@@ -446,32 +446,30 @@ export default function PatientDashboard() {
                 />
             </div>
 
-            {/* Sketch Header */}
-            <header className="bg-white px-6 md:px-12 py-5 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
-                <div className="flex items-center gap-3">
+            {/* Refined Header */}
+            <header className="bg-white px-6 md:px-12 py-6 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <h1 className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight whitespace-nowrap truncate">
+                        {user ? (patient?.name || 'Dashboard') : 'Guest'}
+                    </h1>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    {/* Simplified User Initial / Back to Home */}
+                    <div
+                        onClick={() => router.push('/')}
+                        className="w-10 h-10 rounded-full bg-[#4a2b3d] flex items-center justify-center text-white font-black shadow-lg cursor-pointer hover:scale-105 transition-all text-sm"
+                    >
+                        {user ? (patient?.name?.[0] || 'U') : 'G'}
+                    </div>
+
+                    {/* Menu Ellipsis moved to right */}
                     <button
                         onClick={toggle}
-                        className="lg:hidden p-2 -ml-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
+                        className="p-2 text-[#4a2b3d] hover:bg-gray-50 rounded-xl transition-colors"
                     >
                         <MoreVertical className="w-6 h-6" />
                     </button>
-                    <div className="flex flex-col">
-                        <h1 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.25em] mb-1">Health Portal</h1>
-                        <p className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">
-                            {user ? (patient?.name || 'Dashboard') : 'Guest'}
-                        </p>
-                    </div>
-                </div>
-                <div
-                    onClick={() => router.push('/')}
-                    className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-all bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100"
-                >
-                    <img src="/logo.png" alt="HealthON" className="w-6 h-6 rounded-md" />
-                    <span className="text-[10px] font-black text-[#5a8a7a] uppercase tracking-[0.2em]">HealthOn</span>
-                    <div className="w-8 h-12 border-l border-gray-200 mx-1 hidden md:block"></div>
-                    <div className="w-10 h-10 rounded-full bg-[#4a2b3d] flex items-center justify-center text-white font-bold shadow-md">
-                        {user ? (patient?.name?.[0] || 'U') : 'G'}
-                    </div>
                 </div>
             </header>
 

@@ -281,11 +281,27 @@ function DoctorRoomContent() {
         await initWebRTC();
     };
 
+    const handleCompleteSession = async () => {
+        const tid = toast.loading("Completing session...");
+        try {
+            const { error } = await supabase
+                .from('appointments')
+                .update({ status: 'completed' })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            toast.success("Consultation completed!", { id: tid });
+            handleLeave();
+        } catch (error) {
+            console.error('Error completing session:', error);
+            toast.error("Failed to complete session", { id: tid });
+        }
+    };
+
     const handleLeave = () => {
         if (localStream) {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
+            localStream.getTracks().forEach(track => track.stop());
         }
         router.push('/doctor/telemedicine');
     };
@@ -433,6 +449,16 @@ function DoctorRoomContent() {
                         >
                             {videoEnabled ? <Video size={24} /> : <VideoOff size={24} />}
                         </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.1, y: -5, backgroundColor: '#059669' }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleCompleteSession}
+                            className="px-6 h-14 md:h-16 rounded-3xl bg-emerald-600 text-white flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/20 transition-all font-black text-[10px] uppercase tracking-widest"
+                        >
+                            <Activity size={24} />
+                            Complete Session
+                        </motion.button>
+
                         <motion.button
                             whileHover={{ scale: 1.1, y: -5, backgroundColor: '#000' }}
                             whileTap={{ scale: 0.95 }}
