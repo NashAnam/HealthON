@@ -60,6 +60,7 @@ export default function PatientDashboard() {
                             accepted_terms: false
                         });
                         localStorage.removeItem('pending_patient_data');
+                        localStorage.setItem('returning_user', 'true');
 
                         // Reload patient data
                         const result = await getPatient(user.id);

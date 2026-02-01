@@ -85,12 +85,21 @@ export default function CompleteProfilePage() {
 
   const loadTemporaryData = () => {
     if (typeof window !== 'undefined') {
-      const savedData = sessionStorage.getItem('temp_expert_form');
+      const savedForm = sessionStorage.getItem('temp_expert_form');
+      const savedMeta = sessionStorage.getItem('temp_expert_data');
       const savedType = sessionStorage.getItem('expert_type');
-      if (savedData) {
-        setFormData(JSON.parse(savedData));
+
+      if (savedForm) {
+        setFormData(prev => ({ ...prev, ...JSON.parse(savedForm) }));
         sessionStorage.removeItem('temp_expert_form');
       }
+
+      if (savedMeta) {
+        const meta = JSON.parse(savedMeta);
+        setFormData(prev => ({ ...prev, name: meta.name || prev.name, phone: meta.phone || prev.phone }));
+        sessionStorage.removeItem('temp_expert_data');
+      }
+
       if (savedType) {
         setUserType(savedType);
       }
@@ -252,6 +261,9 @@ export default function CompleteProfilePage() {
       if (result.error) throw result.error;
 
       toast.success('Profile created successfully!');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('returning_user', 'true');
+      }
 
       if (userType === 'doctor') router.push('/doctor/dashboard');
       else if (userType === 'lab') router.push('/lab/dashboard');

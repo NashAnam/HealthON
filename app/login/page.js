@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithGoogle } from '@/lib/supabase';
-import { Activity, Heart } from 'lucide-react';
+import { signInWithGoogle, getCurrentUser, identifyUserRole } from '@/lib/supabase';
+import { Activity, Heart, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -13,6 +13,29 @@ export default function LoginPage() {
     phone: '',
     age: ''
   });
+  const [isReturningUser, setIsReturningUser] = useState(false);
+
+  useEffect(() => {
+    checkReturningStatus();
+  }, []);
+
+  const checkReturningStatus = async () => {
+    // Check localStorage flag
+    if (typeof window !== 'undefined') {
+      const isReturning = localStorage.getItem('returning_user') === 'true';
+      setIsReturningUser(isReturning);
+    }
+
+    // Also check if already logged in and redirect
+    const user = await getCurrentUser();
+    if (user) {
+      const { role } = await identifyUserRole(user.id);
+      if (role !== 'unregistered') {
+        localStorage.setItem('returning_user', 'true');
+        router.replace(`/${role}/dashboard`);
+      }
+    }
+  };
 
   const handleLogin = async () => {
     if (!formData.name || !formData.phone || !formData.age) {
@@ -57,55 +80,61 @@ export default function LoginPage() {
         </div>
 
         <h1 className="text-3xl font-black text-gray-900 mb-2 block">Login</h1>
-        <p className="text-gray-500 mb-8 text-lg font-medium">Track your health journey</p>
+        <p className="text-gray-500 mb-8 text-lg font-medium">
+          {isReturningUser ? 'Welcome back! Sign in to continue.' : 'Track your health journey'}
+        </p>
 
         <div className="space-y-5 text-left bg-white p-1 rounded-2xl">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Full Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 font-medium"
-              placeholder="John Doe"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone Number</label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ''); // Only digits
-                if (value.length <= 10) {
-                  setFormData({ ...formData, phone: value });
-                }
-              }}
-              maxLength={10}
-              className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 font-medium"
-              placeholder="10-digit mobile"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Age</label>
-            <input
-              type="number"
-              value={formData.age}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value.length <= 2 && parseInt(value) <= 99) {
-                  setFormData({ ...formData, age: value });
-                }
-              }}
-              maxLength={2}
-              max={99}
-              className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 font-medium"
-              placeholder="Age (max 99)"
-            />
-          </div>
+          {!isReturningUser && (
+            <>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Full Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 font-medium"
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone Number</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // Only digits
+                    if (value.length <= 10) {
+                      setFormData({ ...formData, phone: value });
+                    }
+                  }}
+                  maxLength={10}
+                  className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 font-medium"
+                  placeholder="10-digit mobile"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Age</label>
+                <input
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 2 && parseInt(value) <= 99) {
+                      setFormData({ ...formData, age: value });
+                    }
+                  }}
+                  maxLength={2}
+                  max={99}
+                  className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#602E5A]/20 font-medium"
+                  placeholder="Age (max 99)"
+                />
+              </div>
+            </>
+          )}
 
           <button
-            onClick={handleLogin}
+            onClick={isReturningUser ? () => signInWithGoogle() : handleLogin}
             disabled={loading}
             className="w-full bg-[#602E5A] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-purple-900/20 hover:bg-[#4a2135] transition-all mt-4 flex items-center justify-center gap-3 relative overflow-hidden group hover:-translate-y-1"
           >
@@ -116,6 +145,15 @@ export default function LoginPage() {
               </>
             )}
           </button>
+
+          {isReturningUser && (
+            <button
+              onClick={() => setIsReturningUser(false)}
+              className="w-full text-xs font-bold text-gray-400 uppercase tracking-tighter hover:text-[#602E5A] transition-colors mt-4"
+            >
+              New user? Register here
+            </button>
+          )}
         </div>
 
       </div>

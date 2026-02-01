@@ -2,53 +2,52 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, Stethoscope, Heart } from 'lucide-react';
-import { signInWithGoogle, getCurrentUser, getDoctor, getLab, getNutritionist, getPhysiotherapist } from '@/lib/supabase';
+import { signInWithGoogle, getCurrentUser, identifyUserRole } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
 export default function ExpertLoginPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [isReturningUser, setIsReturningUser] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: ''
+    });
 
     useEffect(() => {
-        checkExistingUser();
+        checkReturningStatus();
     }, []);
 
-    const checkExistingUser = async () => {
-        try {
-            const user = await getCurrentUser();
-            if (user) {
-                // Check which type of expert profile exists and redirect
-                const [doctorRes, labRes, nutritionistRes, physiotherapistRes] = await Promise.all([
-                    getDoctor(user.id),
-                    getLab(user.id),
-                    getNutritionist(user.id),
-                    getPhysiotherapist(user.id)
-                ]);
+    const checkReturningStatus = async () => {
+        // Check localStorage flag
+        if (typeof window !== 'undefined') {
+            const isReturning = localStorage.getItem('returning_user') === 'true';
+            setIsReturningUser(isReturning);
+        }
 
-                if (doctorRes.data) {
-                    router.replace('/doctor/dashboard');
-                } else if (labRes.data) {
-                    router.replace('/lab/dashboard');
-                } else if (nutritionistRes.data) {
-                    router.replace('/nutritionist/dashboard');
-                } else if (physiotherapistRes.data) {
-                    router.replace('/physiotherapist/dashboard');
-                } else {
-                    // User is logged in but has no expert profile
-                    router.replace('/complete-profile');
-                }
+        const user = await getCurrentUser();
+        if (user) {
+            const { role } = await identifyUserRole(user.id);
+            if (role !== 'unregistered') {
+                localStorage.setItem('returning_user', 'true');
+                router.replace(`/${role}/dashboard`);
             }
-        } catch (error) {
-            console.error('Error checking user:', error);
         }
     };
 
     const handleGoogleLogin = async () => {
+        if (!isReturningUser && (!formData.name || !formData.phone)) {
+            toast.error('Please fill in your name and phone number');
+            return;
+        }
+
         setLoading(true);
         try {
+            if (!isReturningUser && typeof window !== 'undefined') {
+                sessionStorage.setItem('temp_expert_data', JSON.stringify(formData));
+            }
             const { error } = await signInWithGoogle();
             if (error) throw error;
-            // After successful login, user will be redirected by OAuth callback
         } catch (err) {
             toast.error(err.message || 'Failed to login');
             setLoading(false);
@@ -71,9 +70,40 @@ export default function ExpertLoginPage() {
                 </div>
 
                 <h1 className="text-3xl font-black text-gray-900 mb-2">Medical Expert Login</h1>
-                <p className="text-gray-500 mb-8 font-medium">Doctors, Labs, Nutritionists & Physiotherapists</p>
+                <p className="text-gray-500 mb-8 font-medium">
+                    {isReturningUser ? 'Welcome back, Doctor!' : 'Join our team of professionals'}
+                </p>
 
                 <div className="space-y-5 text-left relative z-10">
+                    {!isReturningUser && (
+                        <>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium"
+                                    placeholder="Dr. John Doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone Number</label>
+                                <input
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, '');
+                                        if (value.length <= 10) setFormData({ ...formData, phone: value });
+                                    }}
+                                    maxLength={10}
+                                    className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 font-medium"
+                                    placeholder="10-digit mobile"
+                                />
+                            </div>
+                        </>
+                    )}
+
                     <button
                         onClick={handleGoogleLogin}
                         disabled={loading}
@@ -86,6 +116,15 @@ export default function ExpertLoginPage() {
                             </>
                         )}
                     </button>
+
+                    {isReturningUser && (
+                        <button
+                            onClick={() => setIsReturningUser(false)}
+                            className="w-full text-xs font-bold text-gray-400 uppercase tracking-tighter hover:text-teal-700 transition-colors mt-4"
+                        >
+                            New expert? Register here
+                        </button>
+                    )}
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-gray-100 relative z-10">

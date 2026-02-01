@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getNutritionist, signOut } from '@/lib/supabase';
+import { getCurrentUser, getNutritionist, signOut, getNutritionistPatients, getNutritionistAppointments, getDietPlans } from '@/lib/supabase';
 import { Apple, Users, Calendar, FileText, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useSidebar } from '@/lib/SidebarContext';
 import { MoreVertical } from 'lucide-react';
@@ -18,6 +18,8 @@ export default function NutritionistDashboard() {
         activePlans: 0,
         pendingConsultations: 0
     });
+
+    const [recentActivity, setRecentActivity] = useState([]);
 
     useEffect(() => {
         loadDashboard();
@@ -39,13 +41,51 @@ export default function NutritionistDashboard() {
 
             setNutritionist(nutritionistData);
 
-            // Mock stats for now - replace with actual data later
+            // Fetch real data
+            const today = new Date().toISOString().split('T')[0];
+            const [patientsRes, apptsRes, plansRes] = await Promise.all([
+                getNutritionistPatients(nutritionistData.id),
+                getNutritionistAppointments(nutritionistData.id),
+                getDietPlans(nutritionistData.id)
+            ]);
+
+            const patients = patientsRes.data || [];
+            const appointments = apptsRes.data || [];
+            const dietPlans = plansRes.data || [];
+
+            // Calculate stats
+            const uniquePatientIds = new Set(patients.map(p => p.patient_id));
+            const todayAppts = appointments.filter(a => a.appointment_date === today);
+            const pendingAppts = appointments.filter(a => a.status === 'pending');
+
             setStats({
-                totalPatients: 24,
-                todayAppointments: 5,
-                activePlans: 18,
-                pendingConsultations: 3
+                totalPatients: uniquePatientIds.size,
+                todayAppointments: todayAppts.length,
+                activePlans: dietPlans.filter(p => p.status === 'active').length,
+                pendingConsultations: pendingAppts.length
             });
+
+            // Aggregate Recent Activity
+            const activity = [
+                ...dietPlans.map(p => ({
+                    id: `plan-${p.id}`,
+                    type: 'plan',
+                    title: `Diet plan "${p.title}" created for ${p.patients?.name || 'Patient'}`,
+                    time: p.created_at,
+                    icon: FileText,
+                    color: 'purple'
+                })),
+                ...appointments.map(a => ({
+                    id: `appt-${a.id}`,
+                    type: 'appointment',
+                    title: `Consultation with ${a.patients?.name || 'Patient'}`,
+                    time: a.created_at,
+                    icon: Calendar,
+                    color: 'blue'
+                }))
+            ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
+
+            setRecentActivity(activity);
 
         } catch (error) {
             console.error('Dashboard load error:', error);
@@ -209,24 +249,19 @@ export default function NutritionistDashboard() {
                 <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
                     <h3 className="text-xl font-black text-gray-900 mb-6 uppercase tracking-tight">Recent Activity</h3>
                     <div className="space-y-4">
-                        <ActivityItem
-                            icon={CheckCircle2}
-                            title="Diet plan created for Sarah Johnson"
-                            time="2 hours ago"
-                            color="green"
-                        />
-                        <ActivityItem
-                            icon={Calendar}
-                            title="Consultation scheduled with Mike Chen"
-                            time="4 hours ago"
-                            color="blue"
-                        />
-                        <ActivityItem
-                            icon={FileText}
-                            title="Progress report reviewed for Emma Wilson"
-                            time="Yesterday"
-                            color="purple"
-                        />
+                        {recentActivity.length === 0 ? (
+                            <p className="text-gray-400 text-sm font-bold text-center py-4">No recent activity found.</p>
+                        ) : (
+                            recentActivity.map((item) => (
+                                <ActivityItem
+                                    key={item.id}
+                                    icon={item.icon}
+                                    title={item.title}
+                                    time={new Date(item.time).toLocaleDateString() === today ? 'Today' : new Date(item.time).toLocaleDateString()}
+                                    color={item.color}
+                                />
+                            ))
+                        )}
                     </div>
                 </div>
             </main>

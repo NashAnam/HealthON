@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase, createBlog, getBlogs, deleteBlog } from '@/lib/supabase';
+import { supabase, createBlog, getBlogs, deleteBlog, updateBlog } from '@/lib/supabase';
 import { RefreshCw, Stethoscope, FlaskConical, CheckCircle2, XCircle, FileText, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
     const [showBlogEditor, setShowBlogEditor] = useState(false);
+    const [editingBlogId, setEditingBlogId] = useState(null);
     const [currentBlog, setCurrentBlog] = useState({ title: '', content: '', author: 'Admin' });
 
     useEffect(() => {
@@ -220,16 +221,31 @@ export default function AdminDashboard() {
         }
 
         try {
-            const { error } = await createBlog(currentBlog);
-            if (error) throw error;
-            toast.success('Blog published successfully!');
+            if (editingBlogId) {
+                const { error } = await updateBlog(editingBlogId, currentBlog);
+                if (error) throw error;
+                toast.success('Blog updated successfully!');
+            } else {
+                const { error } = await createBlog(currentBlog);
+                if (error) throw error;
+                toast.success('Blog published successfully!');
+            }
             setShowBlogEditor(false);
+            setEditingBlogId(null);
             setCurrentBlog({ title: '', content: '', author: 'Admin' });
             fetchData();
         } catch (error) {
-            console.error('Error publishing blog:', error);
-            toast.error('Failed to publish blog');
+            console.error('Error with blog operation:', error);
+            toast.error(editingBlogId ? 'Failed to update blog' : 'Failed to publish blog');
         }
+    };
+
+    const handleEditBlog = (blog) => {
+        setEditingBlogId(blog.id);
+        setCurrentBlog({ title: blog.title, content: blog.content, author: blog.author });
+        setShowBlogEditor(true);
+        // Scroll to editor
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDeleteBlog = async (id) => {
@@ -399,7 +415,13 @@ export default function AdminDashboard() {
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-slate-800">Published Blogs</h3>
                                 <button
-                                    onClick={() => setShowBlogEditor(!showBlogEditor)}
+                                    onClick={() => {
+                                        setShowBlogEditor(!showBlogEditor);
+                                        if (showBlogEditor) {
+                                            setEditingBlogId(null);
+                                            setCurrentBlog({ title: '', content: '', author: 'Admin' });
+                                        }
+                                    }}
                                     className="px-6 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-all flex items-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" />
@@ -409,7 +431,7 @@ export default function AdminDashboard() {
 
                             {showBlogEditor && (
                                 <div className="mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-4">
-                                    <h4 className="text-lg font-bold text-slate-700 mb-4">New Blog Post</h4>
+                                    <h4 className="text-lg font-bold text-slate-700 mb-4">{editingBlogId ? 'Edit Blog Post' : 'New Blog Post'}</h4>
                                     <div className="space-y-4">
                                         <input
                                             type="text"
@@ -436,7 +458,7 @@ export default function AdminDashboard() {
                                             onClick={handlePublishBlog}
                                             className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-black transition-all"
                                         >
-                                            Publish Post
+                                            {editingBlogId ? 'Update Post' : 'Publish Post'}
                                         </button>
                                     </div>
                                 </div>
@@ -455,13 +477,22 @@ export default function AdminDashboard() {
                                                 <p className="text-sm text-slate-500 mb-2">By {blog.author} • {new Date(blog.created_at).toLocaleDateString()}</p>
                                                 <p className="text-slate-600 line-clamp-2">{blog.content}</p>
                                             </div>
-                                            <button
-                                                onClick={() => handleDeleteBlog(blog.id)}
-                                                className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all ml-4"
-                                                title="Delete Blog"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
+                                            <div className="flex gap-2 ml-4">
+                                                <button
+                                                    onClick={() => handleEditBlog(blog)}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                    title="Edit Blog"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteBlog(blog.id)}
+                                                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                                    title="Delete Blog"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))
                                 )}

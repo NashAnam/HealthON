@@ -2,11 +2,8 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Heart, ArrowRight, Activity, Calendar, FileText,
-    Shield, CheckCircle2, Phone, Mail, MapPin, Star, UserPlus, Apple, Stethoscope, ChevronRight, Instagram
-} from 'lucide-react';
-import { getVerifiedDoctors, getVerifiedNutritionists, getVerifiedPhysiotherapists } from '@/lib/supabase';
+import { Heart, ArrowRight, Activity, Calendar, FileText, Shield, CheckCircle2, Phone, Mail, MapPin, Star, UserPlus, Apple, Stethoscope, ChevronRight, Instagram, FlaskConical } from 'lucide-react';
+import { getVerifiedDoctors, getVerifiedNutritionists, getVerifiedPhysiotherapists, getVerifiedLabs, getCurrentUser, identifyUserRole } from '@/lib/supabase';
 import Image from 'next/image';
 
 export default function LandingPage() {
@@ -16,24 +13,40 @@ export default function LandingPage() {
     const [loading, setLoading] = useState(true);
 
     const appSlides = [
-        { title: 'Health Assessment', desc: 'Analyze primary risks', color: 'bg-purple-100', icon: Activity, image: '/screens/health-assessment.png' },
-        { title: 'Health Tracker', desc: 'Log vitals, diet & metrics', color: 'bg-green-100', icon: Calendar, image: '/screens/health-tracker.png' },
-        { title: 'Book Appointments', desc: 'Find and consult doctors', color: 'bg-blue-100', icon: FileText, image: '/screens/book-appointment.png' },
-        { title: 'Weekly Progress', desc: 'View visual health trends', color: 'bg-pink-100', icon: Apple, image: '/screens/weekly-progress.png' }
+        { title: 'Health Assessment', desc: 'Analyze primary risks', color: 'bg-plum-100', icon: Activity, image: '/screens/health-assessment.png' },
+        { title: 'Health Tracker', desc: 'Log vitals, diet & metrics', color: 'bg-teal-100', icon: Calendar, image: '/screens/health-tracker.png' },
+        { title: 'Book Appointments', desc: 'Find and consult doctors', color: 'bg-teal-100', icon: FileText, image: '/screens/book-appointment.png' },
+        { title: 'Weekly Progress', desc: 'View visual health trends', color: 'bg-plum-100', icon: Apple, image: '/screens/weekly-progress.png' }
     ];
 
     useEffect(() => {
         const appInterval = setInterval(() => setCurrentAppSlide(p => (p + 1) % appSlides.length), 3000);
+        checkSession();
         loadExperts();
         return () => clearInterval(appInterval);
     }, []);
 
+    const checkSession = async () => {
+        try {
+            const user = await getCurrentUser();
+            if (user) {
+                const { role } = await identifyUserRole(user.id);
+                if (role !== 'unregistered') {
+                    router.replace(`/${role}/dashboard`);
+                }
+            }
+        } catch (error) {
+            console.error('Session check error:', error);
+        }
+    };
+
     const loadExperts = async () => {
         try {
-            const [doctorsRes, nutritionistsRes, physiotherapistsRes] = await Promise.all([
+            const [doctorsRes, nutritionistsRes, physiotherapistsRes, labsRes] = await Promise.all([
                 getVerifiedDoctors(),
                 getVerifiedNutritionists(),
-                getVerifiedPhysiotherapists()
+                getVerifiedPhysiotherapists(),
+                getVerifiedLabs()
             ]);
 
             // Filter out admin team members if they appear in expert lists
@@ -42,7 +55,8 @@ export default function LandingPage() {
             const allExperts = [
                 ...(doctorsRes.data || []).map(d => ({ ...d, type: 'Doctor', specialty: d.specialty || 'General Physician' })),
                 ...(nutritionistsRes.data || []).map(n => ({ ...n, type: 'Nutritionist', specialty: 'Nutritionist' })),
-                ...(physiotherapistsRes.data || []).map(p => ({ ...p, type: 'Physiotherapist', specialty: 'Physiotherapist' }))
+                ...(physiotherapistsRes.data || []).map(p => ({ ...p, type: 'Physiotherapist', specialty: 'Physiotherapist' })),
+                ...(labsRes.data || []).map(l => ({ ...l, type: 'Lab', specialty: 'Diagnostic Laboratory' }))
             ].filter(e => !adminNames.includes(e.name));
 
             setExperts(allExperts);
@@ -54,17 +68,17 @@ export default function LandingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#FDF8FA] font-sans text-slate-900 selection:bg-[#4a2b3d] selection:text-white flex flex-col">
+        <div className="min-h-screen bg-[#FDF8FA] font-sans text-slate-900 selection:bg-[#602E5A] selection:text-white flex flex-col">
             {/* Navbar */}
-            <nav className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#4a2b3d]/5">
+            <nav className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#602E5A]/5">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => router.push('/')}>
                         {/* HealthON Logo */}
                         <div className="relative">
-                            <div className="absolute inset-0 bg-[#4a2b3d] blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                            <div className="absolute inset-0 bg-[#602E5A] blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
                             <Image src="/logo.png" alt="HealthON" width={40} height={40} className="rounded-xl relative z-10" />
                         </div>
-                        <span className="text-2xl font-black tracking-tight text-[#1a1a2e] group-hover:text-[#4a2b3d] transition-colors">HealthON</span>
+                        <span className="text-2xl font-black tracking-tight text-[#1a1a2e] group-hover:text-[#602E5A] transition-colors">HealthON</span>
                     </div>
 
                     <div className="md:flex items-center gap-8">
@@ -82,13 +96,13 @@ export default function LandingPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4a2b3d]/5 to-[#5a8a7a]/5 rounded-full border border-[#4a2b3d]/10"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#602E5A]/5 to-[#649488]/5 rounded-full border border-[#602E5A]/10"
                             >
                                 <span className="flex h-2 w-2 relative">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5a8a7a] opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#5a8a7a]"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#649488] opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#649488]"></span>
                                 </span>
-                                <span className="text-xs font-bold text-[#4a2b3d] tracking-wider uppercase">Future of Healthcare</span>
+                                <span className="text-xs font-bold text-[#602E5A] tracking-wider uppercase">Future of Healthcare</span>
                             </motion.div>
 
                             <motion.h1
@@ -98,7 +112,7 @@ export default function LandingPage() {
                                 className="text-5xl md:text-7xl font-black text-[#1a1a2e] leading-[0.95] tracking-tight"
                             >
                                 Your Health.<br />
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#4a2b3d] to-[#5a8a7a]">Simplified.</span>
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#602E5A] to-[#649488]">Simplified.</span>
                             </motion.h1>
 
                             <motion.p
@@ -117,8 +131,20 @@ export default function LandingPage() {
                                 className="flex flex-col sm:flex-row gap-4"
                             >
                                 <button
-                                    onClick={() => router.push('/patient/dashboard')}
-                                    className="px-8 py-4 bg-gradient-to-r from-[#4a2b3d] to-[#4a2b3d] text-white rounded-2xl font-black text-lg shadow-xl shadow-[#4a2b3d]/25 hover:shadow-2xl hover:shadow-[#4a2b3d]/40 transition-all hover:-translate-y-1 flex items-center justify-center gap-3 group"
+                                    onClick={async () => {
+                                        const user = await getCurrentUser();
+                                        if (user) {
+                                            const { role } = await identifyUserRole(user.id);
+                                            if (role !== 'unregistered') {
+                                                router.push(`/${role}/dashboard`);
+                                            } else {
+                                                router.push('/login');
+                                            }
+                                        } else {
+                                            router.push('/login');
+                                        }
+                                    }}
+                                    className="px-8 py-4 bg-gradient-to-r from-[#602E5A] to-[#602E5A] text-white rounded-2xl font-black text-lg shadow-xl shadow-[#602E5A]/25 hover:shadow-2xl hover:shadow-[#602E5A]/40 transition-all hover:-translate-y-1 flex items-center justify-center gap-3 group"
                                 >
                                     <Activity className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                     TRACK YOUR HEALTH
@@ -130,13 +156,13 @@ export default function LandingPage() {
                         {/* Right Content - App Slideshow (Use Case Screenshots) */}
                         <div className="lg:col-span-7 relative flex justify-end">
                             {/* Enhanced Background Decoration */}
-                            <div className="absolute -inset-20 bg-gradient-to-tr from-[#4a2b3d]/20 via-[#5a8a7a]/20 to-pink-100 rounded-full blur-[100px] opacity-70 -z-10 animate-pulse-slow"></div>
+                            <div className="absolute -inset-20 bg-gradient-to-tr from-[#602E5A]/20 via-[#649488]/20 to-pink-100 rounded-full blur-[100px] opacity-70 -z-10 animate-pulse-slow"></div>
 
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.8 }}
-                                className="relative w-full max-w-[320px] aspect-[9/18] rounded-[3rem] bg-[#1a1a2e] p-4 shadow-2xl ring-4 ring-[#4a2b3d]/10"
+                                className="relative w-full max-w-[320px] aspect-[9/18] rounded-[3rem] bg-[#1a1a2e] p-4 shadow-2xl ring-4 ring-[#602E5A]/10"
                             >
                                 <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-6 bg-[#0f172a] rounded-b-2xl z-20"></div>
                                 <div className="relative h-full w-full bg-white rounded-[2.5rem] overflow-hidden">
@@ -169,7 +195,7 @@ export default function LandingPage() {
                                                     <div className={`p-2 rounded-lg ${appSlides[currentAppSlide].color}`}>
                                                         {(() => {
                                                             const Icon = appSlides[currentAppSlide].icon;
-                                                            return <Icon className="w-5 h-5 text-[#4a2b3d]" />;
+                                                            return <Icon className="w-5 h-5 text-[#602E5A]" />;
                                                         })()}
                                                     </div>
                                                     <h3 className="font-bold text-[#1a1a2e]">{appSlides[currentAppSlide].title}</h3>
@@ -190,14 +216,14 @@ export default function LandingPage() {
                 <div id="experts" className="py-20 bg-white relative overflow-hidden">
                     <div className="absolute inset-0 bg-[#FDF8FA]/50"></div>
                     {/* Decorative Blobs */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-[#4a2b3d]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#5a8a7a]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-[#602E5A]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#649488]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 
                     <div className="max-w-7xl mx-auto px-6 relative z-10">
                         {experts.length > 0 && (
                             <div className="relative group">
                                 <div className="text-center mb-12">
-                                    <span className="text-xs font-black text-[#4a2b3d] uppercase tracking-widest">Our Network</span>
+                                    <span className="text-xs font-black text-[#602E5A] uppercase tracking-widest">Our Network</span>
                                     <h2 className="text-4xl font-black text-[#1a1a2e] mt-2 mb-4">Meet Our Experts</h2>
                                     <p className="text-slate-500 font-medium">Top-rated specialists available for consultation</p>
                                 </div>
@@ -207,7 +233,7 @@ export default function LandingPage() {
 
                                 {loading ? (
                                     <div className="flex items-center justify-center py-20">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#4a2b3d]"></div>
+                                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#602E5A]"></div>
                                     </div>
                                 ) : (
                                     <div className="overflow-hidden py-4">
@@ -217,16 +243,18 @@ export default function LandingPage() {
                                             transition={{ repeat: Infinity, duration: Math.max(20, experts.length * 5), ease: "linear" }}
                                         >
                                             {[...experts, ...experts].map((expert, i) => (
-                                                <div key={i} className="w-72 bg-white rounded-[2rem] p-6 shadow-xl shadow-[#4a2b3d]/5 border border-[#4a2b3d]/5 flex-shrink-0 hover:-translate-y-2 transition-transform duration-300 group/card">
-                                                    <div className="w-24 h-24 bg-gradient-to-br from-[#4a2b3d]/5 to-[#5a8a7a]/10 rounded-full mx-auto mb-6 overflow-hidden border-4 border-white shadow-lg flex items-center justify-center group-hover/card:scale-105 transition-transform">
-                                                        {expert.type === 'Doctor' && <Stethoscope className="w-10 h-10 text-[#4a2b3d]" />}
-                                                        {expert.type === 'Nutritionist' && <Apple className="w-10 h-10 text-[#5a8a7a]" />}
+                                                <div key={i} className="w-72 bg-white rounded-[2rem] p-6 shadow-xl shadow-[#602E5A]/5 border border-[#602E5A]/5 flex-shrink-0 hover:-translate-y-2 transition-transform duration-300 group/card">
+                                                    <div className="w-24 h-24 bg-gradient-to-br from-[#602E5A]/5 to-[#649488]/10 rounded-full mx-auto mb-6 overflow-hidden border-4 border-white shadow-lg flex items-center justify-center group-hover/card:scale-105 transition-transform">
+                                                        {expert.type === 'Doctor' && <Stethoscope className="w-10 h-10 text-[#602E5A]" />}
+                                                        {expert.type === 'Nutritionist' && <Apple className="w-10 h-10 text-[#649488]" />}
                                                         {expert.type === 'Physiotherapist' && <Activity className="w-10 h-10 text-orange-500" />}
+                                                        {expert.type === 'Lab' && <FlaskConical className="w-10 h-10 text-blue-600" />}
                                                     </div>
                                                     <h3 className="font-bold text-slate-900 text-center text-lg">{expert.name}</h3>
-                                                    <div className={`w-fit mx-auto mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${expert.type === 'Doctor' ? 'bg-[#4a2b3d]/10 text-[#4a2b3d]' :
-                                                        expert.type === 'Nutritionist' ? 'bg-[#5a8a7a]/10 text-[#5a8a7a]' :
-                                                            'bg-orange-50 text-orange-600'
+                                                    <div className={`w-fit mx-auto mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${expert.type === 'Doctor' ? 'bg-[#602E5A]/10 text-[#602E5A]' :
+                                                        expert.type === 'Nutritionist' ? 'bg-[#649488]/10 text-[#649488]' :
+                                                            expert.type === 'Physiotherapist' ? 'bg-orange-50 text-orange-600' :
+                                                                'bg-blue-50 text-blue-600'
                                                         }`}>
                                                         {expert.specialty}
                                                     </div>
@@ -242,7 +270,7 @@ export default function LandingPage() {
                     <div className="mt-12 text-center pb-8 relative z-10">
                         <button
                             onClick={() => router.push('/complete-profile')}
-                            className="px-10 py-5 bg-[#4a2b3d] text-white rounded-full font-black text-lg hover:bg-[#4a2b3d] transition-all shadow-xl hover:-translate-y-1 flex items-center gap-3 mx-auto"
+                            className="px-10 py-5 bg-[#602E5A] text-white rounded-full font-black text-lg hover:bg-[#602E5A] transition-all shadow-xl hover:-translate-y-1 flex items-center gap-3 mx-auto"
                         >
                             <UserPlus className="w-6 h-6 text-white" />
                             Join Our Team of Medical Experts
@@ -255,8 +283,8 @@ export default function LandingPage() {
                 <div id="team" className="py-20 max-w-7xl mx-auto px-6">
                     <div className="bg-[#1a1a2e] rounded-[3rem] p-12 md:p-20 relative overflow-hidden text-center">
                         {/* Background Gradients */}
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#4a2b3d]/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#5a8a7a]/20 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#602E5A]/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#649488]/20 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2"></div>
 
                         <div className="relative z-10">
                             <h2 className="text-3xl font-black text-white mb-12 uppercase tracking-wide">Our Team</h2>
@@ -268,7 +296,7 @@ export default function LandingPage() {
                                     { name: 'Afshan Unnisa', role: 'CFO', title: 'Chief Financial Officer', img: '/team/afshan.png' }
                                 ].map((member, i) => (
                                     <div key={i} className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 hover:bg-white/10 transition-all hover:-translate-y-2 group">
-                                        <div className="w-28 h-28 mx-auto mb-6 rounded-full overflow-hidden border-4 border-[#4a2b3d] shadow-2xl relative">
+                                        <div className="w-28 h-28 mx-auto mb-6 rounded-full overflow-hidden border-4 border-[#602E5A] shadow-2xl relative">
                                             {member.img ? (
                                                 <Image src={member.img} alt={member.name} fill className="object-cover" />
                                             ) : (
@@ -278,7 +306,7 @@ export default function LandingPage() {
                                             )}
                                         </div>
                                         <h4 className="font-black text-white text-xl mb-2">{member.name}</h4>
-                                        <p className="text-[#5a8a7a] font-bold text-sm uppercase tracking-wider mb-1">{member.role}</p>
+                                        <p className="text-[#649488] font-bold text-sm uppercase tracking-wider mb-1">{member.role}</p>
                                         <p className="text-white/40 text-xs">{member.title}</p>
                                     </div>
                                 ))}
@@ -300,16 +328,16 @@ export default function LandingPage() {
                             <span className="text-2xl font-black tracking-tight">HealthON</span>
                         </div>
                         <div className="flex gap-8 text-sm font-bold text-gray-400">
-                            <button onClick={() => router.push('/about')} className="hover:text-[#5a8a7a] transition-colors">About</button>
-                            <button onClick={() => router.push('/blogs')} className="hover:text-[#5a8a7a] transition-colors">Blogs</button>
-                            <a href="mailto:contact@healthon.app" className="hover:text-[#5a8a7a] transition-colors">Contact</a>
-                            <button onClick={() => router.push('/terms')} className="hover:text-[#5a8a7a] transition-colors">Terms</button>
+                            <button onClick={() => router.push('/about')} className="hover:text-[#649488] transition-colors">About</button>
+                            <button onClick={() => router.push('/blogs')} className="hover:text-[#649488] transition-colors">Blogs</button>
+                            <a href="mailto:contact@healthon.app" className="hover:text-[#649488] transition-colors">Contact</a>
+                            <button onClick={() => router.push('/terms')} className="hover:text-[#649488] transition-colors">Terms</button>
                         </div>
                     </div>
                     <div className="border-t border-white/5 pt-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
                         <p className="text-gray-500 text-xs">© 2026 HealthON. All rights reserved.</p>
                         <div className="flex gap-4">
-                            <a href="https://www.instagram.com/healthon.app_" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#4a2b3d] transition-colors border border-white/10">
+                            <a href="https://www.instagram.com/healthon.app_" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#602E5A] transition-colors border border-white/10">
                                 <Instagram className="w-5 h-5 text-white" />
                             </a>
                         </div>
