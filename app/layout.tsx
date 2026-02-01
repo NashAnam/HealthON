@@ -60,9 +60,17 @@ export const metadata: Metadata = {
     startupImage: '/logo.png'
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
+    icon: '/logo.png',
+    shortcut: '/logo.png',
     apple: '/logo.png',
+    other: [
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '192x192',
+        url: '/icon-192x192.png',
+      },
+    ],
   },
   manifest: '/manifest.json',
   alternates: {
