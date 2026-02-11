@@ -225,12 +225,12 @@ export default function PatientDashboard() {
     );
 
     return (
-        <div className="min-h-screen bg-[#FDF8FA] pb-10">
+        <div className="min-h-screen bg-[#FDF8FA] pb-safe">
             {/* Terms & Conditions Overlay */}
             {showTerms && (
                 <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 md:p-8">
                     <div className="absolute inset-0 bg-[#4a2b3d]/60 backdrop-blur-md" />
-                    <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col md:flex-row max-h-[90vh] animate-in fade-in zoom-in duration-500">
+                    <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col md:flex-row max-h-[90vh] animate-in fade-in zoom-in duration-500 mb-safe mt-6">
                         {/* Summary Side */}
                         <div className="md:w-1/3 bg-[#4a2b3d] p-10 flex flex-col justify-between text-white">
                             <div>
@@ -420,7 +420,7 @@ export default function PatientDashboard() {
             </div>
 
             {/* Refined Header */}
-            <header className="bg-white px-6 md:px-12 py-6 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
+            <header className="bg-white px-6 md:px-12 pt-10 pb-6 md:py-8 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe px-safe">
                 <div className="flex items-center gap-3 overflow-hidden">
                     <h1 className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight whitespace-nowrap truncate">
                         {user ? (patient?.name || 'Dashboard') : 'Guest'}
@@ -446,7 +446,7 @@ export default function PatientDashboard() {
                 </div>
             </header>
 
-            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8">
+            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8 px-safe">
 
                 {/* 2x2 Grid for Dashboard Sections */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8 mb-8">

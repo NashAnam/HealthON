@@ -225,14 +225,15 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, patien
                                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Dosage</label>
                                                             <div className="flex gap-1">
                                                                 <input
-                                                                    type="number"
+                                                                    type="text"
+                                                                    inputMode="decimal"
                                                                     placeholder="500"
-                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-2 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
+                                                                    className="flex-[3] min-w-0 bg-white border border-gray-200 rounded-xl px-2 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
                                                                     value={med.dosage_val}
                                                                     onChange={(e) => updateMedication(idx, 'dosage_val', e.target.value)}
                                                                 />
                                                                 <select
-                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-1 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
+                                                                    className="flex-[2] min-w-0 bg-white border border-gray-200 rounded-xl px-1 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
                                                                     value={med.dosage_unit}
                                                                     onChange={(e) => updateMedication(idx, 'dosage_unit', e.target.value)}
                                                                 >
@@ -254,14 +255,15 @@ export default function PrescriptionModal({ isOpen, onClose, appointment, patien
                                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-1 block">Duration</label>
                                                             <div className="flex gap-1">
                                                                 <input
-                                                                    type="number"
+                                                                    type="text"
+                                                                    inputMode="numeric"
                                                                     placeholder="7"
-                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-2 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
+                                                                    className="flex-[3] min-w-0 bg-white border border-gray-200 rounded-xl px-2 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20"
                                                                     value={med.duration_val}
                                                                     onChange={(e) => updateMedication(idx, 'duration_val', e.target.value)}
                                                                 />
                                                                 <select
-                                                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-1 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
+                                                                    className="flex-[2] min-w-0 bg-white border border-gray-200 rounded-xl px-1 py-3 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-plum-500/20 cursor-pointer"
                                                                     value={med.duration_unit}
                                                                     onChange={(e) => updateMedication(idx, 'duration_unit', e.target.value)}
                                                                 >

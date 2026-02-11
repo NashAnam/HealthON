@@ -139,9 +139,24 @@ export default function PrescriptionsPage() {
 
         setPrescriptions(rxData || []);
 
-        // Load Patients for the dropdown
-        const { data: pts } = await supabase.from('patients').select('id, name');
-        setPatients(pts || []);
+        // Load Patients for the dropdown (ONLY those with confirmed appointments with this doctor)
+        const { data: apts } = await supabase
+            .from('appointments')
+            .select('patient_id, patients(id, name)')
+            .eq('doctor_id', doctorData.id)
+            .eq('status', 'confirmed');
+
+        // Deduplicate patients
+        const uniquePatients = [];
+        const seenIds = new Set();
+        (apts || []).forEach(apt => {
+            if (apt.patients && !seenIds.has(apt.patients.id)) {
+                seenIds.add(apt.patients.id);
+                uniquePatients.push(apt.patients);
+            }
+        });
+
+        setPatients(uniquePatients);
     };
 
     const filterPrescriptions = () => {
@@ -335,14 +350,15 @@ export default function PrescriptionsPage() {
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Dosage</label>
                                                     <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
                                                         <input
-                                                            type="number"
+                                                            type="text"
+                                                            inputMode="decimal"
                                                             placeholder="500"
-                                                            className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
+                                                            className="flex-[3] min-w-0 p-3 bg-transparent outline-none text-sm font-bold"
                                                             value={med.dosage_val}
                                                             onChange={(e) => updateMedication(idx, 'dosage_val', e.target.value)}
                                                         />
                                                         <select
-                                                            className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
+                                                            className="flex-[2] min-w-0 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
                                                             value={med.dosage_unit}
                                                             onChange={(e) => updateMedication(idx, 'dosage_unit', e.target.value)}
                                                         >
@@ -354,14 +370,15 @@ export default function PrescriptionsPage() {
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Duration</label>
                                                     <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:border-teal-500 transition-colors">
                                                         <input
-                                                            type="number"
+                                                            type="text"
+                                                            inputMode="numeric"
                                                             placeholder="7"
-                                                            className="w-3/5 p-3 bg-transparent outline-none text-sm font-bold"
+                                                            className="flex-[3] min-w-0 p-3 bg-transparent outline-none text-sm font-bold"
                                                             value={med.duration_val}
                                                             onChange={(e) => updateMedication(idx, 'duration_val', e.target.value)}
                                                         />
                                                         <select
-                                                            className="w-2/5 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
+                                                            className="flex-[2] min-w-0 p-3 bg-white/50 border-l border-slate-200 outline-none text-[10px] font-black uppercase text-teal-700 cursor-pointer"
                                                             value={med.duration_unit}
                                                             onChange={(e) => updateMedication(idx, 'duration_unit', e.target.value)}
                                                         >

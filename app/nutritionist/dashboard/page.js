@@ -93,17 +93,18 @@ export default function NutritionistDashboard() {
                 const hasPermission = await requestNotificationPermission();
 
                 if (hasPermission) {
-                    // 1. Schedule reminders for today's appointments
+                    // 1. Schedule reminders for today's appointments (OS level)
                     for (const apt of todayAppts) {
                         await scheduleExpertAppointmentReminder(apt);
                     }
 
-                    // 2. Notify if there are new pending consultations
-                    if (pendingAppts.length > 0) {
+                    // 2. Notify if there are new pending consultations (UI level, guard to prevent loop)
+                    if (pendingAppts.length > 0 && !window.hasNotifiedConsultations) {
                         await showInstantNotification(
                             '🆕 New Consultations',
                             `You have ${pendingAppts.length} pending appointment requests.`
                         );
+                        window.hasNotifiedConsultations = true;
                     }
                 }
             } catch (notifErr) {
@@ -187,7 +188,7 @@ export default function NutritionistDashboard() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="bg-white px-6 md:px-12 py-5 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50">
+            <header className="bg-white px-6 md:px-12 pt-10 pb-5 md:py-6 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe px-safe">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={toggle}
@@ -208,7 +209,7 @@ export default function NutritionistDashboard() {
                 </div>
             </header>
 
-            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8">
+            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8 px-safe">
                 {/* Welcome Section */}
                 <div className="mb-8">
                     <h2 className="text-3xl font-black text-gray-900 mb-2">Welcome back, {nutritionist?.name?.split(' ')[0] || 'Nutritionist'}!</h2>

@@ -99,17 +99,18 @@ export default function DoctorDashboard() {
         const hasPermission = await requestNotificationPermission();
 
         if (hasPermission) {
-          // 1. Schedule reminders for today's confirmed appointments
+          // 1. Schedule reminders for today's confirmed appointments (OS level, safe to re-run as it cancels pending first)
           for (const apt of todayApts) {
             await scheduleExpertAppointmentReminder(apt);
           }
 
-          // 2. Notify if there are new pending requests
-          if (requests.length > 0) {
+          // 2. Notify if there are new pending requests (UI level, guard to prevent loop)
+          if (requests.length > 0 && !window.hasNotifiedRequests) {
             await showInstantNotification(
               '🆕 New Requests',
               `You have ${requests.length} new patient ${requests.length === 1 ? 'request' : 'requests'} waiting for approval.`
             );
+            window.hasNotifiedRequests = true;
           }
         }
       } catch (notifErr) {
@@ -199,7 +200,7 @@ export default function DoctorDashboard() {
   }
 
   return (
-    <div className={`min-h-screen bg-[#FDFDFD] pb-12 transition-all duration-300 w-full max-w-[100vw] ${isOpen ? 'lg:pl-72' : 'lg:pl-0'}`}>
+    <div className={`min-h-screen bg-[#FDFDFD] pb-safe transition-all duration-300 w-full max-w-[100vw] ${isOpen ? 'lg:pl-72' : 'lg:pl-0'}`}>
       {/* Decorative Ellipses (Blobs) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <motion.div
@@ -231,7 +232,7 @@ export default function DoctorDashboard() {
       </div>
 
       <div className="relative z-10">
-        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 pt-10 pb-4 md:py-6 flex items-center justify-between sticky top-0 z-40 pt-safe px-safe">
           <div className="flex items-center gap-2">
             <button onClick={toggle} className="p-2 -ml-2 text-gray-400 hover:text-plum-800 transition-colors">
               <MoreHorizontal size={24} />
@@ -273,7 +274,7 @@ export default function DoctorDashboard() {
           </div>
         </nav>
 
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 px-safe">
           {/* Welcome Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -712,7 +713,7 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-0 md:p-8"
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-0 md:p-8 px-safe py-safe"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}

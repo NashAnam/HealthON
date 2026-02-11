@@ -39,7 +39,7 @@ export default function Sidebar() {
 
             {/* Sidebar Content - FIGMA DESIGN - MOVED TO RIGHT */}
             <aside className={`
-                fixed top-0 right-0 h-screen w-64 bg-[#4a2b3d] flex flex-col z-[1000] transition-transform duration-300 ease-in-out
+                fixed top-0 right-0 h-screen w-64 bg-[#4a2b3d] flex flex-col z-[1000] transition-transform duration-300 ease-in-out pt-safe pb-safe
                 ${isOpen ? 'translate-x-0' : 'translate-x-full'}
             `}>
 
