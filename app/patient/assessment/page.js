@@ -333,11 +333,24 @@ export default function AssessmentPage() {
                     const textToRead = `${currentQ.label}. ${currentQ.subLabel || ''}`;
                     const utterance = new SpeechSynthesisUtterance(textToRead);
                     utterance.onend = () => setIsPlaying(false);
-                    // Try to find a good voice
+
+                    // Configure for natural English pronunciation
+                    utterance.lang = 'en-IN'; // Indian English for natural pronunciation
+                    utterance.rate = 0.9; // Slightly slower for clarity
+                    utterance.pitch = 1.0;
+
+                    // Try to find a good English voice (avoid pure Hindi/Urdu)
                     const voices = window.speechSynthesis.getVoices();
-                    // Prefer Google UK English Female or similar if available, otherwise default
-                    // utterance.voice = voices.find(v => v.name.includes('Female')) || voices[0]; 
-                    // Keeping default for reliability
+                    // Prefer Indian English, then UK/US English voices
+                    const preferredVoice = voices.find(v =>
+                      v.lang.includes('en-IN') ||
+                      v.lang.includes('en-GB') ||
+                      v.lang.includes('en-US')
+                    );
+                    if (preferredVoice) {
+                      utterance.voice = preferredVoice;
+                    }
+
                     window.speechSynthesis.speak(utterance);
                     setIsPlaying(true);
                   }

@@ -1267,12 +1267,64 @@ export default function HealthTrackerPage() {
                     </div>
 
                     <div className="space-y-4">
-                        {logs.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">
-                                <div className="text-slate-400 font-medium">No logs yet. Start tracking today!</div>
-                            </div>
-                        ) : (
-                            logs.map(log => (
+                        {(() => {
+                            // Filter logs based on current tracker type
+                            let filteredLogs = logs;
+
+                            if (isSpecificMode) {
+                                const tab = searchParams.get('tab');
+
+                                if (tab === 'bp') {
+                                    // Show only BP vitals (mmHg)
+                                    filteredLogs = logs.filter(log => {
+                                        if (log.log_type !== 'vitals') return false;
+                                        const logUnit = log.notes?.match(/Unit:\s*([a-zA-Z0-9\/]+)/)?.[1] || log.unit || '';
+                                        return logUnit === 'mmHg';
+                                    });
+                                } else if (tab === 'glucose') {
+                                    // Show only Glucose vitals (mg/dL)
+                                    filteredLogs = logs.filter(log => {
+                                        if (log.log_type !== 'vitals') return false;
+                                        const logUnit = log.notes?.match(/Unit:\s*([a-zA-Z0-9\/]+)/)?.[1] || log.unit || '';
+                                        return logUnit === 'mg/dL';
+                                    });
+                                } else if (tab === 'pr') {
+                                    // Show only PR vitals (bpm)
+                                    filteredLogs = logs.filter(log => {
+                                        if (log.log_type !== 'vitals') return false;
+                                        const logUnit = log.notes?.match(/Unit:\s*([a-zA-Z0-9\/]+)/)?.[1] || log.unit || '';
+                                        return logUnit === 'bpm';
+                                    });
+                                } else if (tab === 'sleep') {
+                                    // Show only sleep logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'sleep');
+                                } else if (tab === 'steps') {
+                                    // Show only activity logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'activity');
+                                } else if (tab === 'diet') {
+                                    // Show only diet logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'diet');
+                                } else if (tab === 'symptoms') {
+                                    // Show only symptoms logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'symptoms');
+                                } else if (tab === 'med') {
+                                    // Show only medication logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'med' || log.log_type === 'medication');
+                                } else if (tab === 'test') {
+                                    // Show only test/report logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'test' || log.log_type === 'reports');
+                                }
+                            }
+
+                            if (filteredLogs.length === 0) {
+                                return (
+                                    <div className="text-center py-12 bg-white rounded-3xl border border-slate-200">
+                                        <div className="text-slate-400 font-medium">No logs yet. Start tracking today!</div>
+                                    </div>
+                                );
+                            }
+
+                            return filteredLogs.slice(0, 10).map(log => (
                                 <div key={log.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow">
                                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 ${log.log_type === 'vitals' ? 'bg-rose-50 border-rose-100 text-rose-600' :
                                         log.log_type === 'diet' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
@@ -1296,8 +1348,8 @@ export default function HealthTrackerPage() {
                                         </div>
                                     )}
                                 </div>
-                            ))
-                        )}
+                            ));
+                        })()}
                     </div>
                 </div>
             </div >
