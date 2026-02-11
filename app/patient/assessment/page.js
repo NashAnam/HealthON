@@ -361,19 +361,19 @@ export default function AssessmentPage() {
                     const utterance = new SpeechSynthesisUtterance(spokenText);
                     utterance.onend = () => setIsPlaying(false);
 
-                    // Configure for natural English pronunciation
-                    utterance.lang = 'en-IN'; // Indian English for natural pronunciation
+                    // Configure for natural Hindi pronunciation
+                    utterance.lang = 'hi-IN'; // Hindi for natural Indian language
                     utterance.rate = 0.85; // Slower for clarity and natural conversation
                     utterance.pitch = 1.0;
                     utterance.volume = 1.0;
 
-                    // Try to find a good English voice (avoid pure Hindi/Urdu)
+                    // Try to find a good Hindi voice
                     const voices = window.speechSynthesis.getVoices();
-                    // Prefer Indian English, then UK/US English voices
+                    // Prefer Hindi voices, then Indian English as fallback
                     const preferredVoice = voices.find(v =>
-                      v.lang.includes('en-IN') ||
-                      v.lang.includes('en-GB') ||
-                      v.lang.includes('en-US')
+                      v.lang.includes('hi-IN') ||
+                      v.lang.includes('hi') ||
+                      v.lang.includes('en-IN')
                     );
                     if (preferredVoice) {
                       utterance.voice = preferredVoice;
