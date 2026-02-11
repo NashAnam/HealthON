@@ -252,22 +252,6 @@ export default function DietTrackerPage() {
                     <div className="lg:col-span-2 bg-white border-2 border-[#648C81]/20 rounded-3xl p-6 md:p-8">
                         <h2 className="text-xl font-black text-slate-900 mb-6">Log Meal</h2>
 
-                        {/* Camera Button */}
-                        <button
-                            onClick={captureFood}
-                            disabled={isAnalyzing}
-                            className="w-full mb-6 bg-[#648C81] hover:bg-[#4a2135] text-white p-6 rounded-xl font-bold flex items-center justify-center gap-3 transition-all"
-                        >
-                            <Camera className="w-6 h-6" />
-                            {isAnalyzing ? 'Analyzing...' : 'Take Photo & Auto-Detect Food'}
-                        </button>
-
-                        {capturedImage && (
-                            <div className="mb-6">
-                                <img src={capturedImage} alt="Food" className="w-full rounded-xl border-2 border-[#648C81]/20" />
-                            </div>
-                        )}
-
                         <div className="relative mb-8">
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Search Food (Google-like)</label>
                             <div className="relative group">
