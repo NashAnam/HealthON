@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getPhysiotherapist, signOut } from '@/lib/supabase';
+import { getCurrentUser, getPhysiotherapist, signOut, getPhysiotherapistPatients, getPhysiotherapistAppointments, getExercisePlans } from '@/lib/supabase';
 import { Activity, Users, Calendar, FileText, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useSidebar } from '@/lib/SidebarContext';
 import { MoreVertical } from 'lucide-react';
@@ -18,6 +18,7 @@ export default function PhysiotherapistDashboard() {
         activePrograms: 0,
         pendingAssessments: 0
     });
+    const [recentActivity, setRecentActivity] = useState([]);
 
     useEffect(() => {
         loadDashboard();
@@ -39,13 +40,74 @@ export default function PhysiotherapistDashboard() {
 
             setPhysiotherapist(physiotherapistData);
 
-            // Mock stats for now - replace with actual data later
+            // Fetch real data
+            const today = new Date().toISOString().split('T')[0];
+            const [patientsRes, apptsRes, plansRes] = await Promise.all([
+                getPhysiotherapistPatients(physiotherapistData.id),
+                getPhysiotherapistAppointments(physiotherapistData.id),
+                getExercisePlans(physiotherapistData.id)
+            ]);
+
+            const patients = patientsRes.data || [];
+            const appointments = apptsRes.data || [];
+            const exercisePlans = plansRes.data || [];
+
+            // Calculate stats
+            const uniquePatientIds = new Set(patients.map(p => p.patient_id));
+            const todayAppts = appointments.filter(a => a.appointment_date === today);
+            const pendingAppts = appointments.filter(a => a.status === 'pending');
+
             setStats({
-                totalPatients: 32,
-                todaySessions: 7,
-                activePrograms: 25,
-                pendingAssessments: 4
+                totalPatients: uniquePatientIds.size,
+                todaySessions: todayAppts.length,
+                activePrograms: exercisePlans.length,
+                pendingAssessments: pendingAppts.length
             });
+
+            // Aggregate Recent Activity
+            const activity = [
+                ...exercisePlans.map(p => ({
+                    id: `plan-${p.id}`,
+                    type: 'plan',
+                    title: `Exercise plan "${p.title}" created for ${p.patients?.name || 'Patient'}`,
+                    time: p.created_at,
+                    icon: FileText,
+                    color: 'purple'
+                })),
+                ...appointments.map(a => ({
+                    id: `appt-${a.id}`,
+                    type: 'appointment',
+                    title: `Session with ${a.patients?.name || 'Patient'}`,
+                    time: a.created_at,
+                    icon: Calendar,
+                    color: 'blue'
+                }))
+            ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
+
+            setRecentActivity(activity);
+
+            // Schedule notifications for physiotherapist
+            try {
+                const { requestNotificationPermission, scheduleExpertAppointmentReminder, showInstantNotification } = await import('@/lib/notifications');
+                const hasPermission = await requestNotificationPermission();
+
+                if (hasPermission) {
+                    // 1. Schedule reminders for today's sessions
+                    for (const apt of todayAppts) {
+                        await scheduleExpertAppointmentReminder(apt);
+                    }
+
+                    // 2. Notify if there are new pending assessments/sessions
+                    if (pendingAppts.length > 0) {
+                        await showInstantNotification(
+                            '🆕 New Session Requests',
+                            `You have ${pendingAppts.length} pending session requests.`
+                        );
+                    }
+                }
+            } catch (notifErr) {
+                console.error('Physio notif error:', notifErr);
+            }
 
         } catch (error) {
             console.error('Dashboard load error:', error);

@@ -5,9 +5,9 @@ import Link from 'next/link';
 import {
     Mic, Camera, Save, Calendar, Clock, Activity, FileText,
     ChevronRight, X, Heart, Thermometer, User, Utensils, Upload, AlertCircle, Droplets, Pill,
-    ClipboardList, CheckCircle, AlertTriangle, Info, Bell, Check
+    ClipboardList, CheckCircle, AlertTriangle, Info, Bell, Check, Dumbbell, Play
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, getPatientDietPlans, getPatientExercisePlans } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
 import { Menu, MoreVertical } from 'lucide-react';
@@ -33,6 +33,12 @@ export default function HealthTrackerPage() {
     const [prescribedMeds, setPrescribedMeds] = useState([]);
     const [latestAssessment, setLatestAssessment] = useState(null);
     const [labResults, setLabResults] = useState([]);
+
+    // Care Plans State
+    const [dietPlans, setDietPlans] = useState([]);
+    const [exercisePlans, setExercisePlans] = useState([]);
+    const [activePlanTab, setActivePlanTab] = useState('diet');
+    const [selectedPlan, setSelectedPlan] = useState(null);
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -76,6 +82,8 @@ export default function HealthTrackerPage() {
             setFormData(prev => ({ ...prev, log_type: 'followup', unit: '' }));
             setTrackerTitle('Follow-up Tracker');
             setTrackerPlaceholder('Enter follow-up details...');
+        } else if (tab === 'care-plans') {
+            setTrackerTitle('My Care Plans');
         } else {
             setTrackerTitle('Health Tracker');
         }
@@ -84,8 +92,6 @@ export default function HealthTrackerPage() {
     // State for Voice & Camera
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
-    const [capturedImage, setCapturedImage] = useState(null);
-    const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         log_type: 'vitals',
@@ -165,6 +171,14 @@ export default function HealthTrackerPage() {
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
+
+            // Fetch Care Plans
+            const [dietRes, exerciseRes] = await Promise.all([
+                getPatientDietPlans(patient.id),
+                getPatientExercisePlans(patient.id)
+            ]);
+            setDietPlans(dietRes.data || []);
+            setExercisePlans(exerciseRes.data || []);
 
             if (rx && rx.medications && Array.isArray(rx.medications)) {
                 setPrescribedMeds(rx.medications);
@@ -247,27 +261,6 @@ export default function HealthTrackerPage() {
         recognition.onend = () => setIsListening(false);
 
         recognition.start();
-    };
-
-    const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            // For now, we'll just show a success message as full camera UI needs a modal/video element
-            toast.success('Camera accessed! (Preview removed for performance)');
-            setCapturedImage('camera_capture_placeholder');
-            // Close stream immediately since we don't have a preview element in this layout
-            stream.getTracks().forEach(track => track.stop());
-        } catch (err) {
-            toast.error('Could not access camera: ' + err.message);
-        }
-    };
-
-    const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setCapturedImage(file.name);
-            toast.success(`File "${file.name}" attached!`);
-        }
     };
 
     const handleSave = async () => {
@@ -611,7 +604,7 @@ export default function HealthTrackerPage() {
                                 { name: 'Diet', icon: Utensils, href: '/patient/health-tracker?tab=diet', color: 'bg-emerald-50 text-emerald-600', key: 'diet' },
                                 { name: 'Symptoms', icon: AlertCircle, href: '/patient/health-tracker?tab=symptoms', color: 'bg-rose-50 text-rose-600', key: 'symptoms' },
                                 { name: 'Med', icon: Pill, href: '/patient/health-tracker?tab=med', color: 'bg-rose-50 text-rose-600', key: 'med' },
-                                { name: 'Tests Result', icon: FileText, href: '/patient/health-tracker?tab=test', color: 'bg-purple-50 text-purple-600', key: 'test' },
+                                { name: 'Care Plans', icon: ClipboardList, href: '/patient/health-tracker?tab=care-plans', color: 'bg-indigo-50 text-indigo-600', key: 'care-plans' },
                                 { name: 'Follow-up', icon: Calendar, href: '/patient/health-tracker?tab=followup', color: 'bg-blue-50 text-blue-600', key: 'followup' },
                             ].map((item) => {
                                 // Find latest log for this item
@@ -624,28 +617,33 @@ export default function HealthTrackerPage() {
                                     return log.log_type === item.key;
                                 });
 
+                                const activeCount = item.key === 'care-plans' ? (dietPlans.length + exercisePlans.length) : 0;
+
                                 return (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-3 hover:shadow-md transition-all active:scale-95 text-center group min-h-[140px]"
-                                    >
+                                    <Link key={item.name} href={item.href} className="bg-white p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-3 hover:shadow-md transition-all active:scale-95 text-center group min-h-[140px]">
                                         <div className={`p-3 rounded-full ${item.color} group-hover:scale-110 transition-transform`}>
                                             <item.icon size={24} />
                                         </div>
                                         <div className="flex flex-col gap-1">
                                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{item.name}</span>
-                                            {latestLog && latestLog.value && (
-                                                <span className="text-sm font-black text-slate-800">
-                                                    {latestLog.value} <span className="text-[10px] text-slate-400 font-bold ml-0.5">{latestLog.unit || item.unit || ''}</span>
-                                                </span>
+                                            {item.key === 'care-plans' ? (
+                                                <span className="text-sm font-black text-slate-800">{activeCount} <span className="text-[10px] text-slate-400 font-bold ml-0.5">Active</span></span>
+                                            ) : latestLog ? (
+                                                <>
+                                                    {latestLog.value && (
+                                                        <span className="text-sm font-black text-slate-800">
+                                                            {latestLog.value} <span className="text-[10px] text-slate-400 font-bold ml-0.5">{latestLog.unit || item.unit || ''}</span>
+                                                        </span>
+                                                    )}
+                                                    {!latestLog.value && latestLog.notes && (
+                                                        <span className="text-[10px] font-bold text-slate-400 truncate max-w-[100px]">
+                                                            {latestLog.notes}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-gray-300">- -</span>
                                             )}
-                                            {latestLog && !latestLog.value && latestLog.notes && (
-                                                <span className="text-[10px] font-bold text-slate-400 truncate max-w-[100px]">
-                                                    {latestLog.notes}
-                                                </span>
-                                            )}
-                                            {!latestLog && <span className="text-[10px] font-bold text-gray-300">- -</span>}
                                         </div>
                                     </Link>
                                 );
@@ -664,8 +662,109 @@ export default function HealthTrackerPage() {
                                 </button>
                             </div>
 
-                            {/* ------------ SYMPTOMS TRACKER UI ------------ */}
-                            {formData.log_type === 'symptoms' ? (
+                            {searchParams.get('tab') === 'care-plans' ? (
+                                <div className="space-y-6">
+                                    {/* Care Plans Tabs */}
+                                    <div className="flex p-1 bg-slate-100 rounded-2xl mb-6">
+                                        <button onClick={() => setActivePlanTab('diet')} className={`flex-1 py-3 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activePlanTab === 'diet' ? 'bg-white text-green-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Diet Plans</button>
+                                        <button onClick={() => setActivePlanTab('exercise')} className={`flex-1 py-3 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activePlanTab === 'exercise' ? 'bg-white text-orange-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Exercise Plans</button>
+                                    </div>
+
+                                    {selectedPlan ? (
+                                        /* Plan Detail View */
+                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                                            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-lg">
+                                                <div className="mb-8">
+                                                    <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${selectedPlan.type === 'diet' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'}`}>{selectedPlan.type === 'diet' ? 'Diet Chart' : 'Exercise Regimen'}</span>
+                                                    <h2 className="text-2xl font-black text-slate-900 mt-4 mb-2">{selectedPlan.title}</h2>
+                                                    <p className="text-slate-500 font-medium">{selectedPlan.description}</p>
+                                                </div>
+
+                                                {selectedPlan.type === 'diet' ? (
+                                                    <div className="space-y-8">
+                                                        {['breakfast', 'lunch', 'dinner', 'snacks'].map((meal) => (
+                                                            <div key={meal} className="bg-slate-50 rounded-2xl p-6">
+                                                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 capitalize">{meal}</h3>
+                                                                <div className="space-y-3">
+                                                                    {selectedPlan.meals?.[meal]?.map((item, idx) => (
+                                                                        <div key={idx} className="bg-white p-4 rounded-xl border border-slate-100 flex justify-between items-center">
+                                                                            <span className="font-bold text-slate-700">{item.item}</span>
+                                                                            {item.quantity && <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-lg">{item.quantity}</span>}
+                                                                        </div>
+                                                                    )) || <p className="text-xs text-slate-400 italic">No items listed</p>}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {(selectedPlan.exercises || []).map((ex, idx) => (
+                                                            <div key={idx} className="bg-white border border-slate-100 p-6 rounded-2xl hover:shadow-md transition-shadow">
+                                                                <div className="flex items-start justify-between mb-4">
+                                                                    <div>
+                                                                        <h4 className="font-bold text-slate-900">{ex.name}</h4>
+                                                                        <div className="flex gap-3 text-xs font-bold text-slate-400 mt-1">
+                                                                            <span>{ex.sets} Sets</span><span>•</span><span>{ex.reps} Reps</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    {ex.video_url && <a href={ex.video_url} target="_blank" className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"><Play size={16} fill="currentColor" /></a>}
+                                                                </div>
+                                                                {ex.instructions && <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 font-medium">{ex.instructions}</div>}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : activePlanTab === 'diet' ? (
+                                        /* Diet Plans List */
+                                        <div className="space-y-4">
+                                            {dietPlans.length === 0 ? (
+                                                <div className="text-center py-12 bg-green-50/50 rounded-3xl border border-dashed border-green-200">
+                                                    <Utensils className="w-12 h-12 text-green-300 mx-auto mb-4" />
+                                                    <p className="text-green-800 font-bold">No Diet Plans Assigned</p>
+                                                </div>
+                                            ) : (
+                                                dietPlans.map(plan => (
+                                                    <div key={plan.id} className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all group">
+                                                        <div className="flex justify-between items-start mb-6">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-2"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[10px] font-black uppercase tracking-widest text-green-600">Active Plan</span></div>
+                                                                <h3 className="text-xl font-black text-slate-900">{plan.title}</h3>
+                                                            </div>
+                                                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600"><Utensils size={20} /></div>
+                                                        </div>
+                                                        <button onClick={() => setSelectedPlan({ ...plan, type: 'diet' })} className="w-full py-4 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-green-700 transition-colors">View Full Chart</button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    ) : (
+                                        /* Exercise Plans List */
+                                        <div className="space-y-4">
+                                            {exercisePlans.length === 0 ? (
+                                                <div className="text-center py-12 bg-orange-50/50 rounded-3xl border border-dashed border-orange-200">
+                                                    <Dumbbell className="w-12 h-12 text-orange-300 mx-auto mb-4" />
+                                                    <p className="text-orange-800 font-bold">No Exercise Plans Assigned</p>
+                                                </div>
+                                            ) : (
+                                                exercisePlans.map(plan => (
+                                                    <div key={plan.id} className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all group">
+                                                        <div className="flex justify-between items-start mb-6">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-2"><span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" /><span className="text-[10px] font-black uppercase tracking-widest text-orange-600">Active Plan</span></div>
+                                                                <h3 className="text-xl font-black text-slate-900">{plan.title}</h3>
+                                                            </div>
+                                                            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-600"><Activity size={20} /></div>
+                                                        </div>
+                                                        <button onClick={() => setSelectedPlan({ ...plan, type: 'exercise' })} className="w-full py-4 bg-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-700 transition-colors">View Regimen</button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : formData.log_type === 'symptoms' ? (
                                 <div className="space-y-8">
                                     {/* Medical Notice Alert */}
                                     <div className="bg-rose-50 border-l-4 border-rose-500 p-6 rounded-r-xl">
@@ -1207,40 +1306,7 @@ export default function HealthTrackerPage() {
                                                 {transcript && <p className="text-sm text-teal-600 font-medium italic ml-1">Listening: "{transcript}"</p>}
                                             </div>
 
-                                            {/* Photo Upload Options */}
-                                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                                <button
-                                                    onClick={startCamera}
-                                                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all border-2 border-dashed border-slate-300"
-                                                >
-                                                    <Camera size={20} /> Take Photo
-                                                </button>
-                                                <button
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all border-2 border-dashed border-slate-300"
-                                                >
-                                                    <Upload size={20} /> Upload Photo
-                                                </button>
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleFileUpload}
-                                                    className="hidden"
-                                                />
-                                            </div>
 
-                                            {capturedImage && (
-                                                <div className="mb-8 relative">
-                                                    <img src={capturedImage} alt="Captured" className="w-full rounded-xl border-2 border-slate-200" />
-                                                    <button
-                                                        onClick={() => setCapturedImage(null)}
-                                                        className="absolute top-2 right-2 bg-rose-500 text-white p-2 rounded-full hover:bg-rose-600 transition-all"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                </div>
-                                            )}
 
                                             <button
                                                 onClick={handleSave}
@@ -1313,6 +1379,9 @@ export default function HealthTrackerPage() {
                                 } else if (tab === 'test') {
                                     // Show only test/report logs
                                     filteredLogs = logs.filter(log => log.log_type === 'test' || log.log_type === 'reports');
+                                } else if (tab === 'care-plans') {
+                                    // Show only diet and activity logs
+                                    filteredLogs = logs.filter(log => log.log_type === 'diet' || log.log_type === 'activity');
                                 }
                             }
 

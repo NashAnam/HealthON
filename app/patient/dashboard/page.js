@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heart, Activity, Thermometer, Droplets, Scale, AlertCircle, Calendar, Bell, ChevronRight, FileText, Pill, Stethoscope, Utensils, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCurrentUser, getPatient, getLatestVitals, supabase, getAppointments, getReminders, createPatient } from '@/lib/supabase';
+import { getCurrentUser, getPatient, getLatestVitals, supabase, getAppointments, getReminders, createPatient, syncPatientReminders } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { useSidebar } from '@/lib/SidebarContext';
@@ -92,9 +92,12 @@ export default function PatientDashboard() {
                 getAppointments(patientData.id),
                 supabase.from('lab_reports').select('*').eq('patient_id', patientData.id).order('created_at', { ascending: false }).limit(3),
                 supabase.from('prescriptions').select('*').eq('patient_id', patientData.id).order('created_at', { ascending: false }).limit(3),
-                getReminders(patientData.id)
+                getReminders(patientData.id),
+                syncPatientReminders(patientData.id)
             ]);
 
+            // Refresh reminders after sync (in case new ones were added)
+            const { data: updatedReminders } = await getReminders(patientData.id);
             setVitals(vitalsRes.data);
 
             // Filter and sort for genuinely UPCOMING appointments (confirmed or pending)
@@ -110,7 +113,7 @@ export default function PatientDashboard() {
                 });
 
             setAppointments(upcomingAppts.slice(0, 3));
-            setReminders(remindersRes.data || []);
+            setReminders(updatedReminders || remindersRes.data || []);
 
 
             // Combine for activity
@@ -146,43 +149,12 @@ export default function PatientDashboard() {
 
             setActivity(activities.sort((a, b) => b.date - a.date).slice(0, 3));
 
-            // Schedule push notifications for appointments and medications
+            // Schedule unified notifications for all reminders & vitals
             try {
-                const { requestNotificationPermission, scheduleAppointmentReminder, scheduleMedicationReminder } = await import('@/lib/notifications');
-
-                const hasPermission = await requestNotificationPermission();
-                if (hasPermission) {
-                    // Schedule appointment reminders
-                    for (const appt of upcomingAppts) {
-                        await scheduleAppointmentReminder(appt);
-                    }
-
-                    // Schedule medication reminders from latest prescription
-                    if (prescriptionsRes.data && prescriptionsRes.data.length > 0) {
-                        const latestPrescription = prescriptionsRes.data[0];
-                        if (latestPrescription.medications && Array.isArray(latestPrescription.medications)) {
-                            for (const med of latestPrescription.medications) {
-                                // Extract time from instructions or frequency
-                                const times = [];
-                                const instr = (med.instructions || '').toLowerCase();
-                                if (instr.includes('morning') || instr.includes('am')) times.push('08:00');
-                                if (instr.includes('afternoon')) times.push('14:00');
-                                if (instr.includes('evening') || instr.includes('pm')) times.push('19:00');
-                                if (instr.includes('night')) times.push('22:00');
-
-                                // Fallback if no specific time found
-                                if (times.length === 0) times.push('09:00');
-
-                                for (const time of times) {
-                                    await scheduleMedicationReminder(med, time);
-                                }
-                            }
-                        }
-                    }
-                }
+                const { scheduleAllReminders } = await import('@/lib/notifications');
+                await scheduleAllReminders(patient.id);
             } catch (notifError) {
                 console.error('Notification scheduling error:', notifError);
-                // Don't show error to user, notifications are optional
             }
 
         } catch (error) {

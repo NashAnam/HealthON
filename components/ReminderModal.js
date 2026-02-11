@@ -38,17 +38,12 @@ export default function ReminderModal({ isOpen, onClose, patientId, onSuccess })
 
             if (error) throw error;
 
-            // Schedule notification
-            if (typeof window !== 'undefined' && 'Notification' in window) {
-                const { requestNotificationPermission, scheduleNotification } = await import('@/lib/notifications');
-                const hasPermission = await requestNotificationPermission();
-                if (hasPermission) {
-                    scheduleNotification(
-                        formData.title,
-                        formData.description || `Time for your ${formData.reminder_type} reminder!`,
-                        reminderDateTime
-                    );
-                }
+            // Schedule unified notifications
+            try {
+                const { scheduleAllReminders } = await import('@/lib/notifications');
+                await scheduleAllReminders(patientId);
+            } catch (notifErr) {
+                console.error('Error scheduling notifications after new reminder:', notifErr);
             }
 
             toast.success('Reminder set successfully!');

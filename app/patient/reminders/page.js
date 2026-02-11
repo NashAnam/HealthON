@@ -36,6 +36,14 @@ export default function RemindersPage() {
       const { data, error } = await getReminders(patientData.id);
       if (error) throw error;
       setReminders(data || []);
+
+      // Re-sync and schedule background notifications
+      try {
+        const { scheduleAllReminders } = await import('@/lib/notifications');
+        await scheduleAllReminders(patientData.id);
+      } catch (notifErr) {
+        console.error('Notification scheduling error on reminders page:', notifErr);
+      }
     } catch (error) {
       console.error(error);
       toast.error('Failed to load reminders');

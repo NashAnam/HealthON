@@ -53,15 +53,8 @@ export default function PatientsPage() {
                 }
             });
         } else {
-            // Fallback: Fetch ALL patients for directory view if no appointments exist
-            const { data: allPatients } = await supabase.from('patients').select('*');
-            if (allPatients) {
-                uniquePatients = allPatients.map(p => ({
-                    ...p,
-                    lastVisit: 'No visits yet',
-                    appointmentCount: 0
-                }));
-            }
+            // Fallback: If no appointments, show empty list (Security Fix)
+            setPatients([]);
         }
 
         setPatients(uniquePatients);

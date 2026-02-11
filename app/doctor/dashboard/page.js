@@ -93,6 +93,29 @@ export default function DoctorDashboard() {
         critical: aptData?.slice(3, 4).map(a => a.patients).filter(Boolean) || []
       });
 
+      // Schedule notifications for doctor
+      try {
+        const { requestNotificationPermission, scheduleExpertAppointmentReminder, showInstantNotification } = await import('@/lib/notifications');
+        const hasPermission = await requestNotificationPermission();
+
+        if (hasPermission) {
+          // 1. Schedule reminders for today's confirmed appointments
+          for (const apt of todayApts) {
+            await scheduleExpertAppointmentReminder(apt);
+          }
+
+          // 2. Notify if there are new pending requests
+          if (requests.length > 0) {
+            await showInstantNotification(
+              '🆕 New Requests',
+              `You have ${requests.length} new patient ${requests.length === 1 ? 'request' : 'requests'} waiting for approval.`
+            );
+          }
+        }
+      } catch (notifErr) {
+        console.error('Doctor notif error:', notifErr);
+      }
+
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

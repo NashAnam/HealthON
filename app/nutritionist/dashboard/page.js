@@ -87,6 +87,29 @@ export default function NutritionistDashboard() {
 
             setRecentActivity(activity);
 
+            // Schedule notifications for nutritionist
+            try {
+                const { requestNotificationPermission, scheduleExpertAppointmentReminder, showInstantNotification } = await import('@/lib/notifications');
+                const hasPermission = await requestNotificationPermission();
+
+                if (hasPermission) {
+                    // 1. Schedule reminders for today's appointments
+                    for (const apt of todayAppts) {
+                        await scheduleExpertAppointmentReminder(apt);
+                    }
+
+                    // 2. Notify if there are new pending consultations
+                    if (pendingAppts.length > 0) {
+                        await showInstantNotification(
+                            '🆕 New Consultations',
+                            `You have ${pendingAppts.length} pending appointment requests.`
+                        );
+                    }
+                }
+            } catch (notifErr) {
+                console.error('Nutritionist notif error:', notifErr);
+            }
+
         } catch (error) {
             console.error('Dashboard load error:', error);
             toast.error('Failed to load dashboard');
