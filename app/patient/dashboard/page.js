@@ -152,7 +152,7 @@ export default function PatientDashboard() {
             // Schedule unified notifications for all reminders & vitals
             try {
                 const { scheduleAllReminders } = await import('@/lib/notifications');
-                await scheduleAllReminders(patient.id);
+                await scheduleAllReminders(patientData.id);
             } catch (notifError) {
                 console.error('Notification scheduling error:', notifError);
             }
