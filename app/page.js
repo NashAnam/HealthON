@@ -138,10 +138,11 @@ export default function LandingPage() {
                                             if (role !== 'unregistered') {
                                                 router.push(`/${role}/dashboard`);
                                             } else {
-                                                router.push('/login');
+                                                router.push('/guest');
                                             }
                                         } else {
-                                            router.push('/login');
+                                            // Not logged in - show guest dashboard
+                                            router.push('/guest');
                                         }
                                     }}
                                     className="px-8 py-4 bg-gradient-to-r from-[#602E5A] to-[#602E5A] text-white rounded-2xl font-black text-lg shadow-xl shadow-[#602E5A]/25 hover:shadow-2xl hover:shadow-[#602E5A]/40 transition-all hover:-translate-y-1 flex items-center justify-center gap-3 group"

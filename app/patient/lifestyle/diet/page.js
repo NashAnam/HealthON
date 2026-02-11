@@ -143,7 +143,7 @@ export default function DietPage() {
                                     type="text"
                                     value={foodItem}
                                     onChange={(e) => setFoodItem(e.target.value)}
-                                    placeholder="e.g., Chicken Biryani, Samosa, Gulab Jamun"
+                                    placeholder="e.g., Roti, Dal, Rice, Idli, Dosa, Paneer, Curd, Biryani, Paratha"
                                     className="w-full bg-gray-50 rounded-xl p-4 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-[#5a8a7a]/20 font-medium"
                                 />
                             </div>
