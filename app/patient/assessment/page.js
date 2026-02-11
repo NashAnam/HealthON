@@ -322,7 +322,6 @@ export default function AssessmentPage() {
               {currentQ.label}
             </h2>
             {/* Audio Playback Button */}
-            {/* Audio Playback Button */}
             <button
               onClick={() => {
                 if ('speechSynthesis' in window) {
@@ -330,14 +329,43 @@ export default function AssessmentPage() {
                     window.speechSynthesis.cancel();
                     setIsPlaying(false);
                   } else {
-                    const textToRead = `${currentQ.label}. ${currentQ.subLabel || ''}`;
-                    const utterance = new SpeechSynthesisUtterance(textToRead);
+                    // Convert question to more natural spoken language
+                    let spokenText = currentQ.label;
+
+                    // Make questions more conversational for voice
+                    const naturalConversions = {
+                      'How old are you?': 'How old are you? Please select your age group.',
+                      'What is your gender?': 'What is your gender? Please select male or female.',
+                      'How is your waist size?': 'How is your waist size? Does your belly feel large? Please select your answer.',
+                      'What are your body measurements?': 'What are your body measurements? Please enter your height and weight to calculate your B M I.',
+                      'How much do you move daily?': 'How much do you move daily? Do you exercise, walk, or mostly sit?',
+                      'What are your eating habits?': 'What are your eating habits? Do you eat home food, or oily and sweet items?',
+                      'Do you eat a lot of salt?': 'Do you eat a lot of salt? Like pickles, papad, or salty snacks?',
+                      'Do you smoke or chew tobacco?': 'Do you smoke or chew tobacco? Please answer yes or no.',
+                      'Do you drink alcohol?': 'Do you drink alcohol? Please select your answer.',
+                      'Do you have Diabetes (Sugar)?': 'Do you have Diabetes, also known as Sugar? Please answer yes or no.',
+                      'Do you have High Blood Pressure?': 'Do you have High Blood Pressure, also known as B P? Please answer yes or no.',
+                      'Do you have Heart Disease?': 'Do you have any Heart Disease? Please answer yes or no.',
+                      'Does anyone in your family have these conditions?': 'Does anyone in your family have these conditions? Like diabetes, blood pressure, or heart problems?',
+                      'Do you feel stressed often?': 'Do you feel stressed often? Please select your answer.',
+                      'How well do you sleep?': 'How well do you sleep at night? Please select your answer.'
+                    };
+
+                    // Use natural conversion if available
+                    if (naturalConversions[currentQ.label]) {
+                      spokenText = naturalConversions[currentQ.label];
+                    } else if (currentQ.subLabel) {
+                      spokenText = `${currentQ.label} ${currentQ.subLabel}`;
+                    }
+
+                    const utterance = new SpeechSynthesisUtterance(spokenText);
                     utterance.onend = () => setIsPlaying(false);
 
                     // Configure for natural English pronunciation
                     utterance.lang = 'en-IN'; // Indian English for natural pronunciation
-                    utterance.rate = 0.9; // Slightly slower for clarity
+                    utterance.rate = 0.85; // Slower for clarity and natural conversation
                     utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
 
                     // Try to find a good English voice (avoid pure Hindi/Urdu)
                     const voices = window.speechSynthesis.getVoices();
