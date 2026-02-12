@@ -187,7 +187,7 @@ export default function PhysiotherapistDashboard() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="bg-white px-6 md:px-12 pt-10 pb-5 md:py-6 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe px-safe">
+            <header className="bg-white px-6 md:px-12 pt-4 pb-5 md:py-6 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe px-safe min-h-[env(safe-area-inset-top)+64px]">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={toggle}
@@ -208,7 +208,7 @@ export default function PhysiotherapistDashboard() {
                 </div>
             </header>
 
-            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8 px-safe">
+            <main className="w-full max-w-7xl mx-auto px-6 md:px-12 py-8 px-safe pb-24 md:pb-8">
                 {/* Welcome Section */}
                 <div className="mb-8">
                     <h2 className="text-3xl font-black text-gray-900 mb-2">Welcome back, {physiotherapist?.name?.split(' ')[0] || 'Physiotherapist'}!</h2>

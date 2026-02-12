@@ -12,6 +12,11 @@ export default function PhysiotherapistPatientsPage() {
     const [filteredPatients, setFilteredPatients] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPatient, setSelectedPatient] = useState(null);
+    const [patientMedicalData, setPatientMedicalData] = useState({
+        vitals: null,
+        assessment: null,
+        loading: false
+    });
 
     useEffect(() => {
         loadData();
@@ -67,12 +72,31 @@ export default function PhysiotherapistPatientsPage() {
         }
     };
 
-    const filterPatients = () => {
-        if (!searchTerm) {
-            setFilteredPatients(patients);
-            return;
+    const fetchPatientMedicalData = async (patientId) => {
+        setPatientMedicalData(prev => ({ ...prev, loading: true }));
+        try {
+            const { getLatestVitals, getLatestAssessment } = await import('@/lib/supabase');
+            const [vitalsRes, assessmentRes] = await Promise.all([
+                getLatestVitals(patientId),
+                getLatestAssessment(patientId)
+            ]);
+            setPatientMedicalData({
+                vitals: vitalsRes.data,
+                assessment: assessmentRes.data,
+                loading: false
+            });
+        } catch (err) {
+            console.error('Error fetching medical data:', err);
+            setPatientMedicalData(prev => ({ ...prev, loading: false }));
         }
+    };
 
+    const handleSelectPatient = (patient) => {
+        setSelectedPatient(patient);
+        fetchPatientMedicalData(patient.id);
+    };
+
+    const filterPatients = () => {
         const lowerTerm = searchTerm.toLowerCase();
         const filtered = patients.filter(p =>
             p.name?.toLowerCase().includes(lowerTerm) ||
@@ -162,7 +186,7 @@ export default function PhysiotherapistPatientsPage() {
                         {filteredPatients.map(patient => (
                             <div
                                 key={patient.id}
-                                onClick={() => setSelectedPatient(patient)}
+                                onClick={() => handleSelectPatient(patient)}
                                 className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-lg hover:border-orange-100 transition-all group cursor-pointer"
                             >
                                 <div className="flex items-center gap-4 mb-6">
@@ -225,17 +249,25 @@ export default function PhysiotherapistPatientsPage() {
 
                         <div className="space-y-6">
                             <div className="bg-slate-50 p-6 rounded-2xl">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Contact Details</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-500">Phone</span>
-                                        <span className="text-sm font-black text-slate-700">{selectedPatient.phone}</span>
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Patient Medical Data</h3>
+                                {patientMedicalData.loading ? (
+                                    <div className="flex justify-center p-4">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-orange-600"></div>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-500">Email</span>
-                                        <span className="text-sm font-black text-slate-700">{selectedPatient.email}</span>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <VitalCard label="Sys/Dia BP" value={patientMedicalData.vitals.systolic_bp ? `${patientMedicalData.vitals.systolic_bp}/${patientMedicalData.vitals.diastolic_bp || '--'}` : 'N/A'} unit="mmHg" />
+                                        <VitalCard label="Heart Rate" value={patientMedicalData.vitals.heart_rate || 'N/A'} unit="bpm" />
+                                        <VitalCard label="Blood Sugar" value={patientMedicalData.vitals.blood_sugar || 'N/A'} unit="mg/dL" />
+                                        <VitalCard label="Logged At" value={patientMedicalData.vitals.recorded_at ? new Date(patientMedicalData.vitals.recorded_at).toLocaleDateString() : 'N/A'} unit="" />
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="font-bold text-slate-500">Health Score</span>
+                                            <span className={`font-black ${patientMedicalData.assessment?.scores?.overall > 70 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                                                {patientMedicalData.assessment?.scores?.overall ? `${patientMedicalData.assessment.scores.overall}/100` : 'N/A'}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             <div className="flex gap-4">
@@ -250,11 +282,12 @@ export default function PhysiotherapistPatientsPage() {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        router.push(`/physiotherapist/patients/${selectedPatient.id}`);
+                                        toast.success('Patient history details available in Exercise Plans');
+                                        setSelectedPatient(null);
                                     }}
-                                    className="flex-1 py-4 bg-orange-50 text-orange-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-100 transition-all"
+                                    className="flex-1 py-4 bg-orange-50 text-orange-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-100 transition-all text-center"
                                 >
-                                    View Full History
+                                    View Summary
                                 </button>
                             </div>
                         </div>

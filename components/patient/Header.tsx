@@ -21,7 +21,7 @@ export default function Header({ userName, userImage }: HeaderProps) {
     ];
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 px-6 pt-10 pb-4 md:py-6 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-300 lg:pr-64 pt-safe px-safe">
+        <header className="fixed top-0 left-0 right-0 z-50 px-6 pt-4 pb-4 md:py-6 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-300 lg:pr-64 pt-safe px-safe min-h-[env(safe-area-inset-top)+64px]">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
 
                 {/* Mobile Menu Trigger & Logo (Mobile Only) */}

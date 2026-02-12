@@ -232,7 +232,7 @@ export default function DoctorDashboard() {
       </div>
 
       <div className="relative z-10">
-        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 pt-10 pb-4 md:py-6 flex items-center justify-between sticky top-0 z-40 pt-safe px-safe">
+        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 pt-4 pb-4 md:py-6 flex items-center justify-between sticky top-0 z-40 pt-safe px-safe min-h-[env(safe-area-inset-top)+64px]">
           <div className="flex items-center gap-2">
             <button onClick={toggle} className="p-2 -ml-2 text-gray-400 hover:text-plum-800 transition-colors">
               <MoreHorizontal size={24} />
@@ -543,7 +543,7 @@ function RequestCard({ req, idx, onView, onConfirm }) {
                 <div className="hidden lg:block w-1 h-1 bg-amber-200 rounded-full" />
                 <div className="flex items-center gap-1 text-[10px] font-black text-teal-600 uppercase tracking-widest">
                   <Video size={12} /> Video
-                </div>
+                </div >
               </>
             )}
           </div>
@@ -641,6 +641,40 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
     { name: '', dosage: '500mg', frequency: 'OD (Once daily)', duration: '7 days', instructions: 'After food' }
   ]);
   const [isSaving, setIsSaving] = useState(false);
+  const [patientData, setPatientData] = useState({
+    assessment: null,
+    labReports: [],
+    vitals: null,
+    loading: false
+  });
+
+  useEffect(() => {
+    if (patient?.id) {
+      fetchPatientMedicalData();
+    }
+  }, [patient?.id]);
+
+  const fetchPatientMedicalData = async () => {
+    setPatientData(prev => ({ ...prev, loading: true }));
+    try {
+      const { getLatestAssessment, getLabReports, getLatestVitals } = await import('@/lib/supabase');
+      const [assessmentRes, reportsRes, vitalsRes] = await Promise.all([
+        getLatestAssessment(patient.id),
+        getLabReports(patient.id),
+        getLatestVitals(patient.id)
+      ]);
+
+      setPatientData({
+        assessment: assessmentRes.data,
+        labReports: reportsRes.data || [],
+        vitals: vitalsRes.data,
+        loading: false
+      });
+    } catch (err) {
+      console.error('Error fetching patient medical data:', err);
+      setPatientData(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -800,6 +834,21 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
                   onClick={() => setActiveTab('history')}
                   label="History"
                 />
+                <TabButton
+                  active={activeTab === 'vital-tracker'}
+                  onClick={() => setActiveTab('vital-tracker')}
+                  label="Vitals"
+                />
+                <TabButton
+                  active={activeTab === 'lab-results'}
+                  onClick={() => setActiveTab('lab-results')}
+                  label="Lab Reports"
+                />
+                <TabButton
+                  active={activeTab === 'assessments'}
+                  onClick={() => setActiveTab('assessments')}
+                  label="Assessments"
+                />
               </div>
             </div>
 
@@ -921,9 +970,95 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
                   <p className="text-sm font-black uppercase tracking-widest">No previous history available</p>
                 </div>
               )}
+
+              {activeTab === 'vital-tracker' && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-50 pb-4">Latest Vitals</h4>
+                    {patientData.loading ? (
+                      <div className="flex justify-center p-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-plum-600"></div>
+                      </div>
+                    ) : patientData.vitals ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <VitalCard label="Sys/Dia BP" value={patientData.vitals.systolic_bp ? `${patientData.vitals.systolic_bp}/${patientData.vitals.diastolic_bp || '--'}` : 'N/A'} unit="mmHg" />
+                        <VitalCard label="Heart Rate" value={patientData.vitals.heart_rate || 'N/A'} unit="bpm" />
+                        <VitalCard label="Blood Sugar" value={patientData.vitals.blood_sugar || 'N/A'} unit="mg/dL" />
+                        <VitalCard label="Logged At" value={patientData.vitals.recorded_at ? new Date(patientData.vitals.recorded_at).toLocaleDateString() : 'N/A'} unit="" />
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-widest text-[10px]">No vitals recorded recently.</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'lab-results' && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-50 pb-4">Lab Reports</h4>
+                    {patientData.loading ? (
+                      <div className="flex justify-center p-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-plum-600"></div>
+                      </div>
+                    ) : patientData.labReports.length > 0 ? (
+                      <div className="space-y-4">
+                        {patientData.labReports.map((report, i) => (
+                          <div key={i} className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                            <div>
+                              <h5 className="font-black text-gray-900 uppercase tracking-tight text-sm">{report.test_name}</h5>
+                              <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                                {new Date(report.created_at).toLocaleDateString()} • {report.lab_name || 'Medical Lab'}
+                              </p>
+                            </div>
+                            <span className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                              Normal
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-widest text-[10px]">No lab reports found.</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'assessments' && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-50 pb-4">Health Assessment Results</h4>
+                    {patientData.loading ? (
+                      <div className="flex justify-center p-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-plum-600"></div>
+                      </div>
+                    ) : patientData.assessment ? (
+                      <div className="space-y-6">
+                        <div className="p-6 bg-plum-50 rounded-2xl border border-plum-100">
+                          <p className="text-[10px] font-black text-plum-400 uppercase tracking-[0.2em] mb-2">Overall Score</p>
+                          <div className="flex items-end gap-2">
+                            <span className="text-4xl font-black text-plum-800">{patientData.assessment.scores?.overall || 0}</span>
+                            <span className="text-sm font-bold text-plum-400 mb-2">/ 100</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Object.entries(patientData.assessment.scores || {}).filter(([k]) => k !== 'overall').map(([key, score], i) => (
+                            <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center">
+                              <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{key}</span>
+                              <span className="text-sm font-black text-gray-900">{score}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-widest text-[10px]">No assessment data available.</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
             </div>
 
-            <div className="bg-white p-8 border-t border-gray-100 flex flex-wrap gap-4 items-center">
+            <div className="bg-white p-8 border-t border-gray-100 flex flex-wrap gap-4 items-center pt-safe px-safe min-h-[env(safe-area-inset-bottom)+80px]">
               <button
                 onClick={handleCompleteOnly}
                 disabled={isSaving}
@@ -959,6 +1094,17 @@ function PatientSummaryItem({ icon, label, value }) {
   );
 }
 
+function VitalCard({ label, value, unit }) {
+  return (
+    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
+      <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className="text-lg font-black text-gray-900">{value}</span>
+        <span className="text-[10px] font-bold text-gray-400 uppercase">{unit}</span>
+      </div>
+    </div>
+  );
+}
 
 function TabButton({ active, onClick, label }) {
   return (
@@ -968,5 +1114,6 @@ function TabButton({ active, onClick, label }) {
     >
       {label}
     </button>
-  )
+  );
 }
+

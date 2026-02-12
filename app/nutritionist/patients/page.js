@@ -11,6 +11,12 @@ export default function NutritionistPatientsPage() {
     const [patients, setPatients] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [selectedPatient, setSelectedPatient] = useState(null);
+    const [patientMedicalData, setPatientMedicalData] = useState({
+        vitals: null,
+        assessment: null,
+        loading: false
+    });
 
     useEffect(() => {
         loadData();
@@ -51,6 +57,30 @@ export default function NutritionistPatientsPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchPatientMedicalData = async (patientId) => {
+        setPatientMedicalData(prev => ({ ...prev, loading: true }));
+        try {
+            const { getLatestVitals, getLatestAssessment } = await import('@/lib/supabase');
+            const [vitalsRes, assessmentRes] = await Promise.all([
+                getLatestVitals(patientId),
+                getLatestAssessment(patientId)
+            ]);
+            setPatientMedicalData({
+                vitals: vitalsRes.data,
+                assessment: assessmentRes.data,
+                loading: false
+            });
+        } catch (err) {
+            console.error('Error fetching medical data:', err);
+            setPatientMedicalData(prev => ({ ...prev, loading: false }));
+        }
+    };
+
+    const handleSelectPatient = (patient) => {
+        setSelectedPatient(patient);
+        fetchPatientMedicalData(patient.id);
     };
 
     const filteredPatients = patients.filter(patient =>
@@ -114,7 +144,8 @@ export default function NutritionistPatientsPage() {
                         {filteredPatients.map((patient) => (
                             <div
                                 key={patient.id}
-                                className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group"
+                                onClick={() => handleSelectPatient(patient)}
+                                className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group cursor-pointer"
                             >
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 font-black text-xl border border-green-100 group-hover:bg-green-600 group-hover:text-white transition-colors">
@@ -162,6 +193,69 @@ export default function NutritionistPatientsPage() {
                     </div>
                 )}
             </main>
+
+            {/* Patient Details Modal */}
+            {selectedPatient && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in duration-200">
+                        <div className="flex justify-between items-start mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center text-2xl font-black text-green-600 border border-green-100">
+                                    {selectedPatient.name?.[0]}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">{selectedPatient.name}</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{selectedPatient.age} Years • {selectedPatient.blood_group || 'Verified'}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedPatient(null)} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 hover:text-rose-500 transition-colors">
+                                <FileText size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Medical Summary</h3>
+                                {patientMedicalData.loading ? (
+                                    <div className="flex justify-center p-4">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-green-600"></div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <VitalCard label="Sys/Dia BP" value={patientMedicalData.vitals.systolic_bp ? `${patientMedicalData.vitals.systolic_bp}/${patientMedicalData.vitals.diastolic_bp || '--'}` : 'N/A'} unit="mmHg" />
+                                        <VitalCard label="Heart Rate" value={patientMedicalData.vitals.heart_rate || 'N/A'} unit="bpm" />
+                                        <VitalCard label="Blood Sugar" value={patientMedicalData.vitals.blood_sugar || 'N/A'} unit="mg/dL" />
+                                        <VitalCard label="Logged At" value={patientMedicalData.vitals.recorded_at ? new Date(patientMedicalData.vitals.recorded_at).toLocaleDateString() : 'N/A'} unit="" />
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="font-bold text-gray-500">Health Assessment</span>
+                                            <span className={`font-black ${patientMedicalData.assessment?.scores?.overall > 70 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                                                {patientMedicalData.assessment?.scores?.overall ? `${patientMedicalData.assessment.scores.overall}% Score` : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => {
+                                        router.push(`/nutritionist/diet-plans?patient=${selectedPatient.id}`);
+                                    }}
+                                    className="py-4 bg-green-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-green-600/20"
+                                >
+                                    Manage Diet
+                                </button>
+                                <button
+                                    onClick={() => setSelectedPatient(null)}
+                                    className="py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all"
+                                >
+                                    Close View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

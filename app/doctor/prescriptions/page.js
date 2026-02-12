@@ -139,12 +139,11 @@ export default function PrescriptionsPage() {
 
         setPrescriptions(rxData || []);
 
-        // Load Patients for the dropdown (ONLY those with confirmed appointments with this doctor)
+        // Load Patients for the dropdown (All connected patients)
         const { data: apts } = await supabase
             .from('appointments')
             .select('patient_id, patients(id, name)')
-            .eq('doctor_id', doctorData.id)
-            .eq('status', 'confirmed');
+            .eq('doctor_id', doctorData.id);
 
         // Deduplicate patients
         const uniquePatients = [];
@@ -260,7 +259,7 @@ export default function PrescriptionsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-12">
-            <header className="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-40">
+            <header className="bg-white border-b border-slate-200 px-6 py-3 sticky top-0 z-40 pt-safe px-safe min-h-[env(safe-area-inset-top)+56px]">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-all">
@@ -290,9 +289,9 @@ export default function PrescriptionsPage() {
                 </div>
 
                 {showNewPrescription && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNewPrescription(false)} />
-                        <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="bg-white w-full h-full md:h-auto md:max-w-lg md:rounded-2xl shadow-2xl relative z-10 flex flex-col md:max-h-[90vh] overflow-hidden pb-safe">
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                                 <h2 className="text-lg font-black text-[#4a2b3d] uppercase tracking-tight">New Prescription</h2>
                                 <button onClick={() => setShowNewPrescription(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400">

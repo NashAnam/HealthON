@@ -228,32 +228,32 @@ export default function PatientDashboard() {
         <div className="min-h-screen bg-[#FDF8FA] pb-safe">
             {/* Terms & Conditions Overlay */}
             {showTerms && (
-                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 md:p-8">
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-0 md:p-8">
                     <div className="absolute inset-0 bg-[#4a2b3d]/60 backdrop-blur-md" />
-                    <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col md:flex-row max-h-[90vh] animate-in fade-in zoom-in duration-500 mb-safe mt-6">
+                    <div className="bg-white w-full h-full md:h-auto md:max-w-4xl md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col md:flex-row max-h-screen md:max-h-[90vh] animate-in fade-in zoom-in duration-500 pb-safe">
                         {/* Summary Side */}
-                        <div className="md:w-1/3 bg-[#4a2b3d] p-10 flex flex-col justify-between text-white">
+                        <div className="md:w-1/3 bg-[#4a2b3d] p-8 md:p-10 flex flex-col justify-between text-white shrink-0 pt-safe">
                             <div>
-                                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
-                                    <AlertCircle className="w-8 h-8 text-white" />
+                                <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6 md:mb-8">
+                                    <AlertCircle className="w-6 h-6 md:w-8 md:h-8 text-white" />
                                 </div>
-                                <h2 className="text-3xl font-black uppercase tracking-tight leading-tight mb-4">Terms & Conditions</h2>
-                                <p className="text-white/60 text-sm font-medium leading-relaxed">
+                                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight leading-tight mb-4">Terms & Conditions</h2>
+                                <p className="text-white/60 text-xs md:text-sm font-medium leading-relaxed">
                                     Please review and accept our medical disclaimer to access your dashboard.
                                 </p>
                             </div>
-                            <div className="pt-8 border-t border-white/10">
+                            <div className="hidden md:block pt-8 border-t border-white/10">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Last Updated</p>
                                 <p className="text-sm font-bold">January 2026</p>
                             </div>
                         </div>
 
                         {/* Content Side */}
-                        <div className="flex-1 p-8 md:p-12 overflow-y-auto bg-gray-50 flex flex-col">
-                            <div className="flex-1 space-y-8 pb-8">
+                        <div className="flex-1 p-6 md:p-12 overflow-y-auto bg-gray-50 flex flex-col">
+                            <div className="flex-1 space-y-6 md:space-y-8 pb-8">
                                 <div className="space-y-4">
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Medical Disclaimer</h3>
-                                    <p className="text-lg font-bold text-slate-700 leading-relaxed">
+                                    <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Medical Disclaimer</h3>
+                                    <p className="text-base md:text-lg font-bold text-slate-700 leading-relaxed">
                                         This Patient Portal is a health tracking and organization tool only. It helps you record and manage your health information to share with your healthcare providers.
                                     </p>
                                 </div>
@@ -263,116 +263,31 @@ export default function PatientDashboard() {
                                         <div className="prose prose-sm max-w-none text-gray-600">
                                             {termsStep === 1 ? (
                                                 <>
-                                                    <h4 className="font-bold text-gray-900 text-lg">1. Purpose of HealthON</h4>
-                                                    <p>HealthON is designed to support awareness, tracking, and early understanding of health patterns, especially related to chronic lifestyle conditions such as diabetes, hypertension, and cardiovascular risk. HealthON helps users organize health data, observe trends, and take informed action, but it does not replace medical care.</p>
+                                                    <h4 className="font-bold text-gray-900 text-base md:text-lg">1. Purpose of HealthON</h4>
+                                                    <p>HealthON is designed to support awareness, tracking, and early understanding of health patterns, especially related to chronic lifestyle conditions such as diabetes, hypertension, and cardiovascular risk.</p>
 
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">2. Not a Medical Device or Diagnosis Tool</h4>
+                                                    <h4 className="font-bold text-gray-900 text-base md:text-lg mt-4">2. Not a Medical Device</h4>
                                                     <ul className="list-disc pl-4 space-y-1">
                                                         <li>HealthON is not a medical device.</li>
                                                         <li>HealthON does not diagnose, treat, cure, or prevent any disease.</li>
-                                                        <li>All insights, alerts, or summaries provided by HealthON are informational only.</li>
-                                                        <li>Users must consult a qualified healthcare professional for diagnosis, treatment, or medical decisions.</li>
+                                                        <li>Users must consult a qualified healthcare professional.</li>
                                                     </ul>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">3. Use of Health Data</h4>
-                                                    <p>HealthON may collect and process health-related data such as:</p>
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        <li>Body measurements and vitals (manual or device-linked)</li>
-                                                        <li>Lifestyle information (diet, activity, habits)</li>
-                                                        <li>Medication intake details entered by the user</li>
-                                                        <li>Lab report information uploaded by the user</li>
-                                                    </ul>
-                                                    <p className="mt-2">This data is used only to generate personal health insights and trends and is handled according to our Privacy Policy.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">4. Accuracy and User Responsibility</h4>
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        <li>HealthON relies on user-provided information and connected device data.</li>
-                                                        <li>Users are responsible for ensuring the accuracy and completeness of the data they enter.</li>
-                                                        <li>HealthON cannot guarantee accuracy if data is incomplete, outdated, or incorrectly entered.</li>
-                                                        <li>Decisions should never be made solely based on app information.</li>
-                                                    </ul>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">5. AI-Generated Insights</h4>
-                                                    <p>HealthON may use AI to identify patterns, highlight potential risks, and summarize health trends.</p>
-                                                    <p className="font-semibold text-xs uppercase tracking-wide text-plum-700 mt-2">AI Insights Are:</p>
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        <li>Supportive, not definitive</li>
-                                                        <li>Not clinical judgments</li>
-                                                        <li>May not account for all personal or medical factors</li>
-                                                    </ul>
-                                                    <p className="mt-2 font-bold">Always validate insights with a healthcare professional.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">6. Emergency Situations</h4>
-                                                    <p className="text-red-600 font-bold">HealthON is not intended for approaches.</p>
-                                                    <p>If you experience severe symptoms, sudden pain, loss of consciousness, or medical distress, <span className="font-bold underline">seek immediate medical attention or contact emergency services.</span></p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">7. External Services & Providers</h4>
-                                                    <p>HealthON may help users discover doctors, labs, or health services. HealthON does not control or guarantee the quality, outcomes, or advice of external providers. Any engagement with third parties is at the user’s discretion.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">8. No Guaranteed Outcomes</h4>
-                                                    <p>HealthON does not guarantee improved health outcomes, disease prevention, or risk reduction. Health outcomes depend on multiple factors, including medical care, lifestyle, and individual conditions.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">9. Eligibility</h4>
-                                                    <p>HealthON is intended for adults aged 18 and above. Users must be capable of understanding health information. Parents or guardians must supervise usage if permitted for minors (if applicable).</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">10. Limitation of Liability</h4>
-                                                    <p>To the extent permitted by law: HealthON is not liable for medical decisions made based on app content. HealthON is not responsible for harm resulting from misuse or misinterpretation of information. Use of the app is at the user’s own risk.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">11. Contact & Support</h4>
-                                                    <p>For questions, concerns, or feedback:</p>
-                                                    <p className="font-bold">📧 Email: contact@healthon.app</p>
-                                                    <p className="font-bold">🌐 Website: healthon.app</p>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <h3 className="text-2xl font-black text-[#4a2b3d] mb-6">HealthON – Privacy & Consent</h3>
-                                                    <p className="font-medium text-gray-500 mb-4">Last Updated: January 2026</p>
-                                                    <p className="mb-6">Your health data is personal. HealthON is built to respect that. This page explains what data we collect, why we collect it, how it’s used, and the choices you have. By using HealthON, you consent to the practices described below.</p>
+                                                    <h3 className="text-xl md:text-2xl font-black text-[#4a2b3d] mb-6">HealthON – Privacy & Consent</h3>
+                                                    <p className="mb-6">Your health data is personal. HealthON is built to respect that. By using HealthON, you consent to the practices described below.</p>
 
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">1. What HealthON Collects</h4>
-                                                    <p>HealthON may collect the following information only when you choose to provide it:</p>
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        <li><strong>Health & Lifestyle Data:</strong> Body readings, connected device data, medications, lab reports, diet, habits, symptoms.</li>
-                                                        <li><strong>Basic Account Information:</strong> Name, age, gender, contact details.</li>
-                                                    </ul>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">2. Why We Collect This Data</h4>
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        <li>Organize your health information in one place</li>
-                                                        <li>Identify patterns and trends over time</li>
-                                                        <li>Provide reminders and non-clinical insights</li>
-                                                        <li>Support better conversations with healthcare professionals</li>
-                                                    </ul>
-                                                    <p className="mt-2 font-bold text-plum-700">HealthON does not sell your health data.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">3. AI & Insights Consent</h4>
-                                                    <p>HealthON may use AI systems to analyze trends, highlight risks, and generate summaries. AI insights are informational, not medical advice.</p>
-                                                    <p className="mt-2">By using HealthON, you consent to this processing.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">4. What HealthON Does NOT Do</h4>
-                                                    <ul className="list-disc pl-4 space-y-1">
-                                                        <li>We do not diagnose diseases</li>
-                                                        <li>We do not provide treatment decisions</li>
-                                                        <li>We do not share your personal health data without consent</li>
-                                                        <li>We do not use your data for advertising targeting</li>
-                                                    </ul>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">5. Data Sharing</h4>
-                                                    <p>Your data is shared only when necessary with secure service providers or when required by law.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">6. Your Choices & Control</h4>
-                                                    <p>You can view, edit, or delete your data, and withdraw consent at any time.</p>
-
-                                                    <h4 className="font-bold text-gray-900 text-lg mt-4">7. Contact Us</h4>
-                                                    <p>For questions or privacy requests: contact@healthon.app</p>
+                                                    <h4 className="font-bold text-gray-900 text-base md:text-lg mt-4">1. Data Storage</h4>
+                                                    <p>We store your name, age, and health metrics securely to provide you with insights.</p>
                                                 </>
                                             )}
                                         </div>
                                     </div>
 
                                     {termsStep === 1 ? (
-                                        <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100">
-                                            <p className="text-sm font-bold text-rose-700 leading-relaxed italic text-center">
+                                        <div className="bg-rose-50 p-4 md:p-6 rounded-3xl border border-rose-100">
+                                            <p className="text-xs md:text-sm font-bold text-rose-700 leading-relaxed italic text-center">
                                                 In case of a medical emergency, please call your local emergency services immediately.
                                             </p>
                                         </div>
@@ -387,7 +302,7 @@ export default function PatientDashboard() {
                                             handleAcceptTerms();
                                         }
                                     }}
-                                    className="w-full py-5 bg-[#5a8a7a] hover:bg-[#4a7a6a] text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#5a8a7a]/20 transition-all hover:scale-[1.02] active:scale-95 mt-4"
+                                    className="w-full py-4 md:py-5 bg-[#5a8a7a] hover:bg-[#4a7a6a] text-white rounded-2xl md:rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-[#5a8a7a]/20 transition-all hover:scale-[1.02] active:scale-95 mt-4"
                                 >
                                     {termsStep === 1 ? 'I Acknowledge & Accept' : 'I Consent & Enter Dashboard'}
                                 </button>
@@ -420,7 +335,7 @@ export default function PatientDashboard() {
             </div>
 
             {/* Refined Header */}
-            <header className="bg-white px-6 md:px-12 pt-10 pb-6 md:py-8 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe px-safe">
+            <header className="bg-white px-6 md:px-12 pt-4 pb-4 md:py-8 flex items-center justify-between border-b border-gray-100 sticky top-0 z-50 pt-safe px-safe min-h-[env(safe-area-inset-top)+64px]">
                 <div className="flex items-center gap-3 overflow-hidden">
                     <h1 className="text-lg md:text-2xl font-black text-[#4a2b3d] uppercase tracking-tight whitespace-nowrap truncate">
                         {user ? (patient?.name || 'Dashboard') : 'Guest'}
