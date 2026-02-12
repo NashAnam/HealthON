@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, Bell, User, FileText, Calendar, Activity, Users } from 'lucide-react';
+import { MoreHorizontal, Bell, User, FileText, Calendar, Activity, Users, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface HeaderProps {
     userName?: string;
@@ -12,6 +15,21 @@ interface HeaderProps {
 
 export default function Header({ userName, userImage }: HeaderProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        if (!supabase) {
+            toast.error('Connection error');
+            return;
+        }
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            toast.error('Logout failed');
+        } else {
+            toast.success('Logged out');
+            router.push('/login');
+        }
+    };
 
     const menuItems = [
         { name: 'Network', icon: Users, href: '/patient/network' },
@@ -71,14 +89,18 @@ export default function Header({ userName, userImage }: HeaderProps) {
                             </div>
 
                             {/* Simple Dropdown for Logout */}
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 hidden group-hover:block animate-fade-in">
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 hidden group-hover:block animate-fade-in transition-all">
                                 <div className="px-4 py-2 border-b border-gray-50">
                                     <p className="text-sm font-bold text-gray-900">My Account</p>
                                     <p className="text-xs text-gray-500">Manage profile</p>
                                 </div>
-                                <Link href="/login" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">
-                                    Sign Out
-                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 font-bold flex items-center gap-2 transition-colors"
+                                >
+                                    <LogOut size={16} />
+                                    <span>Sign Out</span>
+                                </button>
                             </div>
                         </div>
                     </div>
