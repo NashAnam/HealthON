@@ -94,14 +94,17 @@ export default function PatientProfilePage() {
 
             console.log('Saving profile updates:', updates);
 
-            const { error } = await supabase
+            const { data: updatedData, error } = await supabase
                 .from('patients')
                 .update(updates)
-                .eq('id', patient.id);
+                .eq('id', patient.id)
+                .select();
 
             if (error) throw error;
             toast.success('Profile updated successfully!');
-            router.refresh();
+
+            // Reload the profile data to reflect changes
+            await loadProfile();
         } catch (error) {
             console.error('Error saving profile:', error);
             // Show specific error message if available

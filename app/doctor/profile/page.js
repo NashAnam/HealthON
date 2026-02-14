@@ -82,7 +82,7 @@ export default function DoctorProfilePage() {
             const feeFloat = parseFloat(formData.consultationFee);
 
             // Perform update with ONLY verified columns
-            const { error: updateError } = await supabase
+            const { data: updatedData, error: updateError } = await supabase
                 .from('doctors')
                 .update({
                     name: formData.name,
@@ -94,11 +94,15 @@ export default function DoctorProfilePage() {
                     available_days: formData.available_days,
                     timings: formData.timings
                 })
-                .eq('id', doctor.id);
+                .eq('id', doctor.id)
+                .select();
 
             if (updateError) throw updateError;
+
             toast.success('Profile updated successfully!');
-            router.refresh();
+
+            // Reload the profile data to reflect changes
+            await loadProfile();
         } catch (error) {
             console.error('Detailed Save Error:', JSON.stringify(error, null, 2));
             toast.error(error.message || 'Failed to update profile. Check your connection or permissions.');

@@ -69,7 +69,7 @@ export default function NutritionistProfilePage() {
 
         setSaving(true);
         try {
-            const { error: updateError } = await supabase
+            const { data: updatedData, error: updateError } = await supabase
                 .from('nutritionists')
                 .update({
                     name: formData.name,
@@ -82,10 +82,14 @@ export default function NutritionistProfilePage() {
                     available_days: formData.available_days,
                     timings: formData.timings
                 })
-                .eq('id', nutritionist.id);
+                .eq('id', nutritionist.id)
+                .select();
 
             if (updateError) throw updateError;
             toast.success('Profile updated successfully!');
+
+            // Reload the profile data to reflect changes
+            await loadProfile();
         } catch (error) {
             console.error('Save Error:', error);
             toast.error(error.message || 'Failed to update profile');
