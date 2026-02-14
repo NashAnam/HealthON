@@ -119,16 +119,17 @@ export default function PatientProfilePage() {
 
     return (
         <div className="min-h-screen bg-surface pb-20">
+            {/* Back Button - Fixed Position */}
+            <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
+                <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-700 hover:text-[#4a2b3d] transition-colors">
+                    <ArrowLeft size={20} />
+                    <span className="text-sm font-bold">Back</span>
+                </button>
+            </div>
+
             {/* Header */}
             <div className="bg-[#4a2b3d] pt-8 pb-20 px-6 rounded-b-[2.5rem] relative mb-16 shadow-xl">
-                <div className="max-w-4xl mx-auto mb-6">
-                    <div className="flex items-center justify-between text-white mb-4">
-                        <button onClick={() => router.back()} className="flex items-center gap-2 p-2 pr-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all group">
-                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="text-sm font-bold opacity-90">Back</span>
-                        </button>
-                        <div className="w-20" />
-                    </div>
+                <div className="max-w-4xl mx-auto">
                     <h1 className="text-lg font-black uppercase tracking-widest text-white text-center">My Profile</h1>
                 </div>
 
@@ -146,14 +147,6 @@ export default function PatientProfilePage() {
                     <div className="text-center md:text-left flex-1">
                         <h2 className="text-2xl font-black text-[#4a2b3d] uppercase tracking-tight">{formData.name}</h2>
                         <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Patient ID: #{patient?.id?.slice(0, 8)}</p>
-                        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                            <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-green-100">
-                                Active Account
-                            </span>
-                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1">
-                                <Shield size={12} /> Insurance Verified
-                            </span>
-                        </div>
                     </div>
 
                     <button

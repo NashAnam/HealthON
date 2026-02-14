@@ -115,16 +115,17 @@ export default function DoctorProfilePage() {
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] pb-20">
+            {/* Back Button - Fixed Position */}
+            <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4">
+                <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors">
+                    <ArrowLeft size={20} />
+                    <span className="text-sm font-bold">Back</span>
+                </button>
+            </div>
+
             {/* Header - Replaced harsh black with thematic deep teal */}
             <div className="bg-gradient-to-br from-[#1b3c33] to-[#0d1f1a] pt-8 pb-20 px-6 rounded-b-[2.5rem] relative mb-16 shadow-xl">
-                <div className="max-w-4xl mx-auto mb-6">
-                    <div className="flex items-center justify-between text-white mb-4">
-                        <button onClick={() => router.back()} className="flex items-center gap-2 p-2 pr-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all group">
-                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="text-sm font-bold opacity-90">Back</span>
-                        </button>
-                        <div className="w-20" />
-                    </div>
+                <div className="max-w-4xl mx-auto">
                     <h1 className="text-lg font-black uppercase tracking-widest text-white text-center">Doctor Profile</h1>
                 </div>
 
@@ -144,11 +145,6 @@ export default function DoctorProfilePage() {
                         <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">
                             {formData.specialty || 'General Physician'} • ID: #{doctor?.id?.slice(0, 8)}
                         </p>
-                        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                            <span className="px-3 py-1 bg-teal-50 text-teal-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-teal-100 flex items-center gap-1">
-                                <Award size={12} /> Verified Doctor
-                            </span>
-                        </div>
                     </div>
 
                     <button
