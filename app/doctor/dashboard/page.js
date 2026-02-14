@@ -645,6 +645,7 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
     assessment: null,
     labReports: [],
     vitals: null,
+    prescriptions: [],
     loading: false
   });
 
@@ -657,17 +658,19 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
   const fetchPatientMedicalData = async () => {
     setPatientData(prev => ({ ...prev, loading: true }));
     try {
-      const { getLatestAssessment, getLabReports, getLatestVitals } = await import('@/lib/supabase');
-      const [assessmentRes, reportsRes, vitalsRes] = await Promise.all([
+      const { getLatestAssessment, getLabReports, getLatestVitals, getPatientPrescriptions } = await import('@/lib/supabase');
+      const [assessmentRes, reportsRes, vitalsRes, prescriptionsRes] = await Promise.all([
         getLatestAssessment(patient.id),
         getLabReports(patient.id),
-        getLatestVitals(patient.id)
+        getLatestVitals(patient.id),
+        getPatientPrescriptions(patient.id)
       ]);
 
       setPatientData({
         assessment: assessmentRes.data,
         labReports: reportsRes.data || [],
         vitals: vitalsRes.data,
+        prescriptions: prescriptionsRes.data || [],
         loading: false
       });
     } catch (err) {
@@ -965,10 +968,51 @@ function ConsultationModal({ patient, appointmentId, isTelemedicine, onClose }) 
               )}
 
               {activeTab === 'history' && (
-                <div className="py-20 text-center opacity-40">
-                  <Clock size={48} className="mx-auto mb-4" />
-                  <p className="text-sm font-black uppercase tracking-widest">No previous history available</p>
-                </div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
+                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 border-b border-gray-50 pb-4">Prescription History</h4>
+                    {patientData.loading ? (
+                      <div className="flex justify-center p-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-plum-600"></div>
+                      </div>
+                    ) : patientData.prescriptions && patientData.prescriptions.length > 0 ? (
+                      <div className="space-y-4">
+                        {patientData.prescriptions.map((prescription, i) => (
+                          <div key={i} className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <h5 className="font-black text-gray-900 uppercase tracking-tight text-sm">{prescription.diagnosis || 'General Consultation'}</h5>
+                                <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                                  {new Date(prescription.created_at).toLocaleDateString()} • Dr. {prescription.doctors?.name || 'Unknown'}
+                                </p>
+                              </div>
+                            </div>
+                            {prescription.medications && prescription.medications.length > 0 && (
+                              <div className="space-y-2 mt-4">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Medications:</p>
+                                {prescription.medications.map((med, idx) => (
+                                  <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 text-xs">
+                                    <span className="font-black text-gray-900">{med.name}</span>
+                                    <span className="text-gray-400 mx-2">•</span>
+                                    <span className="text-gray-600">{med.dosage} - {med.frequency}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {prescription.notes && (
+                              <div className="mt-4 p-3 bg-blue-50 rounded-xl">
+                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Notes:</p>
+                                <p className="text-xs text-blue-900">{prescription.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400 font-bold uppercase tracking-widest text-[10px]">No previous prescriptions found.</div>
+                    )}
+                  </div>
+                </motion.div>
               )}
 
               {activeTab === 'vital-tracker' && (
