@@ -333,7 +333,6 @@ export default function HealthTrackerPage() {
             let finalNotes = formData.notes || '';
             if (formData.unit) finalNotes = `Unit: ${formData.unit} | ${finalNotes}`;
             if (transcript) finalNotes = `[Voice]: ${transcript} | ${finalNotes}`;
-            if (capturedImage) finalNotes = `[Image Captured] | ${finalNotes}`;
 
             const logEntry = {
                 patient_id: patient.id,
@@ -349,7 +348,6 @@ export default function HealthTrackerPage() {
             toast.success('Logged successfully!', { id: tid });
             setFormData({ ...formData, value: '', notes: '' });
             setTranscript('');
-            setCapturedImage(null);
             loadData(); // Refresh list
         } catch (error) {
             toast.error('Error saving: ' + error.message, { id: tid });
