@@ -104,12 +104,15 @@ export default function NutritionistProfilePage() {
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
             <div className="bg-gradient-to-br from-[#1b3c1b] to-[#0d1f0d] pt-8 pb-20 px-6 rounded-b-[2.5rem] relative mb-16 shadow-xl">
-                <div className="max-w-4xl mx-auto flex items-center justify-between text-white mb-6">
-                    <button onClick={() => router.back()} className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-all">
-                        <ArrowLeft size={20} />
-                    </button>
-                    <h1 className="text-lg font-black uppercase tracking-widest">Nutritionist Profile</h1>
-                    <div className="w-10" />
+                <div className="max-w-4xl mx-auto mb-6">
+                    <div className="flex items-center justify-between text-white mb-4">
+                        <button onClick={() => router.back()} className="flex items-center gap-2 p-2 pr-4 bg-white/10 rounded-xl hover:bg-white/20 transition-all group">
+                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-bold opacity-90">Back</span>
+                        </button>
+                        <div className="w-20" />
+                    </div>
+                    <h1 className="text-lg font-black uppercase tracking-widest text-white text-center">Nutritionist Profile</h1>
                 </div>
 
                 <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl bg-white rounded-[2rem] shadow-xl p-6 flex flex-col md:flex-row items-center md:items-start gap-6">
